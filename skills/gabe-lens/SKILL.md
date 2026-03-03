@@ -99,9 +99,6 @@ Gabe Blocks are token-expensive. A full block costs ~200-350 tokens. In agent fr
 │  Rules in docs get ignored under fatigue...           │
 │  THE ANALOGY                                          │
 │  Gravity vs. posted speed limits...                   │
-│  ANALOGY LIMITS                                       │
-│  When reasoning about hook maintenance, gravity       │
-│  has no cost, but hooks do...                          │
 │  THE MAP                                              │
 │  Tier 1: GRAVITY ══════► Always works                 │
 │  ...                                                   │
@@ -111,6 +108,9 @@ Gabe Blocks are token-expensive. A full block costs ~200-350 tokens. In agent fr
 │    DECIDES: Where to invest enforcement effort        │
 │  ONE-LINE HANDLE                                      │
 │  "Hooks are gravity — docs are speed limit signs"     │
+│  ANALOGY LIMITS                                       │
+│  When reasoning about hook maintenance, gravity       │
+│  has no cost, but hooks do...                          │
 │  SIGNAL: Quick check ✓                                │
 └───────────────────────────────────────────────────────┘
 ```
@@ -149,11 +149,6 @@ When a concept is complex or critical, produce a **Gabe Block**:
 │   user can visualize spatially — not an abstract       │
 │   metaphor. Must capture the KEY TRADE-OFF.]           │
 │                                                        │
-│  ANALOGY LIMITS                                        │
-│  [1-3 sentences. Lead with the CASE: when does this    │
-│   analogy stop working? Then explain why it breaks.    │
-│   Case first, explanation second.]                     │
-│                                                        │
 │  THE MAP                                               │
 │  [ASCII spatial diagram showing relationships, flow,   │
 │   states, or architecture. Use boxes, arrows, layers.  │
@@ -168,6 +163,11 @@ When a concept is complex or critical, produce a **Gabe Block**:
 │  [A memorable phrase — 5-10 words — that captures the  │
 │   essence. Must survive compaction, fatigue, and        │
 │   context loss. Think bumper sticker, not abstract.]   │
+│                                                        │
+│  ANALOGY LIMITS                                        │
+│  [1-3 sentences. Lead with the CASE: when does this    │
+│   analogy stop working? Then explain why it breaks.    │
+│   Case first, explanation second.]                     │
 │                                                        │
 │  SIGNAL: Quick check ✓ | Deeper question ◆            │
 │  [Quick check = simple concept, trust first instinct.  │
@@ -194,12 +194,6 @@ When a concept is complex or critical, produce a **Gabe Block**:
 - Good: "It's like a pressure relief valve — flow is unrestricted until pressure hits the threshold, then the valve diverts excess to a holding tank. The threshold is your 500-operation batch limit. The holding tank is the retry queue."
 - If no good physical analogy exists, say so explicitly: "No clean physical analogy — here's how the mechanism works directly."
 
-### ANALOGY LIMITS
-- Lead with the CASE: when does this analogy stop working? What scenario breaks it?
-- Then explain WHY it breaks in that case
-- 1-3 sentences. Case first, explanation second.
-- Example: "When reasoning about retry priority, a real valve doesn't queue overflow by arrival time, but the retry queue does."
-
 ### THE MAP
 - ASCII art with boxes, arrows, and labels
 - Maximum 15 lines (scannable, not overwhelming)
@@ -223,6 +217,12 @@ When a concept is complex or critical, produce a **Gabe Block**:
   - "The autopilot resets every 27 minutes"
   - "Fix commits outnumber feature commits"
   - "Empty planning folder, full ceremony"
+
+### ANALOGY LIMITS
+- Lead with the CASE: when does this analogy stop working? What scenario breaks it?
+- Then explain WHY it breaks in that case
+- 1-3 sentences. Case first, explanation second.
+- Example: "When reasoning about retry priority, a real valve doesn't queue overflow by arrival time, but the retry queue does."
 
 ### SIGNAL
 - **Quick check ✓** — The concept is straightforward. First instinct is probably right. Don't overthink.
@@ -314,12 +314,6 @@ When invoked as `/gabe-lens annotate [file]`, read the target document, identify
 │  is like a speed bump — it slows you down IF you       │
 │  drive over it, but you can take a different road.     │
 │                                                        │
-│  ANALOGY LIMITS                                        │
-│  When reasoning about hook maintenance burden, gravity   │
-│  has no cost and is uniform, but real hooks can be       │
-│  misconfigured, disabled, or have false positives with   │
-│  execution overhead.                                     │
-│                                                        │
 │  THE MAP                                               │
 │                                                        │
 │    Tier 1: GRAVITY ══════════════════► Always works    │
@@ -344,6 +338,12 @@ When invoked as `/gabe-lens annotate [file]`, read the target document, identify
 │                                                        │
 │  ONE-LINE HANDLE                                       │
 │  "Hooks are gravity — docs are speed limit signs"      │
+│                                                        │
+│  ANALOGY LIMITS                                        │
+│  When reasoning about hook maintenance burden, gravity   │
+│  has no cost and is uniform, but real hooks can be       │
+│  misconfigured, disabled, or have false positives with   │
+│  execution overhead.                                     │
 │                                                        │
 │  SIGNAL: Quick check ✓                                 │
 │  (The concept is intuitive once you see the tiers.     │
@@ -372,13 +372,6 @@ When invoked as `/gabe-lens annotate [file]`, read the target document, identify
 │  constantly. If you open it once, the food (context)   │
 │  stays cold (fresh) and the compressor barely runs.    │
 │                                                        │
-│  ANALOGY LIMITS                                        │
-│  When deciding what to KEEP vs. DISCARD during          │
-│  compaction, opening a fridge doesn't lose food, just   │
-│  warms it, but compaction actually deletes detail.       │
-│  Also re-reading is not uniform like cooling; some       │
-│  files get re-read far more than others.                │
-│                                                        │
 │  THE MAP                                               │
 │                                                        │
 │    Session start ──→ AI reads all files ──→ Context    │
@@ -404,6 +397,13 @@ When invoked as `/gabe-lens annotate [file]`, read the target document, identify
 │                                                        │
 │  ONE-LINE HANDLE                                       │
 │  "The refrigerator door opens every 27 minutes"        │
+│                                                        │
+│  ANALOGY LIMITS                                        │
+│  When deciding what to KEEP vs. DISCARD during          │
+│  compaction, opening a fridge doesn't lose food, just   │
+│  warms it, but compaction actually deletes detail.       │
+│  Also re-reading is not uniform like cooling; some       │
+│  files get re-read far more than others.                │
 │                                                        │
 │  SIGNAL: Quick check ✓                                 │
 │  (The mechanism is simple — the numbers are shocking    │
