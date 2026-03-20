@@ -85,7 +85,8 @@ That one-line handle — *"Hooks are gravity — docs are speed limit signs"* �
 Inside Claude Code:
 
 ```
-/install-github-skills khujta/gabe-lens
+/plugin marketplace add khujta/gabe-lens
+/plugin install gabe-lens@khujta-gabe-lens
 ```
 
 Or clone locally:
