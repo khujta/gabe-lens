@@ -5,13 +5,13 @@
     "email": "khujta@users.noreply.github.com"
   },
   "metadata": {
-    "description": "Cognitive translation plugin for Claude Code. Transforms complex technical concepts into physical-system analogies, ASCII spatial maps, constraint boxes, and memorable one-line handles."
+    "description": "Cognitive toolkit for Claude Code. Explains with analogies (gabe-lens), stress-tests with adversarial reviews (gabe-roast), and adapts to how you think (calibrate)."
   },
   "plugins": [
     {
       "name": "gabe-lens",
       "source": "./",
-      "description": "Transform technical concepts into your cognitive format — analogies, spatial maps, constraint boxes.",
+      "description": "Cognitive toolkit — concept translation, adversarial gap review, and cognitive suit calibration.",
       "author": {
         "name": "khujta"
       },
@@ -19,7 +19,7 @@
       "repository": "https://github.com/khujta/gabe-lens",
       "license": "MIT",
       "category": "learning",
-      "tags": ["learning", "cognitive", "analogies", "visual-spatial", "explanation"]
+      "tags": ["learning", "cognitive", "analogies", "adversarial-review", "gap-analysis"]
     }
   ]
 }

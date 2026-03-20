@@ -1,32 +1,42 @@
 ---
 name: gabe-lens
-description: Cognitive translation skill that transforms technical concepts into physical-system analogies, spatial maps, constraint boxes, and one-line handles — tailored for visual-spatial, conceptual-analogical thinkers.
+description: Cognitive translation skill that transforms technical concepts into analogies, spatial maps, constraint boxes, and one-line handles — adapts to your cognitive suit.
 metadata:
-  version: 2.0.0
+  version: 2.1.0
 ---
 
 # Gabe Lens — Cognitive Translation Skill
 
 ## Purpose
 
-Transform complex technical concepts into a format that matches a **visual-spatial, conceptual-analogical, top-down constraint-driven** cognitive architecture with a **Problem → Analogy → Code** learning sequence.
-
-This skill teaches any agent HOW to explain things so the user absorbs and retains them. It does not change WHAT is communicated — only the format.
+Transform complex technical concepts into a format that matches how the user actually thinks. This skill teaches any agent HOW to explain things so the user absorbs and retains them. It does not change WHAT is communicated — only the format.
 
 ---
 
-## Cognitive Profile (Reference)
+## Cognitive Suit — Loading the Profile
+
+Before producing any Gabe Block, check for a profile at `~/.claude/gabe-lens-profile.md`.
+
+- **If the file exists:** read the `suit` field from frontmatter. Load the matching suit from `SUITS.md` and adapt all output accordingly.
+- **If the file does not exist:** use the default suit (Spatial-Analogical) described below.
+- **To calibrate:** run `/gabe-lens-calibrate`. This presents the same concept in 4 suits and saves the user's choice.
+- **To reset to default:** run `/gabe-lens-calibrate reset`.
+
+Available suits: Spatial-Analogical (default), Sequential-Procedural, Abstract-Structural, Narrative-Contextual. Full definitions in `SUITS.md`.
+
+---
+
+## Cognitive Profile (Default Suit: Spatial-Analogical)
 
 ### How the Learner Thinks
 - **Visual-spatial** — Reasons through images, diagrams, spatial relationships
 - **Conceptual-analogical** — Primary reasoning substrate is metaphor. Thinks *through* analogy, not *with* analogy
 - **Top-down, constraint-driven** — Asks "why does this exist?" before "how does it work?"
 - **Spiral learner** — Iterates: do → generalize → formalize → refine
-- **High working memory** — Holds 4-5 conceptual objects simultaneously
-- **High-autonomy processor** — 60% solo thinking, 20% context gathering, 20% cross-checking
+- **High working memory in familiar domains** — Holds 4-5 conceptual objects in known territory. In unfamiliar domains, reduce to 2-3 and build up.
 
 ### Optimal Sequence
-1. **Problem first** — "What does this solve?"
+1. **Problem first** — "What does this solve?" (or for tool/building-block concepts: "What does this enable?")
 2. **Analogy to ground it** — Map to familiar physical system
 3. **Code/mechanism to make concrete** — Executable understanding
 
@@ -46,7 +56,8 @@ This skill teaches any agent HOW to explain things so the user absorbs and retai
 ### The Overthinking Trap
 When the learner arrives at a simple answer quickly, the mind says "this can't be right — too easy." They search for hidden complexity, don't find it, lose energy.
 - Signal **Quick check ✓** for simple concepts (trust first instinct)
-- Signal **Deeper question ◆** when there are real layers to explore
+- Signal **Deeper question ◆ (~5 min focus)** when there are real layers but focused attention resolves them
+- Signal **Deeper question ◆ (rethink your model)** when the concept changes how you think about the topic
 
 ---
 
@@ -54,41 +65,11 @@ When the learner arrives at a simple answer quickly, the mind says "this can't b
 
 Gabe Blocks are token-expensive. A full block costs ~200-350 tokens. In agent frameworks with limited context windows, this matters. Every block can be expressed at three fidelity levels. Use the leanest mode that serves the current need.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                 COMPRESSION MODES                            │
-│                                                             │
-│  FULL BLOCK (~200-350 tokens)                               │
-│  All components present. Used when:                         │
-│  - Introducing a concept for the first time                 │
-│  - Writing documentation or handoff notes                   │
-│  - Teaching or explaining                                    │
-│                                                             │
-│  BRIEF (~40-80 tokens)                                      │
-│  One-line handle + constraint box only. Used when:          │
-│  - Referencing a previously introduced concept              │
-│  - Loading into warm context for active tasks               │
-│  - Summaries where space is tight                           │
-│                                                             │
-│  ONELINER (~5-15 tokens)                                    │
-│  One-line handle only. Used when:                           │
-│  - Compaction handoff notes                                 │
-│  - Session start re-anchoring                               │
-│  - Any context where every token counts                     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### When to Compress
-
-| Context                                                   | Mode        | Rationale                                            |
-| --------------------------------------------------------- | ----------- | ---------------------------------------------------- |
-| First time explaining a concept                           | Full        | Needs full grounding                                 |
-| Referencing a previously explained concept                | Brief       | Needs constraint box for decisions, not full analogy |
-| Compaction handoff note                                   | Oneliner    | Must survive compression                             |
-| Session start re-anchoring                                | Oneliner    | Already grounded, just re-anchor                     |
-| Writing documentation for humans                          | Full        | Humans benefit from full format                      |
-| Quick status or summary                                   | Oneliner    | Minimum footprint                                    |
+| Mode | Tokens | When to use |
+|---|---|---|
+| **Full** | ~200-350 | First encounter, documentation, teaching |
+| **Brief** | ~40-80 | Referencing a known concept, warm context loading |
+| **Oneliner** | ~5-15 | Compaction handoffs, session re-anchoring, summaries |
 
 ### Compression Examples
 
@@ -169,9 +150,10 @@ When a concept is complex or critical, produce a **Gabe Block**:
 │   analogy stop working? Then explain why it breaks.    │
 │   Case first, explanation second.]                     │
 │                                                        │
-│  SIGNAL: Quick check ✓ | Deeper question ◆            │
-│  [Quick check = simple concept, trust first instinct.  │
-│   Deeper question = real layers here, sit with it.]    │
+│  SIGNAL: Quick check ✓ | Deeper question ◆             │
+│  [Quick check = trust first instinct.                   │
+│   Deeper question (~5 min) = layers, but tractable.     │
+│   Deeper question (rethink) = changes your model.]      │
 │                                                        │
 └────────────────────────────────────────────────────────┘
 ```
@@ -185,6 +167,7 @@ When a concept is complex or critical, produce a **Gabe Block**:
 - One concrete scenario where the absence of this concept causes failure
 - No jargon that isn't already defined
 - Example: "Without batch chunking, a Firestore write of 600 items silently drops the last 100 — no error, just lost data."
+- **For tool/building-block concepts** (data structures, language features, patterns) where no natural problem exists: replace THE PROBLEM with **WHAT IT ENABLES** — what becomes possible or easier with this concept. Example: "Generics let you write one sort function that works on any type — without them, you write a separate sort for strings, numbers, dates, etc."
 
 ### THE ANALOGY
 - Must be a **physical system** the user can visualize in 3D space
@@ -225,8 +208,9 @@ When a concept is complex or critical, produce a **Gabe Block**:
 - Example: "When reasoning about retry priority, a real valve doesn't queue overflow by arrival time, but the retry queue does."
 
 ### SIGNAL
-- **Quick check ✓** — The concept is straightforward. First instinct is probably right. Don't overthink.
-- **Deeper question ◆** — There are real layers here. The surface answer isn't enough. Sit with it.
+- **Quick check ✓** — The concept is straightforward. First instinct is probably right. Don't overthink. Only use when the simple answer IS correct — if a common misconception looks simple, use Deeper question instead.
+- **Deeper question ◆ (~5 min focus)** — There are real layers, but focused attention will get you there. Sit with the analogy.
+- **Deeper question ◆ (rethink your model)** — This will change how you think about the topic. The surface answer is wrong or incomplete. Take your time.
 
 ---
 
@@ -276,20 +260,11 @@ When an analogy no longer fits:
 
 ## Embedding in Workflows
 
-### In dev-story / code-review workflows
-When the planner or architect agent makes a significant decision, the orchestrator should apply gabe-lens to that decision before presenting it. Add to workflow knowledge loading:
-
-```yaml
-project_knowledge:
-  optional:
-    - "skills/gabe-lens/SKILL.md"
-```
-
 ### At compaction checkpoints
 When producing a compaction handoff note, include one-line handles for the key decisions made this session. These survive context compression and re-anchor the spatial model.
 
-### In document annotation mode
-When invoked as `/gabe-lens annotate [file]`, read the target document, identify the 3-5 most complex/critical concepts, and produce a companion file with Gabe Blocks for each.
+### In dev-story / code-review workflows
+When the planner or architect agent makes a significant decision, apply gabe-lens to that decision before presenting it.
 
 ---
 

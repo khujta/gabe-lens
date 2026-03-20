@@ -2,22 +2,34 @@
 
 <img src="assets/gabe-lens-hero.png" alt="gabe-lens" width="600">
 
-# Gabe-Lens
+# Gabe Lens
 
-**Cognitive translation layer for Claude Code**
+**Cognitive toolkit for Claude Code**
 
-Transforms technical explanations into physical analogies, spatial maps, and constraint boxes — built from reverse-engineering how one brain actually learns.
+A growing collection of skills that transform how you understand, review, and decide — built from reverse-engineering how one brain actually learns.
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet.svg?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xMiAyTDIgN2wxMCA1IDEwLTUtMTAtNXoiLz48cGF0aCBkPSJNMiAxN2wxMCA1IDEwLTUiLz48cGF0aCBkPSJNMiAxMmwxMCA1IDEwLTUiLz48L3N2Zz4=)](https://github.com/khujta/gabe-lens)
-[![Version](https://img.shields.io/badge/version-2.0.0-green.svg?style=flat-square)](https://github.com/khujta/gabe-lens)
+[![Version](https://img.shields.io/badge/version-2.1.0-green.svg?style=flat-square)](https://github.com/khujta/gabe-lens)
 [![GitHub Stars](https://img.shields.io/github/stars/khujta/gabe-lens?style=flat-square&color=yellow)](https://github.com/khujta/gabe-lens/stargazers)
 
 *Not a prompt template. Built from empirical self-observation.*
 
 </div>
 
-## See it in action
+## Skills
+
+| Skill | Command | What it does |
+|---|---|---|
+| **Gabe Lens** | `/gabe-lens` | Cognitive translation — transforms concepts into analogies, spatial maps, constraint boxes, and one-line handles |
+| **Gabe Lens Calibrate** | `/gabe-lens-calibrate` | Discover your cognitive suit — same concept in 4 styles, pick the one that clicks |
+| **Gabe Roast** | `/gabe-roast` | Adversarial gap review — stress-tests any target from a required perspective, classified by maturity and importance |
+
+---
+
+## Gabe Lens
+
+### See it in action
 
 Ask `/gabe-lens enforcement tiers` and get this:
 
@@ -73,11 +85,16 @@ That one-line handle — *"Hooks are gravity — docs are speed limit signs"* �
 Inside Claude Code:
 
 ```
-/plugin marketplace add khujta/gabe-lens
-/plugin install gabe-lens@khujta-gabe-lens
+/install-github-skills khujta/gabe-lens
 ```
 
-Or clone locally: `git clone https://github.com/khujta/gabe-lens.git && claude --plugin-dir ./gabe_lens`
+Or clone locally:
+
+```
+git clone https://github.com/khujta/gabe-lens.git
+```
+
+Then point Claude Code at the local directory with `--plugin-dir ./gabe_lens` or add it via your project settings.
 
 ## Usage
 
@@ -113,14 +130,6 @@ Just the memorable phrase. ~5-15 tokens. For compaction handoffs or re-anchoring
 
 Reads a file and produces a companion with Gabe Blocks for the 3-5 most critical concepts.
 
-### Session map
-
-```
-/gabe-lens map
-```
-
-Spatial map of current work state: DONE / NOW / NEXT with one-line handles.
-
 ## Compression modes
 
 | Context | Mode | Command | Tokens |
@@ -143,15 +152,97 @@ Physical systems you can visualize in 3D, in preference order:
 
 If no good physical analogy exists, the skill says so explicitly rather than forcing a weak metaphor.
 
+## Cognitive Suits
+
+Not everyone thinks the same way. Gabe Lens adapts its output to match how your brain works.
+
+| Suit | Style | Example handle for "caching" |
+|---|---|---|
+| **Spatial-Analogical** (default) | Physical metaphors, 3D diagrams | "A fridge next to the stove" |
+| **Sequential-Procedural** | Step-by-step, process flows | "Check the shelf before the warehouse" |
+| **Abstract-Structural** | Patterns, types, relationships | "Every cache is a trade: space for time" |
+| **Narrative-Contextual** | Stories, characters, scenarios | "The barista remembers your order" |
+
+### Calibrate
+
+```
+/gabe-lens-calibrate
+```
+
+Presents the same concept in all 4 suits. Pick the one that clicks. Your choice is saved globally and used for all future `/gabe-lens` output.
+
+To reset to default: `/gabe-lens-calibrate reset`
+
+---
+
+## Gabe Roast
+
+Adversarial gap review. Adopts a perspective (architect, UX designer, security auditor, etc.) and attacks a target to find what's missing, broken, or risky.
+
+### See it in action
+
+Ask `/gabe-roast "UX Designer" MOCKUP-PLAN.md` and get:
+
+```
+GABE ROAST: MOCKUP-PLAN.md
+Perspective: UX Designer
+
+═══ MVP ════════════════════════════════════════════════
+
+CRITICAL
+
+  M1
+  **Gap:** The plan starts with 12 isolated screen mockups
+  but defines no user flow diagrams. Each screen is designed
+  in a vacuum.
+  **One-liner:** "Building rooms before drawing the hallways"
+  **Effort:** M (confident)
+  **Lose:** Every screen gets reworked once flows reveal they
+  don't connect.
+
+HIGH
+
+  M2
+  **Gap:** Component library is extracted BEFORE screens exist.
+  **One-liner:** "Packing a suitcase before knowing the destination"
+  **Effort:** S (confident)
+  **Lose:** Component library gets rebuilt from scratch once
+  real screens reveal actual patterns.
+
+────────────────────────────────────────────────────────
+TOTAL: 2 gaps — 1 critical, 1 high
+```
+
+### Usage
+
+Both inputs are **required** — if either is missing, the skill asks before proceeding.
+
+```
+/gabe-roast [perspective] [target]
+```
+
+**Brief mode** (table format):
+
+```
+/gabe-roast bf [perspective] [target]
+```
+
+### Classification
+
+Gaps are grouped by **maturity level** (MVP / Enterprise / Scale), then by **importance** (Critical / High / Medium / Low). Each gap includes a Gabe Lens one-liner, effort estimate with confidence, and the cost of inaction.
+
+---
+
 ## Embedding in workflows
 
 ```yaml
 project_knowledge:
   optional:
     - "skills/gabe-lens/SKILL.md"
+    - "skills/gabe-roast/SKILL.md"
 ```
 
-One-line handles also enhance compaction handoff notes by surviving context compression.
+One-line handles from both skills enhance compaction handoff notes by surviving context compression.
 
 ## The origin story
 

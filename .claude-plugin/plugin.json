@@ -1,7 +1,7 @@
 {
   "name": "gabe-lens",
-  "version": "2.0.0",
-  "description": "Cognitive translation skill that transforms technical concepts into physical-system analogies, spatial maps, constraint boxes, and one-line handles — with compression modes and analogy hygiene. Tailored for visual-spatial, conceptual-analogical thinkers.",
+  "version": "2.1.0",
+  "description": "Cognitive toolkit for Claude Code. Transforms concepts into analogies, spatial maps, and one-line handles (gabe-lens). Adversarial gap reviews classified by maturity and importance (gabe-roast). Adapts to your cognitive suit via calibration.",
   "author": {
     "name": "Gabe (khujta)",
     "url": "https://github.com/khujta"
@@ -9,7 +9,10 @@
   "homepage": "https://github.com/khujta/gabe-lens",
   "repository": "https://github.com/khujta/gabe-lens",
   "license": "MIT",
-  "skills": ["./skills/gabe-lens"],
+  "skills": [
+    "./skills/gabe-lens",
+    "./skills/gabe-roast"
+  ],
   "commands": ["./commands/"],
   "keywords": [
     "learning",
@@ -17,7 +20,8 @@
     "analogies",
     "visual-spatial",
     "explanation",
-    "accessibility",
+    "adversarial-review",
+    "gap-analysis",
     "education"
   ]
 }

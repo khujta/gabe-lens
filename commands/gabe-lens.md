@@ -27,12 +27,12 @@ Transform a single concept into a full Gabe Block. Steps:
 1. Read the gabe-lens SKILL.md for format rules
 2. Identify the core concept from the user's input
 3. Produce a single, well-formed Gabe Block with all components:
-   - THE PROBLEM (purpose-first)
+   - THE PROBLEM (purpose-first — or WHAT IT ENABLES for tool/building-block concepts)
    - THE ANALOGY (physical system)
-   - ANALOGY LIMITS (where the analogy breaks)
    - THE MAP (ASCII spatial diagram)
    - CONSTRAINT BOX (IS / IS NOT / DECIDES)
    - ONE-LINE HANDLE (5-10 words, survives fatigue)
+   - ANALOGY LIMITS (where the analogy breaks)
    - SIGNAL (Quick check or Deeper question)
 
 ### Mode 2: Brief (`brief` | `bf`)
@@ -69,32 +69,8 @@ Read a document and produce a companion file with Gabe Blocks for its key concep
 3. Identify the 3-5 most complex or critical concepts (not trivial facts)
 4. For each concept, produce a complete Gabe Block (full mode)
 5. Write the companion file to the same directory as the original, named `{original-name}-gabe-lens.md`
-   - Example: `docs/04-gate-audit.md` → `docs/04-gabe-lens.md`
+   - Example: `docs/04-gate-audit.md` → `docs/04-gate-audit-gabe-lens.md`
 6. The companion file should:
    - Reference the source document at the top
    - Present Gabe Blocks in the order they appear in the source
    - Include a brief intro explaining what this file is
-
-### Mode 5: Session Map (`map`)
-
-**Usage:** `/gabe-lens map`
-
-Produce a spatial session map of the current work state:
-
-```
-SESSION MAP — [timestamp]
-┌── DONE ─────────────────────────────────┐
-│ [completed items with one-line handles]  │
-└──────────────────────────────────────────┘
-        │
-        ▼
-┌── NOW ──────────────────────────────────┐
-│ [current task]                           │
-│ [decision point if any]                  │
-└──────────────────────────────────────────┘
-        │
-        ▼
-┌── NEXT ─────────────────────────────────┐
-│ [upcoming items — do NOT start yet]      │
-└──────────────────────────────────────────┘
-```
