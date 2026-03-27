@@ -18,6 +18,20 @@ Read the full skill definition from the gabe-roast skill (`SKILL.md`). This cont
 - Sequential roasting guidance
 - Example output
 
+## Pre-Roast Alignment Gate
+
+Before executing any roast, run a shadow alignment check:
+
+1. Read gabe-align VALUES.md for Core values (A1-A3)
+2. Run each Core value’s test against the roast target
+3. Print the shadow result before the roast output:
+   - All PASS: proceed normally
+   - Any CONCERN: print warning, proceed with roast
+   - Any FAIL: print warning + "Foundational alignment issue detected on [value]. Consider running /gabe-align standard before roasting implementation details. Proceed anyway?"
+4. If user says proceed, continue with roast. If not, stop.
+
+This gate ensures roasts don’t waste effort on implementation gaps in a fundamentally misaligned design.
+
 ## Inputs — Both Required
 
 **If either input is missing, ask before proceeding. Never assume a default perspective.**
@@ -53,18 +67,3 @@ Table format. One row per gap. Sorted by maturity then importance. Steps:
 4. Adopt the perspective
 5. Produce the brief table
 6. Include the summary line
-
-
-## Pre-Roast Alignment Gate
-
-Before executing any roast, run a shadow alignment check:
-
-1. Read gabe-align VALUES.md for Core values (A1-A3)
-2. Run each Core value test against the roast target
-3. Print the shadow result before the roast output:
-   - All PASS: proceed normally with the roast
-   - Any CONCERN: print warning, proceed with roast
-   - Any FAIL: print warning + "Foundational alignment issue detected on [value]. Consider running /gabe-align standard before roasting implementation details. Proceed anyway?"
-4. If user says proceed, continue with roast. If not, stop.
-
-This gate ensures roasts do not waste effort finding implementation gaps in a fundamentally misaligned design.
