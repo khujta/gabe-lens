@@ -3,7 +3,7 @@ name: gabe-cc-update
 description: "Command-center feature coverage — translate shipped work into its entity's lens card, diagrams, and evidence narration; keep the center regenerating green. Also owns scripts/write-inflight.py, the deterministic in-flight projection the E8 beat tail refreshes (inflight.json + .js, read by the board at view time)."
 when_to_use: "Cover a shipped feature, center status, backfill entity-by-entity, curate proof after a green run — ONLY where docs/site/center/center.config.json exists; elsewhere STOP → /gabe-cc-init."
 metadata:
-  version: 1.7.6
+  version: 1.7.7
 ---
 
 # Gabe Feature — the command center's per-feature ritual

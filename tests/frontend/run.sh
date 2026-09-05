@@ -366,6 +366,31 @@ check(_mc9 == {"client": "api", "mappers": "model", "queryClient": "config", "cx
 check(_fe9["stats"]["by_mclass"] == {"api": 1, "config": 1, "lib": 1, "model": 1},
       "mclass: the by_mclass stat tallies module classes")
 for s in skipped: print("  SKIP ⚠:", s)   # the doctor-recognized coverage-skip marker (else a skipped LIVE-extractor case reads as false CLEAN)
+# ── D3 (2026-09-05): a screen file with several hooks — the call's `export` decides which piece carries the screen ──
+_X7 = {"byFile": {"src/features/pantry/usePantryMutations.ts": {
+    "exports": [{"name": "useApplyReset", "kind": "function", "hasJsx": False, "jsx": []},
+                {"name": "useCreatePantryItem", "kind": "function", "hasJsx": False, "jsx": []}],
+    "bindings": {}}}}
+_S7 = [{"id": "web:src/features/pantry/usePantryMutations", "file": "src/features/pantry/usePantryMutations.ts",
+        "calls": [{"method": "POST", "path": "/pantry/items", "export": "useCreatePantryItem"}], "dynamic": 0}]
+_fe7 = _a3_fe.build_fe(_X7, {"pantry": {}}, _S7)
+_P7 = {p["name"]: p for p in _fe7["pieces"]}
+check(_P7["useCreatePantryItem"].get("screen") == "web:src/features/pantry/usePantryMutations" and _P7["useCreatePantryItem"].get("wsites") == 1
+      and not _P7["useApplyReset"].get("screen"),
+      "D3 FIRE: the export that fetched carries the screen (+ its write site); the file's first hook does not")
+check(_fe7["stats"].get("screens_by_export") == 1, "D3: stats.screens_by_export counts the per-export absorption")
+_S7b = [{"id": "web:src/features/pantry/usePantryMutations", "file": "src/features/pantry/usePantryMutations.ts",
+         "calls": [{"method": "POST", "path": "/pantry/items"}], "dynamic": 0}]
+_fe7b = _a3_fe.build_fe(_X7, {"pantry": {}}, _S7b)
+_P7b = {p["name"]: p for p in _fe7b["pieces"]}
+check(_P7b["useApplyReset"].get("screen") and not _P7b["useCreatePantryItem"].get("screen") and _fe7b["stats"].get("screens_by_export") == 0,
+      "D3 SILENT (the floor): a call with no export still lands on the file's principal piece")
+_S7c = [{"id": "web:src/features/pantry/usePantryMutations", "file": "src/features/pantry/usePantryMutations.ts", "calls": [], "dynamic": 1}]
+_fe7c = _a3_fe.build_fe(_X7, {"pantry": {}}, _S7c)
+_P7c = {p["name"]: p for p in _fe7c["pieces"]}
+check(_P7c["useApplyReset"].get("screen") == "web:src/features/pantry/usePantryMutations" and _P7c["useApplyReset"].get("sites") == 0 and _fe7c["stats"].get("screens_absorbed") == 1,
+      "D3 regression pin: a DYNAMIC-only screen (no literal call) is still absorbed by the file's principal — the web node never strands (webLeft stayed 0 on the example)")
+
 print(f"frontend battery: {pass_} passed, {fail} failed" + (f", {len(skipped)} skipped" if skipped else ""))
 sys.exit(1 if fail else 0)
 PY

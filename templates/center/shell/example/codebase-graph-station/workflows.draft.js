@@ -1,5 +1,5 @@
 // DRAFT user workflows — machine-proposed by `/gabe-cc-update curate-workflows` (draft-workflows.py)
-// from the committed c4-graph (head ee92e834): every endpoint no curated workflow names, clustered by
+// from the committed c4-graph (head 2f586de1): every endpoint no curated workflow names, clustered by
 // entity · the screen that drives it, steps ordered read→write, NAMED in the user's words (what the person
 // does — the legend reference's definitions logic) and LEVELED into its tier (Orientation · Core ·
 // Specialized), so each draft already sits in its section of the workflows tab wearing the DRAFT chip.
@@ -30,11 +30,12 @@ window.GABE_WORKFLOWS_DRAFT = [
     "name": "Manage cooking — active · reminders · due · dishes · …",
     "level": 3,
     "draft": true,
-    "note": "manage cooking from the CookingRoute screen — the app reads CookingPhoto, CookingSession, CookingStageReminder, CookingStepProgress… and writes CookingPhoto, CookingSession, Notification; 6 endpoints, cross-entity writes → Specialized (level 3). A DRAFT: accept it by moving this entry into workflows.js (rename freely).",
+    "note": "manage cooking from the CookingRoute screen — the app reads CookingPhoto, CookingSession, CookingStageReminder, CookingStepProgress… and writes CookingPhoto, CookingSession, Notification; 7 endpoints, cross-entity writes → Specialized (level 3). A DRAFT: accept it by moving this entry into workflows.js (rename freely).",
     "steps": [
       "GET /cooking/active",
       "GET /cooking/reminders/due",
       "GET /history/dishes",
+      "GET /notifications",
       "POST /cooking/sessions/{session_id}/cancel",
       "PATCH /cooking/sessions/{session_id}/readiness",
       "DELETE /cooking/sessions/{session_id}/photos/{slot}"
@@ -45,30 +46,10 @@ window.GABE_WORKFLOWS_DRAFT = [
     },
     "why": {
       "writes": 3,
-      "reads": 6,
+      "reads": 7,
       "span": [
         "cooking",
         "recipe"
-      ]
-    }
-  },
-  {
-    "name": "Look at notifications",
-    "level": 1,
-    "draft": true,
-    "note": "look at notifications from the NotificationsRoute screen — the app reads Notification; 1 endpoint, no writes → Orientation (level 1). A DRAFT: accept it by moving this entry into workflows.js (rename freely).",
-    "steps": [
-      "GET /notifications"
-    ],
-    "cluster": {
-      "entity": "cooking",
-      "screen": "NotificationsRoute"
-    },
-    "why": {
-      "writes": 0,
-      "reads": 1,
-      "span": [
-        "cooking"
       ]
     }
   },
@@ -93,13 +74,12 @@ window.GABE_WORKFLOWS_DRAFT = [
     }
   },
   {
-    "name": "Add pantry — locations · resolve batch",
+    "name": "Look at pantry locations",
     "level": 1,
     "draft": true,
-    "note": "add pantry from the CookingRoute screen — the app reads CanonicalIngredient, IngredientAlias, Location, Recipe; 2 endpoints, no writes → Orientation (level 1). A DRAFT: accept it by moving this entry into workflows.js (rename freely).",
+    "note": "look at pantry locations from the CookingRoute screen — the app reads Location; 1 endpoint, no writes → Orientation (level 1). A DRAFT: accept it by moving this entry into workflows.js (rename freely).",
     "steps": [
-      "GET /pantry/locations",
-      "POST /pantry/resolve-batch"
+      "GET /pantry/locations"
     ],
     "cluster": {
       "entity": "pantry",
@@ -107,10 +87,9 @@ window.GABE_WORKFLOWS_DRAFT = [
     },
     "why": {
       "writes": 0,
-      "reads": 4,
+      "reads": 1,
       "span": [
-        "pantry",
-        "recipe"
+        "pantry"
       ]
     }
   },
@@ -135,14 +114,15 @@ window.GABE_WORKFLOWS_DRAFT = [
     }
   },
   {
-    "name": "Add pantry — frequent ingredients · reset · apply · preview",
+    "name": "Add pantry — frequent ingredients · reset · apply · preview · …",
     "level": 3,
     "draft": true,
-    "note": "add pantry from the PantryRoute screen — the app reads CanonicalIngredient, IngredientHistoryEvent, PantryItem, PantryResetOperation and writes IngredientHistoryEvent, PantryItem, PantryResetDecision, PantryResetOperation; 3 endpoints, cross-entity writes → Specialized (level 3). A DRAFT: accept it by moving this entry into workflows.js (rename freely).",
+    "note": "add pantry from the PantryRoute screen — the app reads CanonicalIngredient, IngredientAlias, IngredientHistoryEvent, PantryItem… and writes IngredientHistoryEvent, PantryItem, PantryResetDecision, PantryResetOperation; 4 endpoints, cross-entity writes → Specialized (level 3). A DRAFT: accept it by moving this entry into workflows.js (rename freely).",
     "steps": [
       "GET /pantry/frequent-ingredients",
       "POST /pantry/reset/apply",
-      "POST /pantry/reset/preview"
+      "POST /pantry/reset/preview",
+      "POST /pantry/resolve-batch"
     ],
     "cluster": {
       "entity": "pantry",
@@ -150,7 +130,7 @@ window.GABE_WORKFLOWS_DRAFT = [
     },
     "why": {
       "writes": 4,
-      "reads": 4,
+      "reads": 6,
       "span": [
         "pantry",
         "recipe"

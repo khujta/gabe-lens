@@ -137,5 +137,31 @@ ds = [{"name": "Look at cooking — active", "cluster": {"screen": "A"}}, {"name
 m._dedupe_names(ds); assert [d["name"] for d in ds] == ["Look at cooking — active (from A)", "Look at cooking — active (from B)", "Look at pantry — history"], ds
 PY
 
+# ── D3 (2026-09-05): a bridge carrying `export` lands on THAT hook, and the draft clusters by that hook's route ──
+r=$(mkcenter d3); c4 | python3 -c "
+import json,sys; j=json.load(sys.stdin)
+P=j['fe']['pieces']; P.append({'id':'fe:src/features/pantry/usePantry.ts#usePantryTwo','name':'usePantryTwo','kind':'hook','file':'src/features/pantry/usePantry.ts','screen':'web:src/features/pantry/usePantry'})
+j['fe']['edges'].append([2, len(P)-1, 'uses-hook'])                               # CookingRoute uses the second hook
+for e in j['cross_edges']:
+    if e.get('to')=='endpoint:POST /pantry/reset': e['export']='fe:src/features/pantry/usePantry.ts#usePantryTwo'
+print(json.dumps(j))" > "$r/docs/site/center/c4-graph.json"; printf 'window.GABE_WORKFLOWS = [];\n' > "$r/docs/site/center/workflows.js"
+python3 "$D" "$r" --json > "$T/d3.json"
+python3 - "$T/d3.json" <<'PY' && ok || bad "D3 FIRE: the export's hook (under CookingRoute) splits the pantry cluster — 2 drafts, the reset one from CookingRoute"
+import json,sys; r=json.load(open(sys.argv[1])); d={x["cluster"]["screen"]: x for x in r["drafts"] if x["cluster"]["entity"]=="pantry"}
+assert set(d)=={"PantryRoute","CookingRoute"}, list(d)
+assert d["CookingRoute"]["steps"]==["POST /pantry/reset"] and d["PantryRoute"]["steps"]==["GET /pantry/history"], d
+PY
+# MUTATION: drop the export from the bridge → both calls fall to the file's principal (usePantry) → ONE pantry cluster again
+r=$(mkcenter d3m); c4 | python3 -c "
+import json,sys; j=json.load(sys.stdin)
+P=j['fe']['pieces']; P.append({'id':'fe:src/features/pantry/usePantry.ts#usePantryTwo','name':'usePantryTwo','kind':'hook','file':'src/features/pantry/usePantry.ts','screen':'web:src/features/pantry/usePantry'})
+j['fe']['edges'].append([2, len(P)-1, 'uses-hook'])
+print(json.dumps(j))" > "$r/docs/site/center/c4-graph.json"; printf 'window.GABE_WORKFLOWS = [];\n' > "$r/docs/site/center/workflows.js"
+python3 "$D" "$r" --json > "$T/d3m.json"
+python3 - "$T/d3m.json" <<'PY' && ok || bad "D3 SILENT: no export on the bridge → the file's principal piece → one pantry cluster (the floor)"
+import json,sys; r=json.load(open(sys.argv[1])); d=[x for x in r["drafts"] if x["cluster"]["entity"]=="pantry"]
+assert len(d)==1 and d[0]["cluster"]["screen"]=="PantryRoute", d
+PY
+
 echo "workflow-drafts battery: $pass passed, $fail failed"
 exit $(( fail > 0 ))

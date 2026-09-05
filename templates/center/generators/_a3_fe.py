@@ -251,6 +251,7 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
 
     # screens: the fetch arm's file-level nodes → the principal piece absorbs them
     absorbed = 0
+    by_export = 0                                  # D3: pieces that took a screen through their own export
     for sc in screens or []:
         sid = sc.get("id") or ""
         rel = sid[4:] if sid.startswith("web:") else sid
@@ -258,11 +259,25 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
             pid = principal.get(rel + ext)
             if pid:
                 calls = sc.get("calls") or []
-                pieces[pid]["screen"] = sid
-                pieces[pid]["sites"] = len(calls)
-                w = sum(1 for c in calls if (c.get("method") or "GET").upper() in _WRITE_METHODS)
-                if w:                                  # FE d2w: a POST/PUT/PATCH/DELETE fetch WRITES (HTTP verb, library-agnostic)
-                    pieces[pid]["wsites"] = w          # write-method fetch count (a subset of `sites`)
+                # D3 (operator 2026-09-05): a call site names the EXPORT enclosing it, so the screen lands on
+                # the hook/component that fetched — usePantryMutations.ts (16 hooks) no longer folds onto one
+                # piece. A call with no export (module-level, or an export the arm did not mint) still lands
+                # on the file's principal piece — the floor, never a drop.
+                _by: dict[str, list] = {}
+                for c in calls:
+                    _exp = c.get("export")
+                    _tp = _piece_id(rel + ext, _exp) if _exp else None
+                    _by.setdefault(_tp if (_tp and _tp in pieces) else pid, []).append(c)
+                if not _by:                                # a dynamic-only screen (no literal call) still belongs to the file's principal — the web node must not strand
+                    _by[pid] = []
+                for _tp, _cs in _by.items():
+                    pieces[_tp]["screen"] = sid
+                    pieces[_tp]["sites"] = len(_cs)
+                    w = sum(1 for c in _cs if (c.get("method") or "GET").upper() in _WRITE_METHODS)
+                    if w:                              # FE d2w: a POST/PUT/PATCH/DELETE fetch WRITES (HTTP verb, library-agnostic)
+                        pieces[_tp]["wsites"] = w      # write-method fetch count (a subset of `sites`)
+                    if _tp != pid:
+                        by_export += 1
                 absorbed += 1
                 break
 
@@ -493,7 +508,7 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
         "stats": {"files": len(by_file), "pieces": len(pieces), "by_kind": dict(sorted(by_kind.items())),
                   "by_home": dict(sorted(by_home.items())), "edges": len(edge_list),
                   "by_rel": dict(sorted(by_rel.items())), "cross": sum(1 for e in edge_list if e["cross"]),
-                  "screens_absorbed": absorbed, "unresolved": unresolved, "local_refs": local["refs"],
+                  "screens_absorbed": absorbed, "screens_by_export": by_export, "unresolved": unresolved, "local_refs": local["refs"],
                   "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "promoted": promoted,
                   "by_channel": by_channel, "state_pieces": len(touches_state),
                   "cache_pieces": sum(1 for p in pieces.values() if p.get("cache")),

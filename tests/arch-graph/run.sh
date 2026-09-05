@@ -1103,6 +1103,14 @@ with tempfile.TemporaryDirectory() as _td:
     check(len(_ol) == 1, "web_arm collapses a fetching file to ONE screen node")
     _calls = {(c["method"], c["path"]) for c in _ol[0]["calls"]} if _ol else set()
     check(("GET", "/api/v1/orders") in _calls, "web_arm extracts a literal apiFetch path")
+    _exp = {c["path"]: c.get("export") for c in _ol[0]["calls"]} if _ol else {}
+    check(_exp.get("/api/v1/orders") == "useOrders" and _exp.get("/api/v1/orders/${id}/lines") == "addLine",
+          "D3 (2026-09-05): each call site names the EXPORT enclosing it (useOrders · addLine) — the nearest column-0 declaration above an indented call")
+    check((_wa.get("stats") or {}).get("sites_with_export") == 2, "D3: stats.sites_with_export counts the attributed sites")
+    # MUTATION of the rule: a module-level call (column 0) belongs to no export → no `export` key
+    _ml = W._extract_file(W._strip_comments('import { apiFetch } from "x";\nexport function useA(){ return apiFetch("/api/v1/a"); }\napiFetch("/api/v1/top");\nconst warm = apiFetch("/api/v1/warm");\n'), "apiFetch")[0]
+    check({c["path"]: c.get("export") for c in _ml} == {"/api/v1/a": "useA", "/api/v1/top": None, "/api/v1/warm": "warm"},
+          "D3 SILENT + the floor: a bare column-0 call carries no export; a one-line function names itself (useA); a module-level const names the const (warm — no piece exists for it, so absorption falls to the file's principal)")
     check(("POST", "/api/v1/orders/${id}/lines") in _calls,
           "web_arm reads method from the options object (a nested body:{…} survived)")
     check(_ol[0]["slug"] == "orders" if _ol else False,
@@ -1387,6 +1395,20 @@ _ig.write_text("# my rule\nbuild/\n!graft/\ngraft/.cache/\n")
 GG._defuse_ignore(_td)
 check(_ig.exists() and "build/" in _ig.read_text() and "graft" not in _ig.read_text(),
       "F13: a user's real .ignore patterns survive; only graft's signature is stripped")
+
+# ── D3: the bridge cross-edge carries the export's fe piece id when the call names one; byte-identical without ──
+import copy as _cp
+_wx = _cp.deepcopy(WSSE)
+for _s in _wx.get("screens") or []:
+    _s.setdefault("file", _s["id"][4:] + ".ts")
+    for _c in _s.get("calls") or []:
+        _c["export"] = "useStreamX"
+_gx3 = G.build_c4_graph(FIX_SSE, web=_wx)
+_gx3_br = [e for e in _gx3["cross_edges"] if e.get("kind") == "bridge"]
+check(_gx3_br and all(e.get("export", "").startswith("fe:") and e["export"].endswith("#useStreamX") for e in _gx3_br),
+      "D3 FIRE: a bridge whose call names an export carries export = fe:<file>#<export> (the hook's own piece id)")
+check(_gx3["stats"]["web"].get("sites_with_export") is not None, "D3: stats.web.sites_with_export rides the build")
+check(not any("export" in e for e in gsse_br), "D3 SILENT: a call with no export leaves the bridge byte-identical (no export key)")
 
 print(f"arch-graph battery: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)

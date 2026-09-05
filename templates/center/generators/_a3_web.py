@@ -203,22 +203,60 @@ def _detect_idiom(texts: list[str]) -> tuple[str | None, dict[str, int]]:
     return (best if counts[best] > 0 else None), counts
 
 
+_DECL_RE = re.compile(r"""^(?:export\s+(?:default\s+)?)?(?:async\s+)?(?:function\s*\*?\s*(?P<f>[A-Za-z_$][\w$]*)|(?:const|let|var)\s+(?P<v>[A-Za-z_$][\w$]*)\s*[=:]|class\s+(?P<c>[A-Za-z_$][\w$]*))""", re.M)
+
+
+def _decl_starts(text: str) -> list[tuple[int, str]]:
+    """``[(offset, name)]`` of every COLUMN-0 declaration — the file's top-level exports, consts and
+    classes in source order (formatted TypeScript keeps top-level declarations at column 0)."""
+    return [(m.start(), m.group("f") or m.group("v") or m.group("c")) for m in _DECL_RE.finditer(text)]
+
+
+def _enclosing_export(decls: list[tuple[int, str]], text: str, pos: int) -> str | None:
+    """The top-level declaration a call site sits INSIDE — D3 (operator 2026-09-05): the bridge lands on
+    the hook that fetched, not on its file. Rule: the nearest column-0 declaration ABOVE the call, provided
+    the call's own line is indented (a call on a column-0 line is module-level → None). A FLOOR by design —
+    no brace matching, so a call inside a nested block is still attributed to the enclosing top-level
+    declaration; the right file and the right export, never a guess across files."""
+    ls = text.rfind("\n", 0, pos) + 1
+    if ls >= len(text) or text[ls] not in " \t":
+        # a column-0 line: module-level — UNLESS the line itself opens a declaration (a one-line
+        # `export function useA(){ return apiFetch(…) }` keeps the call on its own declaration line)
+        for off, nm in decls:
+            if off == ls:
+                return nm
+        return None
+    name = None
+    for off, nm in decls:
+        if off <= pos:
+            name = nm
+        else:
+            break
+    return name
+
+
 def _extract_file(text: str, idiom: str) -> tuple[list[dict[str, str]], int]:
-    """Return this file's (method, path) call sites + the dynamic-path site count."""
+    """Return this file's (method, path) call sites (+ the enclosing ``export``, D3) + the dynamic-path
+    site count."""
     calls: list[dict[str, str]] = []
     rx = _CALL_RES[idiom]
+    decls = _decl_starts(text)
     for m in rx.finditer(text):
         path = m.group("path")
         if idiom in ("axios", "openapiFetch"):   # method rides the call itself (group m)
             method = m.group("m").upper()
         else:
             method = _method_after(text, m.start())
-        calls.append({"method": method, "path": path})
+        c: dict[str, str] = {"method": method, "path": path}
+        exp = _enclosing_export(decls, text, m.start())
+        if exp:
+            c["export"] = exp
+        calls.append(c)
     dyn = len(_CALL_DYN[idiom].findall(text))
     # de-dup + sort for determinism
     seen: set[tuple[str, str]] = set()
     uniq: list[dict[str, str]] = []
-    for c in sorted(calls, key=lambda c: (c["method"], c["path"])):
+    for c in sorted(calls, key=lambda c: (c["method"], c["path"], c.get("export") or "")):   # same (method, path) from two exports → the sorted-first export wins, deterministically
         key = (c["method"], c["path"])
         if key not in seen:
             seen.add(key)
@@ -240,10 +278,15 @@ def _extract_sse(text: str) -> tuple[list[dict[str, str]], int, list[dict[str, s
     The bridge reads only method+path, so the extra tags ride harmlessly."""
     text = _strip_comments(text)               # a commented-out `new EventSource("…")` is not a site
     calls: list[dict[str, str]] = []
+    decls = _decl_starts(text)
     for name, rx in _SSE_RES.items():
         for m in rx.finditer(text):
             method = "GET" if name == "EventSource" else _method_after(text, m.start())
-            calls.append({"method": method, "path": m.group("path"), "sse": True})
+            c: dict[str, str] = {"method": method, "path": m.group("path"), "sse": True}
+            exp = _enclosing_export(decls, text, m.start())
+            if exp:
+                c["export"] = exp                  # D3: the stream's hook, not its file
+            calls.append(c)
     dyn = sum(len(rx.findall(text)) for rx in _SSE_DYN.values())
     floors: list[dict[str, str]] = []
     if dyn:                                    # a variable arg → recover the indirected path
@@ -295,6 +338,7 @@ def web_arm(root: Path, entities: dict[str, Any]) -> dict[str, Any]:
         f2s = _file2slug(entities)
         screens: list[dict[str, Any]] = []
         total_sites = total_dyn = total_sse = total_floor = 0
+        total_export = 0                                # D3: call sites attributed to their enclosing export
         for f, src in texts:
             # the winning REST idiom (byte-identical when no SSE joins) + the always-on
             # SSE pass, MERGED and re-deduped by (method, path). A no-SSE file's `calls`
@@ -327,6 +371,7 @@ def web_arm(root: Path, entities: dict[str, Any]) -> dict[str, Any]:
             total_sites += len(calls)
             total_dyn += dyn
             total_sse += sum(1 for c in calls if c.get("sse"))
+            total_export += sum(1 for c in calls if c.get("export"))
             total_floor += sum(1 for c in calls if c.get("floor"))
         # no REST idiom AND no SSE anywhere → the honest 'nothing to extract' record
         # (byte-identical to the pre-SSE build; `idiom_hits` kept for the debug trail).
@@ -343,7 +388,7 @@ def web_arm(root: Path, entities: dict[str, Any]) -> dict[str, Any]:
             "present": True, "reason": reason,
             "extractor": extractor, "screens": screens,
             "stats": {"screens": len(screens), "fetch_sites": total_sites,
-                      "dynamic": total_dyn, "sse_sites": total_sse, "sse_floor": total_floor,
+                      "dynamic": total_dyn, "sse_sites": total_sse, "sites_with_export": total_export, "sse_floor": total_floor,
                       "extractor": extractor},
         }
     except Exception as exc:   # noqa: BLE001 — the arm enhances, never breaks, the build

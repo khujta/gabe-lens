@@ -143,7 +143,10 @@ def analyse(c4: dict, covered: set[str], min_size: int) -> dict:
     fe = c4.get("fe") or {}
     pieces: list[dict] = fe.get("pieces") or []
     idx = {p["id"]: i for i, p in enumerate(pieces)}
-    by_screen = {p["screen"]: p["id"] for p in pieces if p.get("screen")}
+    by_screen: dict[str, str] = {}
+    for p in pieces:                              # a file may now hold several fetching pieces (D3): the FIRST
+        if p.get("screen"):                       # (principal-ranked) is the fallback for a bridge with no export
+            by_screen.setdefault(p["screen"], p["id"])
     parents: dict[str, list[str]] = {}          # piece → the pieces that render / use / import it
     for e in fe.get("edges") or []:
         if len(e) < 3 or e[2] not in ("renders", "uses-hook", "imports"):
@@ -177,10 +180,10 @@ def analyse(c4: dict, covered: set[str], min_size: int) -> dict:
                 break
         return best
 
-    bridges: dict[str, set[str]] = {}
+    bridges: dict[str, set[tuple[str, str | None]]] = {}
     for e in c4.get("cross_edges") or []:
         if e.get("kind") == "bridge" and e.get("to") and e.get("from"):
-            bridges.setdefault(e["to"], set()).add(e["from"])
+            bridges.setdefault(e["to"], set()).add((e["from"], e.get("export")))   # (file node, the export piece — D3)
 
     reached: list[dict] = []
     unreached: list[dict] = []
@@ -199,7 +202,7 @@ def analyse(c4: dict, covered: set[str], min_size: int) -> dict:
         ops = (n.get("access") or {}).get("ops") or []
         writes = sorted({o["model"] for o in ops if o.get("rw") == "w" and o.get("model")})
         reads = sorted({o["model"] for o in ops if o.get("rw") == "r" and o.get("model")})
-        screens = sorted(by_screen[w] for w in bridges.get(n.get("id", ""), ()) if w in by_screen)
+        screens = sorted({(x if (x and x in idx) else by_screen.get(w)) for w, x in bridges.get(n.get("id", ""), ())} - {None})   # the export's piece first, the file's principal as the floor
         row = {"label": label, "verb": verb, "path": path, "entity": n.get("slug") or "?",
                "writes": writes, "reads": reads,
                "screens": [pieces[idx[s]]["name"] for s in screens],

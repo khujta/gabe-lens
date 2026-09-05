@@ -347,3 +347,7 @@ feed files were landed by hand; the parts pipeline needs a re-split-or-retire de
 **Ruled (same day, `8521ba2`): `parts/` RETIRED.** The template is the source of record (`build_center_a3.py` ships it
 to every project); `fill-example.py` rehomes the template into the example; `regen-example.sh` no longer assembles or
 lands onto the template. `--check` after the change: the 4 feeds OK · codebase-graph.html OK · example page OK.
+
+### D3 — the bridge lands on the export that fetched (ruling 2026-09-05)
+
+The web arm records, per call site, the top-level declaration enclosing it (`_enclosing_export`: the nearest column-0 declaration above an indented call — a floor, no brace matching). The graph build puts `export: fe:<file>#<name>` on the bridge cross-edge (the file stays as `from`, so the codebase-graph station's Screens column is untouched); the frontend arm absorbs a screen per export, so a 16-hook file (`usePantryMutations.ts`) no longer folds onto one piece; the universe's link adapter and the drafter prefer the export piece and fall back to the file's principal. Batteries: arch-graph (export + bridge, byte-identical without) · frontend (absorption per export, the floor) · workflow-drafts (a second hook splits the cluster; mutation = drop the export) · gabe-universe (the FE leg of `POST /pantry/items` starts at `useCreatePantryItem`).

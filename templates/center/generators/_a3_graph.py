@@ -920,7 +920,7 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
                        _norm_path(str(call.get("path", ""))))
                 hit = ep_index.get(key)
                 if hit:
-                    _hits.append(hit)                       # (ep_slug, ep_id)
+                    _hits.append((hit[0], hit[1], call.get("export")))   # (ep_slug, ep_id, enclosing export — D3)
                 else:
                     _unmatched.append({"from": screen["id"], "m": key[0],
                                        "p": call.get("path")})
@@ -928,7 +928,7 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
             # the (sorted-first) matched endpoint's entity — the bridge fallback.
             home = screen.get("slug")
             if home not in _slugs:
-                home = sorted({s for s, _ in _hits})[0] if _hits else None
+                home = sorted({h[0] for h in _hits})[0] if _hits else None
             if home is None:
                 _web_unhomed += 1                           # unhomed + unmatched → not drawn
                 continue
@@ -936,15 +936,18 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
                 {"id": screen["id"], "label": screen.get("label"),
                  "sites": len(screen.get("calls") or [])})
             _web_screens += 1
-            for ep_slug, ep_id in _hits:
-                _bridges.append({"from_slug": home, "from": screen["id"],
-                                 "to_slug": ep_slug, "to": ep_id,
-                                 "via": "fetch", "kind": "bridge"})
+            for ep_slug, ep_id, _exp in _hits:
+                _b = {"from_slug": home, "from": screen["id"],
+                      "to_slug": ep_slug, "to": ep_id,
+                      "via": "fetch", "kind": "bridge"}
+                if _exp and screen.get("file"):            # D3 (2026-09-05): the wire names the EXPORT that fetched —
+                    _b["export"] = f"fe:{screen['file']}#{_exp}"   # the hook's own fe piece id; the file stays as `from`
+                _bridges.append(_b)
         # dedup a screen's repeat calls to one endpoint; sort both lists
         _seen: set[tuple[str, str]] = set()
         _bd: list[dict] = []
         for e in sorted(_bridges, key=lambda e: (e["from_slug"], e["from"],
-                                                 e["to_slug"], e["to"])):
+                                                 e["to_slug"], e["to"], 0 if e.get("export") else 1, e.get("export") or "")):   # a bridge WITH its export outranks one without
             k = (e["from"], e["to"])
             if k not in _seen:
                 _seen.add(k)
@@ -1383,6 +1386,7 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
                      "matched": len(_bridges),
                      "unmatched": _unmatched,
                      "sse": (web.get("stats") or {}).get("sse_sites", 0),   # streams now in the denominator, not invisible
+                     "sites_with_export": (web.get("stats") or {}).get("sites_with_export", 0),   # D3: call sites attributed to their enclosing export
                      "dynamic": (web.get("stats") or {}).get("dynamic", 0)}
                     if web_present else
                     {"present": False,
