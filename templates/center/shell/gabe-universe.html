@@ -1247,7 +1247,7 @@ if(_FE){
     var m={ behind:0, depth:0, tests:0, cols:0, fanin:0, god:false, method:null };
     var n={ id:p.id, kind:kind, ent:p.home, label:p.name, col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"web",
       m:m, det:det, behind:{}, fe:true, screen:p.screen||null, sites:p.sites||0, candidate:!!p.candidate,
-      area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null,   // AREA + showcase tag + the fold-control class (phase 1)
+      area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null, hrole:p.hrole||null,   // AREA + showcase tag + the fold-control class (phase 1)
       write:!!p.write, wsites:p.wsites||0, fed2w:(p.fed2w==null?null:p.fed2w) };   // FE d2w: on the WRITE spine · write-method fetch count · hops-to-write (the gradient's number, 0 at the write)
     nodes.push(n); NIDS[n.id]=n; });
 }
@@ -1719,7 +1719,7 @@ function buildNode(n){ var grp=new T.Group(); var col=iconCol(n), br=massR(n);
   if(n.kind==="endpoint" && n.m && n.m.method){ try{ grp.add(methodBadge(n.m.method, br)); }catch(_mb){} }
   else if(n.kind==="function" && n.role){ try{ grp.add(roleBadge(n.role)); }catch(_rb){} }   // C1: function ROLE badge (accessor/caller/gate/pure) at the icon lower-right
   else if(n.kind==="schema" && n.__foldN>0){ try{ var _cb=countBadge(n.__foldN); _cb.__n=n.__foldN; grp.add(_cb); grp.__cnt=_cb; }catch(_cb0){} }   // schema FOLD COUNT badge (kept in sync by __uniSyncCountBadges)
-  else if(n.kind==="component" && (n.feClass==="connector"||n.feClass==="container"||n.feClass==="leaf"||n.feClass==="private"||n.feClass==="detached")){ try{ grp.add(feclassBadge(n.feClass)); }catch(_fb){} }   else if(n.kind==="module" && n.mclass){ try{ grp.add(feclassBadge(n.mclass,"mclass")); }catch(_mb2){} }   // module CLASS badge (operator 2026-09-03)   // component CLASS badge (operator) — connector/container/leaf/private all badged; view wears the screen icon
+  else if(n.kind==="component" && (n.feClass==="connector"||n.feClass==="container"||n.feClass==="leaf"||n.feClass==="private"||n.feClass==="detached")){ try{ grp.add(feclassBadge(n.feClass)); }catch(_fb){} }   else if(n.kind==="module" && n.mclass){ try{ grp.add(feclassBadge(n.mclass,"mclass")); }catch(_mb2){} }   else if(n.kind==="hook" && n.hrole){ try{ grp.add(feclassBadge(n.hrole,"hrole")); }catch(_hb){} }   /* D2: the hook ROLE badge */   // module CLASS badge (operator 2026-09-03)   // component CLASS badge (operator) — connector/container/leaf/private all badged; view wears the screen icon
   grp.add(bubble(br));
   if(ENC.verts){ var vv=Math.min(8,Math.round(num(nodeVal("verts",n).raw))); if(vv>0) radarVerts(grp, br, vv); }   // N sphere vertices lit by a radar sweep = used-by
   if(ENC.glow){ var g=nodeVal("glow",n); if(g.r>0) grp.add(glowSprite(col, 14+g.r*22, 0.5)); }
@@ -3964,13 +3964,15 @@ window.__uniDrawBundles=function(grp){ if(!UNIWIRE.r3) return;
 window.__BADGE_COL={ method:{GET:"#22c55e",POST:"#3b82f6",PUT:"#f97316",PATCH:"#eab308",DELETE:"#ef4444",BOOT:"#8a8f98"},
                      role:{accessor:"#ef4444",caller:"#3b82f6",gate:"#eab308",pure:"#8794ab"},
                      feclass:{connector:"#f97316",container:"#a855f7",leaf:"#84cc16",private:"#8794ab",detached:"#fb7185"},   /* connector blue → ORANGE 2026-09-05 (a blue badge on the new cobalt body vanished); detached = rose, D1 */   // component CLASS badge (operator palette) — connector=blue data-in · container=violet compose · leaf=lime atom · private=gray internal (pure-like); container off gray (private owns gray), leaf off green (collided with GET/hook/view)
-                     mclass:{api:"#3b82f6","render-fn":"#d946ef",model:"#14b8a6",config:"#8794ab",lib:"#84cc16",logic:"#22d3ee"},   /* operator 2026-09-05: render-fn + logic were amber/orange ON an amber module — invisible; render-fn now wears the VIEW fuchsia (it draws UI), logic cyan */   // module CLASS badge (operator 2026-09-03): api=blue phone-line · render-fn=component orange · model=table teal · config=grey wiring · lib=lime shared · logic=module amber
+                     mclass:{api:"#3b82f6","render-fn":"#d946ef",model:"#14b8a6",config:"#8794ab",lib:"#84cc16",logic:"#22d3ee"},
+                     hrole:{fetcher:"#3b82f6",streamer:"#8b5cf6",store:"#ec4899",orchestrator:"#f59e0b",effect:"#ef4444",deriver:"#8794ab"},   /* D2 (2026-09-05): the HOOK ROLE badge — fetcher=api blue · streamer=endpoint violet · store=store pink · orchestrator=amber · effect=red side channel · deriver=gray like pure */   /* operator 2026-09-05: render-fn + logic were amber/orange ON an amber module — invisible; render-fn now wears the VIEW fuchsia (it draws UI), logic cyan */   // module CLASS badge (operator 2026-09-03): api=blue phone-line · render-fn=component orange · model=table teal · config=grey wiring · lib=lime shared · logic=module amber
                      count:{"*":(typeof KINDS!=="undefined"&&KINDS.schema&&KINDS.schema.col)||"#0e9aa7"} };   // schema fold count — the schema colour
 window.__BADGE_DESC={
   method:{ GET:"reads — returns data, no write", POST:"creates — writes a new row", PUT:"replaces — overwrites a row", PATCH:"updates — mutates fields", DELETE:"removes — deletes a row", BOOT:"boot — runs ONCE at app startup (the lifespan seeder), not a request verb" },
   role:{ accessor:"touches the store — reads/writes a DB table or a durable sink", caller:"orchestrates — calls other functions, no store of its own", gate:"guards — auth / consent / idempotency before the work runs", pure:"pure — computes from its inputs, no store, no callee that writes" },
   feclass:{ connector:"connector — wires data into a view (the FE's controller)", container:"container — composes children, the screen's structure", leaf:"leaf — a shared, reused atom (Button, Chip…)", private:"private — internal to one view, not shared or reused", detached:"detached — no drawn renderer: the app shell, or a piece whose renderer the map cannot see (D1: never a view)" },
   mclass:{ api:"api — fetches the backend (call sites absorbed from the web arm)", "render-fn":"render-fn — a plain function whose body holds JSX", model:"model — the feature's data layer (a model/types/schema path)", config:"config — app wiring (an app/config/setup path)", lib:"lib — shared plumbing (lib/utils/design-system/i18n/assets)", logic:"logic — feature rules and calculations" },
+  hrole:{ fetcher:"fetcher — calls the API (a fetch site is attributed to it, or a query-library cache, or an api module it calls)", streamer:"streamer — its fetch is an event stream (SSE)", store:"store — reads or writes client state (reader/writer split: follow-up)", orchestrator:"orchestrator — composes other hooks, touches no data", effect:"effect — a side channel: analytics · logging · idempotency", deriver:"deriver — computes from its inputs, no store, no API" },
   count:{ "*":"nested-only schemas folded into this one — composition helpers no endpoint or function names; double-click the parent to reveal them" } };
 /* connection KINDS (REL2KIND buckets) — shown on the link card + the connectors legend */
 window.__CONNDESC={ fk:"foreign-key data coupling", calls:"a function / handler call", imports:"a component / module import", bridge:"a frontend fetch reaching an API", rollup:"endpoint→model — the call-tree ROLLUP (reaches this table through its functions)", access:"function→model — the TRUE data access (this fn reads/writes this table)" };
@@ -3979,12 +3981,19 @@ window.__badgeGlyph=function(c, kind, key){
   c.fillStyle=col; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill();
   if(kind==="count"){ var t=String(key==null?"":key); c.fillStyle='#0b0f18'; c.textAlign='center'; c.textBaseline='middle';
     c.font='700 '+(t.length>1?60:72)+'px ui-monospace, Menlo, Consolas, monospace'; c.fillText(t, 64, 68); return; }   // the digits ARE the glyph
-  c.strokeStyle='#0b0f18'; c.lineWidth=(kind==="role"||kind==="feclass"||kind==="mclass"?11:13); c.lineCap='round'; c.lineJoin='round'; c.beginPath();
+  c.strokeStyle='#0b0f18'; c.lineWidth=(kind==="role"||kind==="feclass"||kind==="mclass"||kind==="hrole"?11:13); c.lineCap='round'; c.lineJoin='round'; c.beginPath();
   if(kind==="role"){
     if(key==='accessor'){ c.ellipse(64,42,26,10,0,0,6.2832); c.moveTo(38,42); c.lineTo(38,86); c.moveTo(90,42); c.lineTo(90,86); c.moveTo(38,64); c.bezierCurveTo(38,74,90,74,90,64); c.moveTo(38,86); c.bezierCurveTo(38,96,90,96,90,86); }
     else if(key==='caller'){ c.moveTo(40,64); c.lineTo(70,64); c.moveTo(70,44); c.lineTo(70,84); c.moveTo(70,44); c.lineTo(90,44); c.moveTo(70,84); c.lineTo(90,84); }
     else if(key==='gate'){ c.moveTo(64,32); c.lineTo(92,44); c.lineTo(92,66); c.bezierCurveTo(92,86,64,96,64,96); c.bezierCurveTo(64,96,36,86,36,66); c.lineTo(36,44); c.closePath(); }
     else { c.moveTo(64,32); c.lineTo(72,56); c.lineTo(96,64); c.lineTo(72,72); c.lineTo(64,96); c.lineTo(56,72); c.lineTo(32,64); c.lineTo(56,56); c.closePath(); }
+  } else if(kind==="hrole"){
+    if(key==='fetcher'){ c.moveTo(36,64); c.lineTo(74,64); c.moveTo(60,50); c.lineTo(76,64); c.lineTo(60,78); c.moveTo(90,40); c.lineTo(90,88); }   // a call out to the backend's wall (the same line the api module draws)
+    else if(key==='streamer'){ c.moveTo(34,50); c.bezierCurveTo(44,38,54,62,64,50); c.bezierCurveTo(74,38,84,62,94,50); c.moveTo(34,78); c.bezierCurveTo(44,66,54,90,64,78); c.bezierCurveTo(74,66,84,90,94,78); }   // waves — a response that keeps arriving
+    else if(key==='store'){ c.ellipse(64,44,26,10,0,0,6.2832); c.moveTo(38,44); c.lineTo(38,84); c.moveTo(90,44); c.lineTo(90,84); c.moveTo(38,84); c.bezierCurveTo(38,94,90,94,90,84); }   // the cylinder — client state
+    else if(key==='orchestrator'){ c.moveTo(40,64); c.lineTo(64,64); c.moveTo(64,64); c.lineTo(88,44); c.moveTo(64,64); c.lineTo(88,64); c.moveTo(64,64); c.lineTo(88,84); }   // a fork — it calls other hooks
+    else if(key==='effect'){ c.moveTo(70,30); c.lineTo(50,68); c.lineTo(66,68); c.lineTo(58,98); c.lineTo(80,58); c.lineTo(64,58); c.closePath(); }   // a bolt — a side channel (analytics, logging)
+    else { c.moveTo(44,40); c.lineTo(64,88); c.moveTo(56,52); c.lineTo(84,52); c.moveTo(48,72); c.lineTo(80,72); }   // ƒx — computes from its inputs
   } else if(kind==="mclass"){
     if(key==='api'){ c.moveTo(36,64); c.lineTo(74,64); c.moveTo(60,50); c.lineTo(76,64); c.lineTo(60,78); c.moveTo(90,40); c.lineTo(90,88); }   // a call out to the backend's wall (the phone line)
     else if(key==='render-fn'){ c.moveTo(40,44); c.lineTo(40,88); c.lineTo(88,88); c.moveTo(52,40); c.lineTo(92,40); c.lineTo(92,76); }   // a canvas corner — draws UI from a plain function
@@ -4339,6 +4348,7 @@ window.__uniLegRef=function(){
     return _exNode(function(n){ return n.kind===k; }); }
   function _exFc(fc){ return _exNode(function(n){ return n.kind==="component" && n.feClass===fc; }); }
   function _exMc(mc){ return _exNode(function(n){ return n.kind==="module" && n.mclass===mc; }); }
+  function _exHr(hr){ return _exNode(function(n){ return n.kind==="hook" && n.hrole===hr; }); }
   function _exMethod(m){ return _exNode(function(n){ return n.kind==="endpoint" && n.m && n.m.method===m; }); }
   function _exRole(r){ var p=_fnPool(); for(var i=0;i<p.length;i++){ if(p[i].role===r) return {label:p[i].label}; } return null; }
   function _esc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -4380,6 +4390,12 @@ window.__uniLegRef=function(){
     "mclass:config":"app wiring — clients, config, setup",
     "mclass:lib":"shared plumbing used everywhere — formatting, i18n, assets, design-system helpers",
     "mclass:logic":"the feature's rules and calculations — no UI, no API",
+    "hrole:fetcher":"the hook that calls the API — its fetch site is the bridge",
+    "hrole:streamer":"the hook whose fetch is a stream — the response keeps arriving",
+    "hrole:store":"the hook that reads or writes client state (the writer/reader split waits on setter extraction)",
+    "hrole:orchestrator":"composes other hooks — touches no data itself",
+    "hrole:effect":"a side channel — analytics, logging, idempotency — no data, no UI",
+    "hrole:deriver":"computes from its inputs — no store, no API",
     endpoint:"the API door the frontend knocks on — one URL and a verb",
     "function":"one backend step — the work behind an endpoint",
     schema:"the shape of what an endpoint takes in or hands back",
@@ -4465,7 +4481,8 @@ window.__uniLegRef=function(){
     ["route","component","hook","type","store","module","unknown","web"].forEach(function(k){ if(!K[k]) return;
       var _kids=(k==="component" && hasFe); h+=_typeRow(k, _kids);                      // component is a PARENT — no header example
       if(_kids){ ["connector","container","leaf","private"].forEach(function(fc){ h+=_badgeRow("feclass", fc, fc, (BD.feclass&&BD.feclass[fc])||"", _exFc(fc), _minTierFc(fc)); }); }
-      else if(k==="module" && hasFe){ ["api","render-fn","model","config","lib","logic"].forEach(function(mc){ h+=_badgeRow("mclass", mc, mc, (BD.mclass&&BD.mclass[mc])||"", _exMc(mc), _minTierKind("module")); }); } });
+      else if(k==="module" && hasFe){ ["api","render-fn","model","config","lib","logic"].forEach(function(mc){ h+=_badgeRow("mclass", mc, mc, (BD.mclass&&BD.mclass[mc])||"", _exMc(mc), _minTierKind("module")); }); }
+      else if(k==="hook" && hasFe){ ["fetcher","streamer","store","orchestrator","effect","deriver"].forEach(function(hr){ h+=_badgeRow("hrole", hr, hr, (BD.hrole&&BD.hrole[hr])||"", _exHr(hr), _minTierKind("hook")); }); }   /* D2: hook ROLES behind the hook row */ });
     if(hasFe){ var vico=(typeof svgInline==="function")?svgInline("screen",VIEWCOL,18):"";   // View = a screen-glyph type (the merged view+screen), toggled as a feClass
       var _von=!(window.__uniFeClassState&&__uniFeClassState.view===false), _vt=_minTierFc("view");
       h+='<div class="lrrow'+_dimCls(_vt)+'"><button class="lrflag'+(_von?" on":"")+'" data-flagfc="view" title="'+(_von?"drawn — click to hide":"hidden — click to show")+'"></button><span class="lrico">'+vico+'</span><div class="lrtx"><b style="color:#d946ef">View</b><i>a screen — the top-level view component</i></div><div class="lrdef">'+_esc(_LRDEF.view)+'</div>'+_exChip(_exFc("view"))+_tierCell(_vt,"kind")+'</div>'; }
@@ -5793,10 +5810,10 @@ var _legSub="Defense";   // active sub-tab within Planet
    SAME __badgeGlyph the 3D chip uses (legend-visual law), beside its one-line meaning. method → the five
    HTTP verbs · role → the four function roles (accessor/caller/gate/pure). ── */
 window.__badgePop=function(anchor, kind, key){ if(window.__badgePopHide) __badgePopHide();
-  var allKeys=(kind==="method")?["GET","POST","PUT","PATCH","DELETE","BOOT"]:(kind==="count")?["N"]:(kind==="feclass")?["connector","container","leaf","private"]:(kind==="mclass")?["api","render-fn","model","config","lib","logic"]:["accessor","caller","gate","pure"];
+  var allKeys=(kind==="method")?["GET","POST","PUT","PATCH","DELETE","BOOT"]:(kind==="count")?["N"]:(kind==="feclass")?["connector","container","leaf","private"]:(kind==="mclass")?["api","render-fn","model","config","lib","logic"]:(kind==="hrole")?["fetcher","streamer","store","orchestrator","effect","deriver"]:["accessor","caller","gate","pure"];
   var keys=key?[key]:allKeys;   // key given (the node's OWN badge) → single row; else the whole key
   var desc=(window.__BADGE_DESC&&window.__BADGE_DESC[kind])||{};
-  var head=key?((kind==="method")?(key==="BOOT"?"boot event — runs once at startup":"HTTP method"):(kind==="count")?"folded schemas":(kind==="mclass")?"module class — what the module DOES (api · render-fn · model · config · lib · logic)":(kind==="feclass")?"component class":"function role"):((kind==="method")?"HTTP method — the endpoint's verb (what it does to the row)":(kind==="count")?"fold count — nested-only schemas hidden under this one (critical); double-click to reveal":(kind==="feclass")?"component class — how each component is drawn":"function role — what it does with the data store");
+  var head=key?((kind==="method")?(key==="BOOT"?"boot event — runs once at startup":"HTTP method"):(kind==="count")?"folded schemas":(kind==="hrole")?"hook role — what the hook DOES (streamer · fetcher · store · orchestrator · effect · deriver), one by precedence":(kind==="mclass")?"module class — what the module DOES (api · render-fn · model · config · lib · logic)":(kind==="feclass")?"component class":"function role"):((kind==="method")?"HTTP method — the endpoint's verb (what it does to the row)":(kind==="count")?"fold count — nested-only schemas hidden under this one (critical); double-click to reveal":(kind==="feclass")?"component class — how each component is drawn":"function role — what it does with the data store");
   var pop=document.createElement("div"); pop.id="badgepop"; pop.className="badgepop";
   var html='<div class="bph">'+head+'</div>';
   keys.forEach(function(k){ html+='<div class="bprow"><canvas class="bpcv" width="30" height="30" data-k="'+k+'"></canvas><div class="bpt"><b>'+(kind==="count"?"N":k)+'</b><span>'+(desc[k]||desc["*"]||"")+'</span></div></div>'; });
@@ -5890,8 +5907,8 @@ function buildLegend(){ var el=document.getElementById("elegend"), tabs=Object.k
         var _st=(window.__uniKindState&&__uniKindState[it.k])||(it.k==="type"?"off":"all");
         var _cls=(_st==="off")?"lgoff":"";
         var _t=(_st==="off")?"hidden — click to show":"showing — click to hide";
-        var _bik=(it.k==="endpoint")?"method":(it.k==="function")?"role":(it.k==="schema")?"count":(it.k==="component")?"feclass":(it.k==="module")?"mclass":null;   // badged kinds carry a badge-KEY info dot (operator): endpoint methods · function roles · schema fold count · component classes
-        var _bi=_bik?('<button class="lgbi" data-badgeinfo="'+_bik+'" title="badge key — '+(_bik==="method"?"the HTTP methods":(_bik==="role")?"the four function roles":(_bik==="feclass")?"the component classes (how each is drawn)":(_bik==="mclass")?"the module classes (what each file is for)":"the nested-only fold count")+'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>'):'';
+        var _bik=(it.k==="endpoint")?"method":(it.k==="function")?"role":(it.k==="schema")?"count":(it.k==="component")?"feclass":(it.k==="module")?"mclass":(it.k==="hook")?"hrole":null;   // badged kinds carry a badge-KEY info dot (operator): endpoint methods · function roles · schema fold count · component classes
+        var _bi=_bik?('<button class="lgbi" data-badgeinfo="'+_bik+'" title="badge key — '+(_bik==="method"?"the HTTP methods":(_bik==="role")?"the four function roles":(_bik==="feclass")?"the component classes (how each is drawn)":(_bik==="mclass")?"the module classes (what each file is for)":(_bik==="hrole")?"the hook roles (what each hook does)":"the nested-only fold count")+'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>'):'';
         h+='<div class="lgrow lgk '+_cls+'" data-lgk="'+it.k+'" title="'+_t+' · '+K.type+'"><div class="lgvis">'+svgInline(it.k,K.col,17)+'</div><div class="lglbl"><b style="color:'+K.col+'">'+K.type+'</b>'+_bi+'</div></div>'; return; }   // the node KIND — a 3-STATE control (all · critical · off) + badge-key dot
       if(it.t==="ship"||it.t==="sat"){ var i=thumbs.length; thumbs.push(it);
         h+='<div class="lgrow"><div class="lgvis"><canvas class="lgcv" width="42" height="36" data-i="'+i+'"></canvas></div><div class="lglbl">'+it.l+'</div></div>'; return; }

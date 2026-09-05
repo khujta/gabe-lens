@@ -391,6 +391,29 @@ _P7c = {p["name"]: p for p in _fe7c["pieces"]}
 check(_P7c["useApplyReset"].get("screen") == "web:src/features/pantry/usePantryMutations" and _P7c["useApplyReset"].get("sites") == 0 and _fe7c["stats"].get("screens_absorbed") == 1,
       "D3 regression pin: a DYNAMIC-only screen (no literal call) is still absorbed by the file's principal — the web node never strands (webLeft stayed 0 on the example)")
 
+# ── D2 (2026-09-05): HOOK ROLES — one per hook by precedence, from wires the arm already draws ──
+_X8 = {"byFile": {
+    "src/features/r/useFetchR.ts": {"exports": [{"name": "useFetchR", "kind": "function", "hasJsx": False, "calls": []}], "bindings": {}},
+    "src/features/r/useStreamR.ts": {"exports": [{"name": "useStreamR", "kind": "function", "hasJsx": False, "calls": []}], "bindings": {}},
+    "src/features/r/useLocaleStore.ts": {"exports": [{"name": "useLocaleStore", "kind": "function", "hasJsx": False, "calls": ["create"]}], "bindings": {"create": {"ext": True}}},
+    "src/features/r/useLocale.ts": {"exports": [{"name": "useLocale", "kind": "function", "hasJsx": False, "calls": ["useLocaleStore"]}], "bindings": {"useLocaleStore": {"file": "src/features/r/useLocaleStore.ts", "name": "useLocaleStore"}}},
+    "src/features/r/useDeriveR.ts": {"exports": [{"name": "useDeriveR", "kind": "function", "hasJsx": False, "calls": ["useMemo"]}], "bindings": {"useMemo": {"ext": True}}},
+    "src/features/r/useComboR.ts": {"exports": [{"name": "useComboR", "kind": "function", "hasJsx": False, "calls": ["useDeriveR"]}], "bindings": {"useDeriveR": {"file": "src/features/r/useDeriveR.ts", "name": "useDeriveR"}}},
+    "src/lib/analytics.ts": {"exports": [{"name": "track", "kind": "function", "hasJsx": False, "calls": []}], "bindings": {}},
+    "src/features/r/useTrackR.ts": {"exports": [{"name": "useTrackR", "kind": "function", "hasJsx": False, "calls": ["track"]}], "bindings": {"track": {"file": "src/lib/analytics.ts", "name": "track"}}}}}
+_S8 = [{"id": "web:src/features/r/useFetchR", "file": "src/features/r/useFetchR.ts", "calls": [{"method": "GET", "path": "/r", "export": "useFetchR"}], "dynamic": 0},
+       {"id": "web:src/features/r/useStreamR", "file": "src/features/r/useStreamR.ts", "calls": [{"method": "GET", "path": "/r/stream", "export": "useStreamR", "sse": True}], "dynamic": 0}]
+_fe8 = _a3_fe.build_fe(_X8, {"r": {}}, _S8)
+_H8 = {p["name"]: p.get("hrole") for p in _fe8["pieces"] if p["kind"] == "hook"}
+check(_H8 == {"useFetchR": "fetcher", "useStreamR": "streamer", "useLocale": "store", "useDeriveR": "deriver", "useComboR": "orchestrator", "useTrackR": "effect"},
+      "HOOK ROLES (D2): fetcher · streamer · store · orchestrator · effect · deriver from wires — got " + str(_H8))
+check(_fe8["stats"].get("by_hrole") == {"deriver": 1, "effect": 1, "fetcher": 1, "orchestrator": 1, "store": 1, "streamer": 1},
+      "HOOK ROLES: stats.by_hrole tallies the six")
+check(not any("hrole" in p for p in _fe8["pieces"] if p["kind"] != "hook"), "HOOK ROLES: only hooks carry a role")
+_fe8m = _a3_fe.build_fe(_X8, {"r": {}}, [_S8[1]])
+check({p["name"]: p.get("hrole") for p in _fe8m["pieces"] if p["name"] == "useFetchR"} == {"useFetchR": "deriver"},
+      "HOOK ROLES MUTATION: without its fetch site useFetchR falls to deriver (the role is READ from wires, never assumed)")
+
 print(f"frontend battery: {pass_} passed, {fail} failed" + (f", {len(skipped)} skipped" if skipped else ""))
 sys.exit(1 if fail else 0)
 PY

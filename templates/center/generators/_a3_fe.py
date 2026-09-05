@@ -276,6 +276,8 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                     w = sum(1 for c in _cs if (c.get("method") or "GET").upper() in _WRITE_METHODS)
                     if w:                              # FE d2w: a POST/PUT/PATCH/DELETE fetch WRITES (HTTP verb, library-agnostic)
                         pieces[_tp]["wsites"] = w      # write-method fetch count (a subset of `sites`)
+                    if any(c.get("sse") for c in _cs):
+                        pieces[_tp]["sse"] = True       # an event stream — the hook role reads it (streamer)
                     if _tp != pid:
                         by_export += 1
                 absorbed += 1
@@ -475,6 +477,34 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
         if pid in touches_write:
             p["write"] = True                          # on the FE d2w WRITE spine (reaches a write-method fetch)
         by_class[fc] = by_class.get(fc, 0) + 1
+    # ── HOOK ROLES (D2, operator 2026-09-05): a hook is the frontend's function — ONE role from what it
+    #    touches, read the way a backend function's role is read, by precedence, from wires the arm
+    #    already draws: streamer (its fetch is an event stream) · fetcher (a fetch site attributed to it,
+    #    a query-library cache sink, or an api-class module it calls that fetches) · store (a uses-store
+    #    wire — reads OR writes: the extractor does not see setters, so the writer/reader split is the
+    #    named follow-up) · orchestrator (calls other project hooks and nothing above) · effect (calls a
+    #    lib/config module — analytics, logging, idempotency — and nothing above) · deriver (none of the
+    #    above: computes from its inputs). Library hooks (useState, useMemo) are ext bindings → no wire. ──
+    _out: dict[str, list] = {}
+    for e in edge_list:
+        _out.setdefault(e["from"], []).append(e)
+    by_hrole: dict[str, int] = {}
+    for pid, p in pieces.items():
+        if p["kind"] != "hook":
+            continue
+        outs = _out.get(pid, ())
+        _api = [pieces[e["to"]] for e in outs if e["rel"] == "fecall"
+                and pieces[e["to"]]["kind"] == "module" and pieces[e["to"]].get("mclass") == "api"]
+        _sse = bool(p.get("sse")) or any(m.get("sse") for m in _api)
+        _fetch = bool(p.get("screen")) or bool(p.get("cache")) or any(m.get("screen") for m in _api)
+        _store = any(e["rel"] == "uses-store" for e in outs)
+        _orch = any(e["rel"] == "uses-hook" and pieces[e["to"]]["kind"] == "hook" for e in outs)
+        _eff = any(e["rel"] == "fecall" and pieces[e["to"]]["kind"] == "module"
+                   and pieces[e["to"]].get("mclass") in ("lib", "config") for e in outs)
+        hr = ("streamer" if _sse else "fetcher" if _fetch else "store" if _store
+              else "orchestrator" if _orch else "effect" if _eff else "deriver")
+        p["hrole"] = hr
+        by_hrole[hr] = by_hrole.get(hr, 0) + 1
     by_kind: dict[str, int] = {}
     by_home: dict[str, int] = {}
     for p in pieces.values():
@@ -509,7 +539,7 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                   "by_home": dict(sorted(by_home.items())), "edges": len(edge_list),
                   "by_rel": dict(sorted(by_rel.items())), "cross": sum(1 for e in edge_list if e["cross"]),
                   "screens_absorbed": absorbed, "screens_by_export": by_export, "unresolved": unresolved, "local_refs": local["refs"],
-                  "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "promoted": promoted,
+                  "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "by_hrole": dict(sorted(by_hrole.items())), "promoted": promoted,
                   "by_channel": by_channel, "state_pieces": len(touches_state),
                   "cache_pieces": sum(1 for p in pieces.values() if p.get("cache")),
                   "write_pieces": len(touches_write),
