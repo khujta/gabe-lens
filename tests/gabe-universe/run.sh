@@ -1125,7 +1125,7 @@ check('if(n&&n.kind==="capsule"){ if(window.__uniCapExpand) __uniCapExpand(n.ent
 check('if(_CAPST&&_CAPST.byPiece[id])' in page, "goto/search into a folded piece no longer auto-expands")
 check('g:"collapsed"' in page and 'opens the capsule' in page,
       "stashed pieces vanished from search (the index must list them and expand on open)")
-check('if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400);' in page,
+check('if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} } if(window.__uniApplyDeepLinks){ try{ __uniApplyDeepLinks(); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400);' in page,
       "the boot 400ms settle applies the T1 tier (capsules default off → the tier is the boot-time simplification)")
 check('KINDS.capsule={' in page and 'f==="pod"' in page and 'C.capsule=function(n)' in page,
       "the capsule kind lost its form/card")

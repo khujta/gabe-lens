@@ -295,6 +295,7 @@ if ts_dir and shutil.which("node"):
     live = _a3_fe.fe_arm(fix, {"recipe": {}}, screens)
     del os.environ["GABE_TS_DIR"]
     check(live.get("present") is True, f"LIVE: the arm runs on the fixture ({live.get('reason')})")
+    check("borrowed via GABE_TS_DIR" in (live.get("reason") or ""), f"LIVE (2026-09-06): a GABE_TS_DIR run SAYS the typescript was borrowed ({live.get('reason')})")
     same = json.dumps({k: live.get(k) for k in ("pieces", "edges", "homes")}, sort_keys=True) == \
            json.dumps({k: fe[k] for k in ("pieces", "edges", "homes")}, sort_keys=True)
     check(same, "LIVE: the compiler pass re-derives the FROZEN fixture graph exactly (pieces · edges · homes)")

@@ -640,8 +640,8 @@ def fe_arm(root: Path, entities: dict[str, Any] | frozenset[str] | None,
         out = build_fe(data, entities, screens)
         out["present"] = True
         out["reason"] = f"typescript {data.get('ts')} · {data.get('files')} files"
-        if not (pkg / "node_modules").is_dir():   # a borrowed typescript parsed the tree, but the project's own deps are absent → third-party imports unresolved
-            out["reason"] += " · node_modules absent — third-party imports unresolved"
+        if data.get("tsFrom") == "override":       # a BORROWED typescript (GABE_TS_DIR) parsed the tree — the project's own deps may be absent → third-party imports unresolved
+            out["reason"] += " · typescript borrowed via GABE_TS_DIR — the project's own deps may be absent (third-party imports unresolved)"
         return out
     except Exception as exc:  # noqa: BLE001 — the arm enhances, never breaks, the build
         return {"present": False, "reason": f"fe arm error: {exc}"}

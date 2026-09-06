@@ -235,7 +235,7 @@ for (const sf of program.getSourceFiles()) {
   files[rel(f)] = rec;
 }
 const keys = Object.keys(files).sort();
-const out = { version: 1, web: rel(WEB) || '.', ts: ts.version, files: keys.length, byFile: Object.fromEntries(keys.map(k => [k, files[k]])) };
+const out = { version: 1, web: rel(WEB) || '.', ts: ts.version, tsFrom: TS_DIR ? 'override' : 'project', files: keys.length, byFile: Object.fromEntries(keys.map(k => [k, files[k]])) };   // tsFrom: where `typescript` came from — the project's own tree, or a GABE_TS_DIR override (review 2026-09-06)
 const text = JSON.stringify(out);
 if (OUT) fs.writeFileSync(OUT, text); else process.stdout.write(text);
 const all = keys.map(k => files[k]);
