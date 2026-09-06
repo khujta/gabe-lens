@@ -787,6 +787,7 @@
   #uni-legref .lrdef{ flex:1; min-width:0; font:400 11px/1.35 var(--font-ui); color:var(--ink-soft); }   /* WHAT IT IS, IN YOUR WORDS — the reader's definition, one per row (operator 2026-09-03) */
   #uni-legref .lrtx b{ font:600 12px/1.2 var(--font-ui); color:var(--ink); }
   #uni-legref .lrtx i{ font:400 10.5px/1.35 var(--font-ui); font-style:normal; color:var(--muted); }
+  #uni-legref .lrexl{ max-width:100% !important; }   /* a wire example carries two names (+ the fk key) — never truncate it */
   #uni-legref .lrex{ flex:none; max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     font:500 11px/1 var(--font-mono); color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);
     border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:6px; padding:4px 8px; cursor:pointer; }
@@ -1631,8 +1632,10 @@ window.__uniCfgToggle=function(){ var c=document.getElementById("cfg"); if(!c) r
 window.__uniNavToggle=function(){ document.body.classList.toggle("nav-min");
   setTimeout(function(){ try{ if(typeof resizeGraph==="function") resizeGraph(); }catch(e){} }, 220); };   // graph refills the reclaimed width after the slide
 function connectorWire(grp, a, b, kind, R, hf, ea, eb, hov, sel, band){ var cfg=CONN[kind]||CONN.calls;
-  hf=(hf==null)?1:hf; if(!hf) return;   // depth-highlight factor: 0 = outside a FOCUS set (skip) · >1 = in the lit set (brighter, additive)
-  var _bm=(window.__uniBeam && window.__uniBeam[kind]!=null)?window.__uniBeam[kind]:1; if(!_bm) return;
+  hf=(hf==null)?1:hf; if(!hf && !sel) return;   // depth-highlight factor: 0 = outside a FOCUS set (skip) · >1 = in the lit set (brighter, additive) — a SELECTED wire always draws
+  if(!hf) hf=1;
+  var _bm=(window.__uniBeam && window.__uniBeam[kind]!=null)?window.__uniBeam[kind]:1; if(!_bm && !sel) return;   /* operator 2026-09-05: a rollup wire (beam 0 by default) selected from a card vanished — it was never drawn; the selection now overrides the kind toggle */
+  if(!_bm) _bm=1;
   var dir=b.clone().sub(a); var len=dir.length()||1; dir.multiplyScalar(1/len);
   var A=a.clone().addScaledVector(dir,R), B=b.clone().addScaledVector(dir,-R);   // reach just past each node bubble
   var _pts=window.__uniCurved?__uniCurve(A,B,dir,len):[A,B]; var geo=new T.BufferGeometry().setFromPoints(_pts), mat;
@@ -4071,6 +4074,8 @@ window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbo
     if(CFG.selAnim==null) CFG.selAnim="pulse"; if(CFG.selAnimSpeed==null) CFG.selAnimSpeed=0.3; if(CFG.selGlow==null) CFG.selGlow=true; if(CFG.selGlowInt==null) CFG.selGlowInt=0.05; } };
 /* ── GOTO (batch 51) — ONE navigation path for card/link chips: select + frame a drawn node;
    a HELD fe-type or function wakes its toggle first (the search rows' behavior, shared). ── */
+window.__uniSelectLink=function(l){ if(!l) return; window.__uniSelLink=l; SEL={kind:"link",data:l}; try{ showLinkPanel(l); }catch(e){} try{ refreshEncSel(); }catch(e){} try{ updateConnectors(); }catch(e){}
+  try{ var _s=lid(l.source), _t=lid(l.target); if(typeof _frameSet==="function" && NIDS[_s] && NIDS[_t]) _frameSet([_s,_t]); }catch(e){} };   /* the ONE select path for a wire (3D pick · card chip · legend example): select + card + redraw lit + frame both ends */
 window.__uniGoto=function(id){ if(!id) return;
   var _n0=NIDS[id];   // a panel chip whose target is FLEET-hidden → reveal its cluster+entity IN PLACE first, then select (same as clicking the ghost star; operator)
   if(_n0 && window.__uniReveal && typeof _nodeVisibleFn==="function" && !_nodeVisibleFn(_n0)){ try{ __uniReveal(id); }catch(_re){} }
@@ -4340,6 +4345,13 @@ window.__uniLegRef=function(){
   // ONE example per type/class/method — a REAL loaded node so the search always resolves. Functions ride
   // off-field (stars); their example carries NO id → __uniSearchGo runs the search, which wakes ƒ + focuses.
   function _exNode(pred){ for(var i=0;i<nodes.length;i++){ if(pred(nodes[i])) return {label:nodes[i].label, id:nodes[i].id}; } return null; }
+  var _EXREL={ fk:["fk"], calls:["calls","handler","touches","touch","consumes"], imports:["imports"], bridge:["bridge"], rollup:["reads_from","writes_to"], access:["fnwrites","fnreads"], renders:["renders"], uses:["uses"], reads:["reads"], typed:["typed"], fecall:["fecall"] };
+  function _exLink(k){ var rels=_EXREL[k]||[k]; var pool=((typeof _fieldLinks==="function")?_fieldLinks():links).concat((typeof _FNLINKS!=="undefined"&&_FNLINKS)||[]);   /* calls/access wires live in the function-level pool until functions unfold — the example still names one */
+    for(var i=0;i<pool.length;i++){ var l=pool[i]; if(rels.indexOf(l.rel)<0) continue; var s=NIDS[lid(l.source)], t=NIDS[lid(l.target)]; if(!s||!t) continue;
+      var lab=s.label+" → "+t.label; if(k==="fk"){ var fks=(s.det&&s.det.fks||[]).map(function(f){ return Array.isArray(f)?f:[f]; }); if(fks.length){ var fk=fks[0]; lab=s.label+"."+fk[0]+" → "+fk[1]; } }
+      return {label:lab, s:lid(l.source), t:lid(l.target)}; } return null; }
+  function _exLinkChip(k){ var ex=_exLink(k); if(!ex) return '<span class="lrex lrnone" title="no wire of this kind is drawn right now">—</span>';
+    return '<button class="lrex lrexl" data-lk="'+_esc(ex.s)+'|'+_esc(ex.t)+'" title="find this wire in the graph — selects it, lights it, frames both ends">'+_esc(ex.label)+'</button>'; }
   function _fnPool(){ if(!window._FNNODES){ try{ if(typeof _buildFnData==="function") _buildFnData(); }catch(e){} } return window._FNNODES||[]; }
   // types + functions ride off-field (Types / ƒ held off) and entities are clusters — derive their example by
   // LABEL (no id) so __uniSearchGo runs the search, which WAKES the held layer / entity and focuses it.
@@ -4573,7 +4585,7 @@ window.__uniLegRef=function(){
     var h='<div class="lrsec"><div class="lrsh">CONNECTORS · what wires elements together</div>';
     items.forEach(function(it){ if(it.t==="grp"){ h+='<div class="lrgrp">'+it.l+'</div>'; return; }
       if(/tog$/.test(it.t||"")) return;   /* a VIEW SWITCH (d2w colour · fe heat · write ring) is not a wire — the compact legend keeps the toggle, the reference lists wires only (operator 2026-09-05: three blank rows) */
-      h+='<div class="lrrow lrb"><span class="lrico">'+_refIco(it)+'</span><div class="lrtx">'+_refTx(it.l)+'</div><div class="lrdef">'+_esc(_defOf(it.l))+'</div>'+_tierCell(null,"any")+'</div>'; });
+      h+='<div class="lrrow lrb"><span class="lrico">'+_refIco(it)+'</span><div class="lrtx">'+_refTx(it.l)+(it.t==="ln"&&it.k?(' '+_exLinkChip(it.k)):'')+'</div><div class="lrdef">'+_esc(_defOf(it.l))+'</div>'+_tierCell(null,"any")+'</div>'; });   /* an example WIRE per connector row (operator 2026-09-05) */
     return h+'</div>'; }
   function _planetSection(){ var P=(typeof LEGEND!=="undefined"&&LEGEND.Planet)||null; if(!P) return "";
     var h='<div class="lrsec"><div class="lrsh">FLEET · planets &amp; ships</div>';
@@ -4593,7 +4605,10 @@ window.__uniLegRef=function(){
   // paint the REAL 3D ship thumbnails (operator) — the continuous spin, same as the small legend's Planet tab
   [].forEach.call(ov.querySelectorAll(".lrcv"), function(cv){ var it=_thumbs[+cv.dataset.ti]; if(it) _refThumb(cv, _thumbBuild(it), it.t==="sat"?2.8:null); });   // sats take a FIXED scale (auto-fit shrinks them); ships auto-fit
   // example chip → fill the bar + focus + close the overlay
-  [].forEach.call(ov.querySelectorAll(".lrex"), function(b){ b.onclick=function(){ var s=b.getAttribute("data-s"), id=b.getAttribute("data-id");
+  [].forEach.call(ov.querySelectorAll(".lrexl"), function(b){ b.onclick=function(ev){ ev.stopPropagation(); var pr=(b.getAttribute("data-lk")||"").split("|"); var pool=(typeof _fieldLinks==="function")?_fieldLinks():links;
+    pool=pool.concat((typeof _FNLINKS!=="undefined"&&_FNLINKS)||[]);
+    var l=pool.find(function(x){ return lid(x.source)===pr[0] && lid(x.target)===pr[1]; }); if(l && window.__uniSelectLink) __uniSelectLink(l); __uniLegRef(); }; });
+  [].forEach.call(ov.querySelectorAll(".lrex:not(.lrexl)"), function(b){ b.onclick=function(){ var s=b.getAttribute("data-s"), id=b.getAttribute("data-id");
     if(window.__uniSearchGo) __uniSearchGo(s, id||null); __uniLegRef(); }; });
   // flag toggle → show/hide the kind / feClass, then rebuild the overlay so the pill reflects the new state
   [].forEach.call(ov.querySelectorAll(".lrflag"), function(b){ b.onclick=function(){ var k=b.getAttribute("data-flagk"), fc=b.getAttribute("data-flagfc");
@@ -4973,7 +4988,7 @@ function build(){
     .backgroundColor("#0e1524").graphData({nodes:nodes, links:links})
     .nodeThreeObject(buildNode).nodeLabel(function(n){ var _dk=_dispK(n); return _dk.type+" — "+(n.label||_dk.label); })
     .onNodeClick(function(n){ if(n&&n.kind==="capsule"){ if(window.__uniCapExpand) __uniCapExpand(n.ent); return; } var _lc=window.__uniLastClick||{}, _ct=Date.now(); if(n&&_lc.id===n.id&&(_ct-_lc.t)<350&&window.__uniRevealNeighbors){ window.__uniLastClick={id:null,t:0}; window.__uniRevealNeighbors(n); return; } window.__uniLastClick={id:(n&&n.id)||null,t:_ct}; SEL={kind:"node",data:n}; showPanel(n); refreshEncSel(); if(window.__uniHLSelect) __uniHLSelect(n); })
-    .onLinkClick(function(l){ SEL={kind:"link",data:l}; showLinkPanel(l); refreshEncSel(); })
+    .onLinkClick(function(l){ if(window.__uniSelectLink) __uniSelectLink(l); else { SEL={kind:"link",data:l}; showLinkPanel(l); refreshEncSel(); } })
     .linkColor(linkColorFn).linkOpacity(0.6).linkWidth(linkWidthFn).linkVisibility(linkVisFn).linkHoverPrecision(8)
     .linkThreeObjectExtend(true)
     .linkThreeObject(function(l){ var cv=document.createElement("canvas"); cv.width=160; cv.height=40; var c=cv.getContext("2d");
@@ -5662,9 +5677,21 @@ var KINDCARD=(function(){
     if(rel==="access"||rel==="fnwrites"||rel==="fnreads"||rel==="rollup"||rel==="reads_from"||rel==="writes_to"||rel==="touches"||rel==="touch"){ var md=(t.kind==="model")?t:(s.kind==="model"?s:null); return md?table(md,"the table's columns"):note("— no table on this wire"); }
     if(rel==="reads"||rel==="uses-store"){ var st=(t.kind==="store")?t:(s.kind==="store"?s:null); return st?table(st,"the store's fields"):note("— no store on this wire"); }
     if(rel==="typed"){ return (t.kind==="type")?table(t,"the shape"):note("— no type on this wire"); }
-    if(rel==="fk"||rel==="pk"||rel==="nests"){ return table(t,(rel==="nests")?"the nested shape":"the target table's columns"); }
+    if(rel==="fk"||rel==="pk"||rel==="nests"){ var _k=(rel==="nests")?null:fkKey(s,t); var _tb=table(t,(rel==="nests")?"the nested shape":"the target table's columns");
+      if(_k && _tb){ _tb.insertBefore(E("div",{class:"kv",style:"margin:2px 0 6px"}, E("b",{}, "key "), s.label+"."+_k.col+" → "+_k.to), _tb.children[1]||null); }   /* which column points at which (operator 2026-09-05) */
+      return _tb; }
     if(rel==="consumes"||rel==="returns"||rel==="takes"||rel==="resp"||rel==="serializes"){ var sc=(t.kind==="schema")?t:(s.kind==="schema"?s:null); return sc?table(sc,"the body shape"):note("— no body on this wire"); }
     return note("— a control wire: the props / arguments it carries are not captured (the data rides the wires around it)"); }
+  function wireVisSec(l){ var s=NIDS[lid(l.source)], t=NIDS[lid(l.target)], gk=(typeof REL2KIND!=="undefined"&&REL2KIND[l.rel])||"calls", bm=(window.__uniBeam&&window.__uniBeam[gk]!=null)?window.__uniBeam[gk]:1, msgs=[];
+    if(!bm) msgs.push("its wire kind ("+gk+") is toggled OFF in the legend's connectors — drawn while selected; click the "+gk+" row to keep it");
+    [s,t].forEach(function(n){ if(n && typeof _nodeVisibleFn==="function" && !_nodeVisibleFn(n)) msgs.push(n.label+" is not drawn (its kind or fleet is off) — the wire cannot land until it is"); });
+    if(!s||!t) msgs.push("one end is not in the graph");
+    if(!msgs.length) return null;
+    return E("div",{class:"sec"}, sechd("info","Visibility"), E("div",{style:"font-size:12px;color:var(--muted)"}, msgs.join(" · "))); }
+  function fkKey(s, t){ var fks=(s&&s.det&&s.det.fks||[]).map(function(f){ return Array.isArray(f)?f:[f]; }); if(!fks.length||!t) return null;
+    var tb=String(t.table||""), tl=String(t.label||"").toLowerCase();
+    var hit=fks.filter(function(f){ var tt=String(f[1]||"").split(".")[0].toLowerCase(); return (tb&&tt===tb.toLowerCase()) || tt===tl || tt===tl+"s" || tt===tl.replace(/y$/,"ies"); })[0] || (fks.length===1?fks[0]:null);
+    return hit?{col:hit[0], to:hit[1]}:null; }
   C.__link=function(l){ var s=l.source, t=l.target, sl=(s&&s.label)||s, tl=(t&&t.label)||t, sk=(s&&s.kind)||"function", tk=(t&&t.kind)||"function";
     var _lchip=function(nd,k,lb){ var el=E("span",{class:"pchip "+chipCls(k)}, icoEl(k), lb);   // hover lights the node — same halo as the element card's chips
       var id=(nd&&nd.id)||((typeof nd==="string")?nd:null);
@@ -5674,6 +5701,7 @@ var KINDCARD=(function(){
         el.addEventListener("click",function(ev){ ev.stopPropagation(); if(window.__uniGoto) __uniGoto(id); }); }
       return el; };
     return [
+      wireVisSec(l),
       (function(){ var _ck=(typeof REL2KIND!=="undefined"&&REL2KIND[l.rel])||"calls";
         var _cc=(typeof CONN!=="undefined"&&CONN[_ck])||{color:0x8794ab,style:"dashed"};
         var _hxc="#"+("000000"+((_cc.color||0)>>>0).toString(16)).slice(-6);

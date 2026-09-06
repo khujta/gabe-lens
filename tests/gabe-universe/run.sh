@@ -230,7 +230,7 @@ check('M4 19 20 5' in page and 'M4 19 C 8 5 16 5 20 12' in page, "the LINES pill
 check('{v:"straight",t:"Straight"}' not in page, "REGRESSION: the LINES pill is back to text labels")
 check('id="curveAmtRng"' in page and '*(window.__uniCurveAmt||1)' in page,
       "curve-amount slider missing or __uniCurve ignores it")
-check('window.__uniBeam={ fk:0.9' in page and 'if(!_bm) return;' in page and 'cfg.trust*_bm' in page,
+check('window.__uniBeam={ fk:0.9' in page and 'if(!_bm && !sel) return;' in page and 'cfg.trust*_bm' in page,
       "per-kind beam missing (declare + skip-at-0 + opacity multiply)")
 check('wireRow("fk")+wireRow("bridge")+wireRow("calls")+wireRow("imports")' in page,
       "the four per-kind wire rows (sample · color · shape · beam) are not built")
@@ -888,6 +888,8 @@ check('WRAPPER CLIMB' in page and 'sn.kind==="module"' in page and 'c.ent!==sn.e
       "the FE-leg WRAPPER CLIMB: a bridged shared-lib MODULE with a cross-entity caller (an SSE client like lib/api/sse) is swapped for its feature callers, so the leg reaches the feature screen not the lib — proven on gustify: Create-a-recipe 0→2 → useRecipeStream → GustifyGenerateSheet")
 check('(kind==="mclass")?"module class":' not in page and '(kind==="mclass")?["api","render-fn","model","config","lib","logic"]' in page,
       "__badgePop's key ternary carries no string branch for mclass (2026-09-05: keys.forEach threw on the Module ⓘ)")
+check('if(!_bm && !sel) return;' in page and 'window.__uniSelectLink=function(l)' in page and 'if(window.__uniSelectLink) __uniSelectLink(l);' in page and 'function wireVisSec(l)' in page and 'function fkKey(s, t)' in page and 'class="lrex lrexl"' in page and '.lrex:not(.lrexl)' in page,
+      "WIRE SELECTION (2026-09-05): a selected wire draws even when its kind beam is 0 (the vanishing rollup); one select path; the card says why a wire is hidden; the FK key line; example WIRE chips on the reference's connector rows")
 check('C.store=feDataBuilder; C.type=feDataBuilder; C.hook=feHookBuilder; C.component=feHookBuilder;' in page and 'function carriesSec(l)' in page and page.count('carriesSec(l)')>=1 and 'function carriesSec(l)' in page and '{t:"ln",k:"renders"' in page and '"x:typed":' in page and 'if(/tog$/.test(it.t||"")) return;' in page and page.count('structureSec(n),\n') >= 1,
       "CARD ORDER + CARRIES + CONNECTORS (2026-09-05): data kinds put Structure before Connections; hooks/components list the shapes they handle; every wire card says what it carries; the frontend wires join the connector roster; the reference lists wires only")
 check('cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null' in page and 'n.kind==="store"){ op="client state"; opk="store"; fields=(n.det&&n.det.cols)||null;' in page and 'the frontend\'s table: its fields are its value type' in page,
@@ -1325,6 +1327,14 @@ const { chromium } = require(process.argv[3]);
   await p.evaluate(() => window.__uniSetTier(2));
   await p.waitForTimeout(1000);
   const afterTier = await p.evaluate(() => ({ on:HL.on, walk:WALK.mode, vis:nodes.filter(n=>_nodeVisibleFn(n)).length })).catch(e=>({err:String(e)}));
+  // WIRE SELECTION (2026-09-05): a selected wire DRAWS even when its kind beam is 0 (the vanishing rollup) — probed after the layout cached positions
+  const wireSel = await p.evaluate(() => { try{ var rl=links.find(function(l){ return (l.rel==='reads_from'||l.rel==='writes_to') && NIDS[lid(l.source)] && NIDS[lid(l.target)] && _npos[lid(l.source)] && _npos[lid(l.target)]; }); if(!rl) return {err:'no positioned rollup wire', npos:Object.keys(_npos).length};
+      window.__uniSelCurve=null; __uniSelectLink(rl); var drawn=!!window.__uniSelCurve; var heads=[].map.call(document.querySelectorAll('#pbody .sec .sechd'), function(h){ return h.textContent.trim().slice(0,10); });
+      var chips=0; try{ __uniLegRef(); chips=document.querySelectorAll('#uni-legref .lrexl').length; __uniLegRef(); }catch(e){}
+      var fkl=links.find(function(l){ return l.rel==='fk' && NIDS[lid(l.source)] && NIDS[lid(l.target)]; }); var key=null; if(fkl){ __uniSelectLink(fkl); key=/key /.test(document.getElementById('pbody').textContent); }
+      window.__uniSelLink=null; SEL=null; try{ updateConnectors(); }catch(e){}
+      return {drawn:drawn, vis:heads.indexOf('Visibility')>=0, chips:chips, key:key, beam:window.__uniBeam&&window.__uniBeam.rollup}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
+  console.log('  wireSel '+JSON.stringify(wireSel));
   // TIER KEY regression (operator bug): plain 1–4 fired the tier handler AND the fleet-column handler
   // (two listeners, preventDefault can't stop the second) → the same tier rendered differently each
   // press. Tiers now require Alt+Digit1–4; plain digits must NO LONGER move the tier, and Alt+Digit is
@@ -1582,7 +1592,8 @@ const { chromium } = require(process.argv[3]);
     && jd.entDots===jd.steps && jd.clus===jd.steps && jd.ops>0 && jd.tgts>0 && jd.fields>0 && jd.rels>0 && jd.flush && jd.aligned && jd.resizeOk
     && jd.matrixOk && jd.frozenOk && jd.walkSyncOk && jd.flagsOk && jd.opcFrozen && jd.indirect>0;
   const sc=storeCheck, storeOk = sc && !sc.err && sc.storeCols>=1 && sc.storeFlagOn && sc.litStore>=1 && sc.iconInline && sc.titleHot && sc.cellClean && sc.row0Lit>=0 && sc.row0Lit<=5 && sc.anchorKind==='route' && sc.anchorKind3==='route' && sc.lgbiOk===true && /useCreatePantryItem/.test(sc.feStart||'') && sc.hookRoles && sc.hookRoles.hooks>0 && sc.hookRoles.withRole===sc.hookRoles.hooks && sc.hookRoles.kinds>=3 && sc.storeShape && sc.storeShape.stores>0 && sc.storeShape.shaped>=1 && sc.cardOrder && !sc.cardOrder.err && /Usage/.test(sc.cardOrder.store[0]||'') && /Structure/.test(sc.cardOrder.store[1]||'') && /Structure/.test(sc.cardOrder.model[1]||'') && sc.cardOrder.carries===true && sc.cardOrder.ref && sc.cardOrder.ref.blank===0 && sc.cardOrder.ref.fe===true && sc.drafts>=1 && sc.draftWalk>0 && sc.draftGrp && sc.draftLeveled && sc.draftNamed && sc.viewType==='View (FE)' && sc.viewCol==='#d946ef' && (sc.viewIcon==='heat'||sc.viewIcon==='#d946ef');
-  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk;
+  const wireSelOk = !!(wireSel && !wireSel.err && wireSel.drawn===true && wireSel.vis===true && wireSel.chips>=8 && wireSel.key===true && wireSel.beam===0);
+  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk;
   if(ok) console.log(`  render: PASS — ${r.nodes} live nodes, 0 errors, card renders (st-pass=${r.stPass}, faces=${r.face}); frontend ${f.present?`${f.feNodes} pieces · ${f.absorbed} screens absorbed · ${f.typesHeld} types held · FE-write heat off-by-default, bands blue→magenta`:'absent (honest-empty)'}`);
   else { console.error('  render FAIL:', JSON.stringify(r), 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
 })();
