@@ -1965,7 +1965,7 @@ def main() -> int:
     # version 2 (2026-08-27): the archmap schema now carries the route/file census. The census
     # keys are non-empty-only (P5), so their ABSENCE cannot alone tell "full coverage" from "an
     # archmap a pre-census build wrote" — pulse S13 reads this version to make that call honestly.
-    amap = {"version": 2, "head": HEAD_SHA, "generated": STAMP,
+    amap = {"version": 3, "head": HEAD_SHA, "generated": STAMP,   # 3 (2026-09-06): + element_census (entity-models Phase 0)
             "coverage": ctx.flow_coverage,
             "model_insight": _a3_code.insight_serial(REPO_ROOT),
             "test_insight": _a3_tests.test_insight(REPO_ROOT),
@@ -2007,6 +2007,11 @@ def main() -> int:
         amap["file_census"] = {**_fcen, "unclaimed": [
             ({**_u, "reach": _reach[_u["file"]]} if _u["file"] in _reach else _u)
             for _u in _fcen["unclaimed"]]}
+    _ecen = _a3_code.element_census(REPO_ROOT)      # the UNGATED census — every unclaimed .py under a claim root, parsed once (P5: absent when nothing)
+    if _ecen:
+        amap["element_census"] = _ecen
+        print(f"    element census: {_ecen['stats']['files']} unclaimed file(s) under {len(_ecen['scanned_roots'])} claim root(s) — "
+              f"{_ecen['stats']['fns']} fn(s) · {_ecen['stats']['tables']} table(s) · {_ecen['stats']['routes']} route(s) · {_ecen['stats']['unparseable']} unparseable")
     for _slug, _layer in _a3_code.undeclared_layers():
         print(f"    ⚠ center.config entity '{_slug}' claims layer '{_layer}' not in "
               f"code_layers — those files are dropped (add '{_layer}' to code_layers)")

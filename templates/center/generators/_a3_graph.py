@@ -69,7 +69,8 @@ _L1_FLOW_ROW_H = 118.0   # row stride within a flow column
 _L2_COL_W = 240.0    # column stride for the columns-by-kind L2 layout
 _L2_ROW_H = 64.0     # row stride within a column
 _L2_KINDS = ("endpoint", "model", "schema", "external", "web",
-             "middleware", "provider", "flag", "prompt")  # column order, left→right
+             "middleware", "provider", "flag", "prompt", "element")  # column order, left→right; element = an unclaimed file (entity-models Phase 0)
+_ELEMENT_CAP = 2000   # element:<file> nodes minted per map; above it the census rows are clipped and `truncated` says so
 _FLAG_SAT = 20   # class 12: a feature flag walling MORE than this many endpoints is an app-level
 #                  clock (rate-limit-style) — its node + walls edges are suppressed (it belongs on a
 #                  middleware node, not a per-endpoint star). gustify's busiest flag walls 3.
@@ -1338,6 +1339,35 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
                                  "slug": _UNCLAIMED, "status": None, "counts": None})
     _app_mw_n = len(_mw_nodes)
 
+    # class 14 · ELEMENTS (entity-models Phase 0, 2026-09-06): every python file under a claim root that NO entity
+    # claims — the ungated element census — becomes ONE `element:<file>` L2 node under __unclaimed__ (the operator's
+    # words: "unclaimed ones under __unclaimed__"), no edges (its fns are levels-side, its routes ride route_census).
+    # Census absent → byte-identical (P5); the claim view never draws them elsewhere.
+    _ecen = amap.get("element_census") or {}
+    _el_rows = list(_ecen.get("elements") or []) if isinstance(_ecen, dict) else []
+    _el_n = 0
+    _el_trunc = len(_el_rows) > _ELEMENT_CAP
+    if _el_rows:
+        _el_nodes = []
+        for _e in _el_rows[:_ELEMENT_CAP]:
+            _f = _e.get("file")
+            if not _f:
+                continue
+            _el_nodes.append({"id": f"element:{_f}", "kind": "element", "slug": _UNCLAIMED, "label": _f.rsplit("/", 1)[-1],
+                              "unmapped": True, "fns": int(_e.get("fns_n") or len(_e.get("fns") or [])),
+                              "tables": list(_e.get("tables") or []), "routes": int(_e.get("routes") or 0), "lines": _e.get("lines"),
+                              "det": {"PURPOSE": "a file under a claim root that no entity claims — an element of nothing until a claim names it",
+                                      "file": _f, "fns": list((_e.get("fns") or [])[:12]), "reason": _e.get("reason")}})
+        _el_n = len(_el_nodes)
+        if _el_nodes:
+            _umg3 = l2.setdefault(_UNCLAIMED, {"nodes": [], "edges": []})
+            _umg3["nodes"].extend(_el_nodes)
+            _umg3["nodes"].sort(key=lambda n: (_L2_KINDS.index(n["kind"]), n["id"]))
+            _stamp_l2(_umg3)
+            if not any(n["kind"] == "unclaimed" for n in l1_nodes):
+                l1_nodes.append({"id": _UNCLAIMED, "label": "unclaimed", "kind": "unclaimed",
+                                 "slug": _UNCLAIMED, "status": None, "counts": None})
+
     # class 9 · PROVIDERS — the external SDK/LLM edge a fn reaches. Mint provider:<name> L2 nodes
     # homed by the tagged fn's entity (or __unclaimed__), from function_insight.externals; the
     # `reaches` fn→provider wire is drawn in levels. Honest-empty: no externals → nothing (P5).
@@ -1409,6 +1439,10 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
             # class 9: external providers reached (SDK/LLM edges); absent when none (P5).
             **({"providers": {"count": _prov_n, "by_provider": dict(sorted(_prov_by.items())),
                               "by_pclass": dict(sorted(Counter(_PROVIDER_CLASS[p] for p in _prov_by if p in _PROVIDER_CLASS).items()))}} if _prov_n else {}),   # unknown names excluded — honest-empty
+            # class 14: the unclaimed elements drawn under __unclaimed__ (entity-models Phase 0) — absent when the census found nothing
+            **({"elements": {"present": True, "files": _el_n, "fns": int((_ecen.get("stats") or {}).get("fns") or 0),
+                             "routes": int((_ecen.get("stats") or {}).get("routes") or 0), "tables": int((_ecen.get("stats") or {}).get("tables") or 0),
+                             "unparseable": int((_ecen.get("stats") or {}).get("unparseable") or 0), "truncated": _el_trunc}} if _el_n else {}),
             # the archmap-only facts the station's Sources rows read (legend pass 2026-09-06) — same omitted-when-empty idiom as schema_homing
             **({"unparseable": {"count": len(_up), "files": [f[0] for f in _up][:12]}} if (_up := amap.get("unparseable")) else {}),
             **({"route_mounts": {"mounted": int(_rm.get("mounted") or 0), "routers": int(_rm.get("routers") or 0), "unresolved": list(_rm.get("unresolved") or [])}}

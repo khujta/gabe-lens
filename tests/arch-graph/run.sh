@@ -40,8 +40,8 @@ def check(cond, msg):
 # indices (every drawn node's stamped x/y byte-identical; only the emitted layout.l2.order grows) ──
 check(G._L2_KINDS[:5] == ("endpoint", "model", "schema", "external", "web"),
       "pre-C: the historical 5 L2 kinds keep their order + indices (append-only, byte-identity)")
-check(G._L2_KINDS[5:] == ("middleware", "provider", "flag", "prompt"),
-      "pre-C: the 4 wave-C kinds are appended after web (they draw no nodes until wave C emits them)")
+check(G._L2_KINDS[5:] == ("middleware", "provider", "flag", "prompt", "element"),
+      "pre-C: the 4 wave-C kinds are appended after web (they draw no nodes until wave C emits them); element (entity-models Phase 0) appends last")
 
 # ── fixture: entities exercising every REAL derivation path ─────────────────
 #   alpha: model A(table=a, fks: self a.id · TWO to beta b.id/b.x · one unmodelled)
@@ -1557,6 +1557,32 @@ _hm = json.loads(json.dumps(_hl)); _hm["fn_edges"][1]["ss"] = "alpha"           
 check(H.evidence(_ha, _hg, _hm)["pieces"]["a/svc.py#mover"]["verdict"] == "stay", "Part C mutation: flipping one caller's entity drops mover below the 60% bar → stay (the users witness is READ, not assumed)")
 check(json.dumps(H.evidence(_ha, _hg, _hl), sort_keys=True) == json.dumps(_hev, sort_keys=True), "Part C: byte-identical on a re-run (no wallclock, sorted)")
 check(all("orphan" not in json.dumps(x) for x in (_hev, H.__doc__)), "Part C R10: no 'orphan' in the evidence or its doc")
+
+# ── entity-models Phase 0 (2026-09-06) · element nodes from the ungated census: only __unclaimed__ + stats.elements change ──
+_fixel = json.loads(json.dumps(FIX))
+_fixel["element_census"] = {"scanned_roots": ["app"], "claimed": {"py": 3},
+                            "elements": [{"file": "app/extra/util.py", "lang": "py", "fns": ["helper", "Svc.run"], "fns_n": 2, "tables": [], "routes": 0, "lines": 40, "reason": "file under a claim root that no entity claims"},
+                                         {"file": "app/extra/broken.py", "lang": "py", "fns": [], "fns_n": 0, "tables": [], "routes": 0, "lines": None, "reason": "unparseable: syntax error at line 3"}],
+                            "stats": {"files": 2, "fns": 2, "tables": 0, "routes": 0, "unparseable": 1}}
+_gel = G.build_c4_graph(_fixel, labels=LABELS, status=STATUS)
+_eln = [n for n in _gel["l2"].get("__unclaimed__", {}).get("nodes", []) if n["kind"] == "element"]
+check(len(_eln) == 2 and _eln[0]["id"] == "element:app/extra/broken.py" and _eln[1]["id"] == "element:app/extra/util.py" and _eln[1]["fns"] == 2 and _eln[1]["det"]["fns"] == ["helper", "Svc.run"]
+      and all(n["slug"] == "__unclaimed__" and n["unmapped"] for n in _eln) and any(n["kind"] == "unclaimed" for n in _gel["l1"]["nodes"]),
+      f"Phase 0 FIRE: the census's files become element: nodes under __unclaimed__ (sorted, fns named, the l1 bucket present) ({[n['id'] for n in _eln]})")
+check(_gel["stats"]["elements"] == {"present": True, "files": 2, "fns": 2, "routes": 0, "tables": 0, "unparseable": 1, "truncated": False}, f"Phase 0: stats.elements carries the census counts ({_gel['stats'].get('elements')})")
+check(not any(n["kind"] == "element" for sl, g_ in _gel["l2"].items() if sl != "__unclaimed__" for n in g_["nodes"]), "Phase 0: an element never lands in a declared entity (the mutation lever: home it to alpha and this reddens)")
+check("element" in _gel["layout"]["l2"]["order"], "Phase 0: layout.l2.order carries the element column (the 2D station appends unknown kinds from it)")
+_gel_strip = json.loads(json.dumps(_gel)); _gel_strip["stats"].pop("elements", None)
+_gel_strip["l2"]["__unclaimed__"]["nodes"] = [n for n in _gel_strip["l2"]["__unclaimed__"]["nodes"] if n["kind"] != "element"]
+if not _gel_strip["l2"]["__unclaimed__"]["nodes"] and not _gel_strip["l2"]["__unclaimed__"].get("edges"):
+    _gel_strip["l2"].pop("__unclaimed__")          # the l1 unclaimed node pre-exists in FIX (an unresolved table) — the mint reuses it, never re-adds it
+_g0 = G.build_c4_graph(FIX, labels=LABELS, status=STATUS)
+check(all(json.dumps(_gel_strip.get(k), sort_keys=True) == json.dumps(_g0.get(k), sort_keys=True) for k in ("l1", "cross_edges", "fe")) and json.dumps(_gel_strip["l2"], sort_keys=True) == json.dumps(_g0["l2"], sort_keys=True),
+      "Phase 0 BYTE-IDENTITY: stripping the element nodes + stats.elements gives back the plain build (l1 · l2 · cross_edges · fe)")
+check("elements" not in _g0["stats"] and not any(n["kind"] == "element" for g_ in _g0["l2"].values() for n in g_["nodes"]), "Phase 0 SILENT: no census → no element node, no stats key")
+_fixel2 = json.loads(json.dumps(_fixel)); _fixel2["element_census"]["elements"] = [dict(_fixel["element_census"]["elements"][0], file=f"app/x/f{i}.py") for i in range(2005)]
+_gel2 = G.build_c4_graph(_fixel2, labels=LABELS, status=STATUS)
+check(_gel2["stats"]["elements"]["files"] == 2000 and _gel2["stats"]["elements"]["truncated"] is True, "Phase 0 CAP: 2,005 census rows mint 2,000 nodes and say truncated")
 
 print(f"arch-graph battery: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)

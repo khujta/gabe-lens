@@ -834,6 +834,8 @@ def _def_spans(f: str, text: str) -> list:
 _CENSUS: dict | None = None
 _ROUTE_CENSUS: dict | None = None
 _FILE_CENSUS: dict | None = None
+_ELEMENT_CENSUS: dict | None = None
+_ELEMENT_FN_CAP = 40          # fn names carried per element row; the total rides fns_n
 _FLAGS: dict | None = None
 _DISPATCH: dict | None = None
 
@@ -932,7 +934,8 @@ def route_census(repo: Path, entity_code: dict | None = None) -> dict:
     ``{scanned_dirs, claimed, unclaimed:[{file, routes, methods, reason}]}``. Emitted-only-when-
     non-empty is the P5 rule: ``{}`` when there is no api config OR nothing unclaimed to report,
     so a project with full route coverage carries NO ``route_census`` key (byte-identical).
-    Deterministic: sorted dirs, files, methods. Cached like the sibling censuses."""
+    Deterministic: sorted dirs, files, methods. Cached like the sibling censuses. The recursive bound
+    (every route file under a claim root) is :func:`element_census`; this one stays non-recursive by design."""
     global _ROUTE_CENSUS
     if _ROUTE_CENSUS is not None and entity_code is None:
         return _ROUTE_CENSUS
@@ -968,6 +971,129 @@ def route_census(repo: Path, entity_code: dict | None = None) -> dict:
     return out
 
 
+def _parse_quiet(path: Path):
+    """(tree, why) for a Python file WITHOUT recording into ``unparseable_files`` — that list is 'every MAPPED .py
+    the scanners skipped'; an unclaimed file the census reads is not mapped, so its failure is the census's row."""
+    src = _safe_read(path)
+    if src is None:
+        return None, "unreadable"
+    try:
+        return ast.parse(src), None
+    except SyntaxError as exc:
+        shimmed = _shim_parse(src)
+        if shimmed is not None:
+            return shimmed, None
+        return None, f"syntax error at line {exc.lineno}"
+
+
+def _callable_names(tree) -> list[str]:
+    """Top-level functions and class methods by name — the function_insight filter (no dunder, ≥3 chars);
+    nested/local helpers are mass (``_count_callables``), not elements."""
+    out: list[str] = []
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if not node.name.startswith("__") and len(node.name) >= 3:
+                out.append(node.name)
+        elif isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and not item.name.startswith("__") and len(item.name) >= 3:
+                    out.append(f"{node.name}.{item.name}")
+    return out
+
+
+def _claim_roots(ec: dict) -> list[str]:
+    """The CLAIM ROOTS — the literal directory prefix of every ``code.<layer>`` pattern (before the first glob
+    character; a literal file's parent), collapsed to the shallowest ancestors. The defensible bound for the
+    element census: a strict superset of ``file_census``'s parent dirs, never the whole repo (onyx: the top
+    package would add 325 files of alembic/scripts noise)."""
+    roots: set[str] = set()
+    for slug in sorted(ec):
+        for layer in _CODE_LAYERS:
+            for pat in (ec[slug].get(layer) or []):
+                pat = str(pat)
+                if layer in ("web", "mobile") and ".py" not in pat:
+                    continue                                       # the frontend is the fe arm's; only python-bearing claims bound the census
+                cut = len(pat)
+                for ch in "*?[":
+                    i = pat.find(ch)
+                    if i >= 0:
+                        cut = min(cut, i)
+                prefix = pat[:cut]
+                root = prefix.rsplit("/", 1)[0] if "/" in prefix else ""
+                if root and not root.endswith(".py"):
+                    roots.add(root.rstrip("/"))
+    out: list[str] = []
+    for r in sorted(roots, key=lambda x: (x.count("/"), x)):
+        if not any(r == a or r.startswith(a + "/") for a in out):
+            out.append(r)
+    return sorted(out)
+
+
+def element_census(repo: Path, entity_code: dict | None = None) -> dict:
+    """The UNGATED element census (entity-models Phase 0, 2026-09-06): every ``.py`` under the CLAIM ROOTS
+    (:func:`_claim_roots`, walked RECURSIVELY) that no entity claims, parsed once, named with its callables,
+    tables and routes — the elements the claim gate used to hide (gastify: 58 files · 254 fns · 31 routes
+    invisible to every arm). They are homed to ``__unclaimed__`` by construction; no declared entity's counts
+    change. ``file_census`` (the parent dirs, non-recursive — pulse S13 + the cc-init adopt rail read its
+    exact rows) and ``route_census`` stay byte-identical; their bound is narrower by design and both
+    docstrings say so. P5 honest-empty: ``{}`` when no python-bearing code config OR nothing unclaimed. A bare
+    file (no fn, table, route) is never listed; an unparseable one is listed with its reason and counted.
+    Deterministic: sorted roots, files, names. Cached."""
+    global _ELEMENT_CENSUS
+    if _ELEMENT_CENSUS is not None and entity_code is None:
+        return _ELEMENT_CENSUS
+    ec = ENTITY_CODE if entity_code is None else entity_code
+    claimed: set[str] = set()
+    for slug in sorted(ec):
+        for layer in _CODE_LAYERS:
+            for pat in (ec[slug].get(layer) or []):
+                for f in sorted(_glob.glob(str(repo / pat), recursive=True)):
+                    p = Path(f)
+                    if p.is_file() and p.suffix == ".py":
+                        claimed.add(str(p.relative_to(repo)))
+    roots = _claim_roots(ec)
+    out: dict = {}
+    if roots:
+        rows: list[dict] = []
+        n_fns = n_tables = n_routes = n_unp = 0
+        seen: set[str] = set()
+        for root in roots:
+            rp = repo / root
+            if not rp.is_dir():
+                continue
+            for py in sorted(rp.rglob("*.py")):
+                rel = str(py.relative_to(repo))
+                if rel in seen or rel in claimed:
+                    continue
+                if any(frag in ("/" + rel + "/") for frag in _MOUNT_SKIP):
+                    continue
+                if py.name in _CENSUS_SKIP or py.name.startswith("test_") or ".test." in py.name:
+                    continue
+                seen.add(rel)
+                tree, why = _parse_quiet(py)
+                if tree is None:
+                    n_unp += 1
+                    rows.append({"file": rel, "lang": "py", "fns": [], "fns_n": 0, "tables": [], "routes": 0,
+                                 "lines": None, "reason": f"unparseable: {why}"})
+                    continue
+                fns = _callable_names(tree)
+                tables = [c for c, _t in _table_classes(tree)]
+                routes = len(parse_endpoints(repo, [rel]))
+                if not fns and not tables and routes == 0:          # bare __init__/constants — nothing to home
+                    continue
+                lines = len((_safe_read(py) or "").splitlines())
+                n_fns += len(fns); n_tables += len(tables); n_routes += routes
+                rows.append({"file": rel, "lang": "py", "fns": fns[:_ELEMENT_FN_CAP], "fns_n": len(fns), "tables": tables,
+                             "routes": routes, "lines": lines, "reason": "file under a claim root that no entity claims"})
+        rows.sort(key=lambda r: r["file"])
+        if rows:                                   # P5: no key at all when nothing is unclaimed
+            out = {"scanned_roots": roots, "claimed": {"py": len(claimed)}, "elements": rows,
+                   "stats": {"files": len(rows), "fns": n_fns, "tables": n_tables, "routes": n_routes, "unparseable": n_unp}}
+    if entity_code is None:
+        _ELEMENT_CENSUS = out
+    return out
+
+
 def file_census(repo: Path, entity_code: dict | None = None) -> dict:
     """The BACKEND-FILE census BEYOND the config code allowlists — the broad sibling of
     :func:`route_census`. An entity's ``code.<layer>`` lists name its files; a ``.py`` in one
@@ -983,7 +1109,9 @@ def file_census(repo: Path, entity_code: dict | None = None) -> dict:
     route, fn or table (a bare ``__init__``/constants module) is not nagged. P5 honest-empty:
     ``{}`` when there is no python code config OR nothing unclaimed (byte-identical). Only the
     dirs the config already reaches are scanned — a fully-orphan dir (no claimed sibling) is
-    surfaced by the layer report + the operator's claims, never guessed here.
+    surfaced by the layer report + the operator's claims, never guessed here. The wider, RECURSIVE
+    bound (the claim roots) is :func:`element_census` — this census's rows are FROZEN so pulse S13 and the
+    cc-init adopt rail keep their exact behaviour; the two are never cited against each other.
     Deterministic: sorted dirs, files. Cached."""
     global _FILE_CENSUS
     if _FILE_CENSUS is not None and entity_code is None:
