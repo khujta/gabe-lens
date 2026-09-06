@@ -1046,7 +1046,7 @@ function svgDoc(kind, col){ return '<svg xmlns="http://www.w3.org/2000/svg" view
 var KINDS={
   route:{ col:"#339af0", form:"cone", label:"/recipes/:id", type:"Route (screen)", layer:"web", usage:[0,"entry — a URL, nothing depends on it"],
     conns:[["renders","component","RecipeDetail"]], tests:0, ident:[["home","recipe"],["path","/recipes/:id"]],
-    doc:"A URL → the component tree it mounts. Orphan URL-domains feed entity-shape thinking (a candidate entity)." },
+    doc:"A URL → the component tree it mounts. A URL domain no entity claims feeds entity-shape thinking (a candidate entity)." },
   component:{ col:"#ff8c00", form:"panel", label:"RecipeCard", type:"Component (FE)", layer:"web", usage:[4,"4 components render this one"],
     conns:[["renders hooks","hook","useRecipe · useT"],["reads store","store","recipeStore"]], tests:2, ident:[["home","recipe"],["language","TSX"]],
     doc:"A React component. graft captures component→hook calls but barely JSX child renders (a blind spot the Tier-1 arm fills)." },
