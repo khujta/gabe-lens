@@ -1477,7 +1477,7 @@ _fixst4["route_mounts"] = {"scanned": 8, "routers": 7, "mounted": 11, "unresolve
 _fixst4["fn_similarity"] = {"mode": "blocked", "pairs": 9, "budget": 2, "sizable": 3, "rare_df": 40}
 _gs4 = G.build_c4_graph(_fixst4, labels=LABELS, status=STATUS)["stats"]
 check(_gs4.get("unparseable") == {"count": 1, "files": ["a.py"]} and _gs4.get("route_mounts") == {"mounted": 11, "routers": 7, "unresolved": [{"file": "app/main.py", "line": 12, "why": "non-literal prefix: settings.API_V1_STR"}]}
-      and _gs4.get("fn_similarity") == {"mode": "blocked", "pairs": 9, "budget": 2},
+      and _gs4.get("fn_similarity") == {"mode": "blocked", "pairs": 9, "budget": 2, "sizable": 3},
       f"Step 4 FIRE: unparseable · route_mounts · fn_similarity ride the stats in their Sources shapes ({ {k: _gs4.get(k) for k in ('unparseable', 'route_mounts', 'fn_similarity')} })")
 _gs0 = G.build_c4_graph(FIX, labels=LABELS, status=STATUS)["stats"]
 check(all(k not in _gs0 for k in ("unparseable", "route_mounts", "fn_similarity")), "Step 4 SILENT: an archmap without the blocks emits none of the three keys")

@@ -1096,7 +1096,7 @@ Object.keys(KINDCOL).forEach(function(k){ if(KINDS[k]) KINDS[k].col=KINDCOL[k]; 
 /* layer ruling (c) 2026-08-20: the old SUBOF collapse (endpoints→api, web→frontend) is retired —
    the layer core groups by the kind's OWN layer value, so new kinds bring their layer for free. */
 var LZ={ endpoints:150, api:60, web:150, data:-150 };
-var METHOD={ GET:"#22c55e", POST:"#3b82f6", PUT:"#f97316", PATCH:"#eab308", DELETE:"#ef4444", BOOT:"#8a8f98", TASK:"#a78bfa" };   /* TASK = a worker entrypoint dispatched by name (review 2026-09-06) */
+var METHOD={ GET:"#22c55e", POST:"#3b82f6", PUT:"#f97316", PATCH:"#eab308", DELETE:"#ef4444", BOOT:"#8a8f98", TASK:"#f0abfc" };   /* TASK = a worker entrypoint dispatched by name (review 2026-09-06); fuchsia-light — the disc must clear ~30° of the endpoint body #8b5cf6 (contrast rule, legend pass) */
 /* rel → edge colour. c4 kinds: touches · fk · bridge (+ empty→fk on model FK cross-edges). */
 var RELCOL={ touches:"#7c5cfc", fk:"#12b886", bridge:"#e8f443", calls:"#f59e0b", imports:"#a855f7",
   renders:"#339af0", mounts:"#e8590c", uses:"#0ca678", reads:"#e64980", typed:"#8794ab", fetches:"#e8590c", handler:"#8b5cf6", resp:"#f59f00", pk:"#868e96" };
@@ -1220,7 +1220,7 @@ Object.keys(_C4.l2||{}).forEach(function(ent){
     var n={ id:p.id, kind:kind, ent:ent, label:p.label||p.slug||p.id,
       col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"data",
       m:m, det:det, behind:beh, resp:p.resp, ids:p.ids, table:p.table, sites:p.sites, fn:p.fn,
-      middleware:p.middleware, stream:!!p.stream };   // C4: the endpoint's level-2 gate/dep floor → the card's Guards section · stream = SSE/chunked delivery (review 2026-09-06)
+      middleware:p.middleware, stream:!!p.stream, pclass:p.pclass||null };   // C4: the endpoint's level-2 gate/dep floor → the card's Guards section · stream = SSE/chunked delivery (review 2026-09-06)
     nodes.push(n); NIDS[n.id]=n; });
 });
 if(_generic) try{ console.warn("[universe] "+_generic+" piece(s) drawn GENERICALLY (kind unknown to this station — a newer emitter; add to KINDS to give it a glyph)"); }catch(e){}
@@ -1249,7 +1249,7 @@ if(_FE){
     var m={ behind:0, depth:0, tests:0, cols:0, fanin:0, god:false, method:null };
     var n={ id:p.id, kind:kind, ent:p.home, label:p.name, col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"web",
       m:m, det:det, behind:{}, fe:true, screen:p.screen||null, sites:p.sites||0, candidate:!!p.candidate,
-      area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null, hrole:p.hrole||null,   // AREA + showcase tag + the fold-control class (phase 1)
+      area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null, hrole:p.hrole||null, homedBy:p.homed_by||null,   // AREA + showcase tag + the fold-control class (phase 1)
       write:!!p.write, wsites:p.wsites||0, fed2w:(p.fed2w==null?null:p.fed2w) };   // FE d2w: on the WRITE spine · write-method fetch count · hops-to-write (the gradient's number, 0 at the write)
     nodes.push(n); NIDS[n.id]=n; });
 }
@@ -1725,6 +1725,8 @@ function buildNode(n){ var grp=new T.Group(); var col=iconCol(n), br=massR(n);
   else if(n.kind==="function" && n.role){ try{ grp.add(roleBadge(n.role)); }catch(_rb){} }   // C1: function ROLE badge (accessor/caller/gate/pure) at the icon lower-right
   else if(n.kind==="schema" && n.__foldN>0){ try{ var _cb=countBadge(n.__foldN); _cb.__n=n.__foldN; grp.add(_cb); grp.__cnt=_cb; }catch(_cb0){} }   // schema FOLD COUNT badge (kept in sync by __uniSyncCountBadges)
   else if(n.kind==="component" && (n.feClass==="connector"||n.feClass==="container"||n.feClass==="leaf"||n.feClass==="private"||n.feClass==="detached")){ try{ grp.add(feclassBadge(n.feClass)); }catch(_fb){} }   else if(n.kind==="module" && n.mclass){ try{ grp.add(feclassBadge(n.mclass,"mclass")); }catch(_mb2){} }   else if(n.kind==="hook" && n.hrole){ try{ grp.add(feclassBadge(n.hrole,"hrole")); }catch(_hb){} }   /* D2: the hook ROLE badge */   // module CLASS badge (operator 2026-09-03)   // component CLASS badge (operator) — connector/container/leaf/private all badged; view wears the screen icon
+  if(n.kind==="provider" && n.pclass){ try{ grp.add(feclassBadge(n.pclass,"pclass")); }catch(_pb){} }   // class 9b: the PROVIDER CLASS badge (legend pass 2026-09-06)
+  if(n.kind==="endpoint" && n.stream){ try{ var _sb=feclassBadge("stream","delivery"); _sb.__slot=1; grp.add(_sb); }catch(_sb0){} }   // class 13b: the DELIVERY badge on a SECOND slot — the first is the method's
   grp.add(bubble(br));
   if(ENC.verts){ var vv=Math.min(8,Math.round(num(nodeVal("verts",n).raw))); if(vv>0) radarVerts(grp, br, vv); }   // N sphere vertices lit by a radar sweep = used-by
   if(ENC.glow){ var g=nodeVal("glow",n); if(g.r>0) grp.add(glowSprite(col, 14+g.r*22, 0.5)); }
@@ -2934,7 +2936,7 @@ function _stepNote(){ var el=document.getElementById("stepnote"); if(!el) return
   var accTxt=function(a){ if(!a||!a.ops||!a.ops.length) return ""; var w=[],r=[]; a.ops.forEach(function(o){ (o.rw==="w"?w:r).push(o.model); });
     return (w.length?('<span class="snw">writes</span> '+esc(w.join(", "))):"")+(w.length&&r.length?" · ":"")+(r.length?('<span class="snr">reads</span> '+esc(r.join(", "))):""); };
   if(kind==="endpoint"){ var gates=(n.middleware||[]).filter(function(m){ return m.gate; }).map(function(m){ return m.name; });
-    what="API endpoint — the entity's outward door. "+(gates.length?("Gated by "+esc(gates.join(", "))+". "):"")+(n.m&&n.m.behind?("Pulls in "+n.m.behind+" function(s) behind its handler. "):"");
+    what=(n.m&&n.m.method==="TASK"?"Worker task — runs on a worker, dispatched by name from a queue. ":"API endpoint — the entity's outward door. ")+(n.stream?"It streams: the reply keeps arriving after the first byte (SSE / chunked). ":"")+(gates.length?("Gated by "+esc(gates.join(", "))+". "):"")+(n.m&&n.m.behind?("Pulls in "+n.m.behind+" function(s) behind its handler. "):"");
     var ea=n.access&&n.access.ops?accTxt(n.access):""; if(ea) what+="Rollup: "+ea+"."; }
   else if(kind==="function"){ var d=n.d2w, role=n.role||"function";
     var band=(d===0)?"a WRITE-ANCHOR — writes here or holds the commit":(d===1)?"one hop from a write":(d==null)?"never reaches a write (read / serialize path)":(d+" hops from a write");
@@ -3975,17 +3977,21 @@ window.__uniDrawBundles=function(grp){ if(!UNIWIRE.r3) return;
    (accessor/caller/gate/pure, colour = __BADGE_COL.role). Draws the coloured disc + dark glyph onto a
    128² canvas context; methodBadge/roleBadge wrap it into a Sprite, the legend popup paints it onto a
    DOM <canvas>. Change a glyph HERE and both the 3D badge and its legend swatch move together. ── */
-window.__BADGE_COL={ method:{GET:"#22c55e",POST:"#3b82f6",PUT:"#f97316",PATCH:"#eab308",DELETE:"#ef4444",BOOT:"#8a8f98",TASK:"#a78bfa"},
+window.__BADGE_COL={ method:{GET:"#22c55e",POST:"#3b82f6",PUT:"#f97316",PATCH:"#eab308",DELETE:"#ef4444",BOOT:"#8a8f98",TASK:"#f0abfc"},
                      role:{accessor:"#ef4444",caller:"#3b82f6",gate:"#eab308",pure:"#8794ab"},
                      feclass:{connector:"#f97316",container:"#a855f7",leaf:"#84cc16",private:"#8794ab",detached:"#fb7185"},   /* connector blue → ORANGE 2026-09-05 (a blue badge on the new cobalt body vanished); detached = rose, D1 */   // component CLASS badge (operator palette) — connector=blue data-in · container=violet compose · leaf=lime atom · private=gray internal (pure-like); container off gray (private owns gray), leaf off green (collided with GET/hook/view)
                      mclass:{api:"#3b82f6","render-fn":"#d946ef",model:"#14b8a6",config:"#8794ab",lib:"#84cc16",logic:"#22d3ee"},
-                     hrole:{fetcher:"#3b82f6",streamer:"#8b5cf6",store:"#ec4899",orchestrator:"#f59e0b",effect:"#ef4444",deriver:"#8794ab"},   /* D2 (2026-09-05): the HOOK ROLE badge — fetcher=api blue · streamer=endpoint violet · store=store pink · orchestrator=amber · effect=red side channel · deriver=gray like pure */   /* operator 2026-09-05: render-fn + logic were amber/orange ON an amber module — invisible; render-fn now wears the VIEW fuchsia (it draws UI), logic cyan */   // module CLASS badge (operator 2026-09-03): api=blue phone-line · render-fn=component orange · model=table teal · config=grey wiring · lib=lime shared · logic=module amber
+                     hrole:{fetcher:"#3b82f6",streamer:"#8b5cf6",store:"#ec4899",orchestrator:"#f59e0b",effect:"#ef4444",deriver:"#8794ab"},
+                     pclass:{llm:"#d946ef",embed:"#a3e635",vector:"#14b8a6",agent:"#8b5cf6",infra:"#8794ab",http:"#3b82f6",observability:"#ec4899",payments:"#22c55e"},   /* legend pass 2026-09-06: the PROVIDER CLASS badge — RULE: a disc never sits within ~30° of its host kind's body (provider body #e8590c); glyphs carry the idea (bubble · vector arrow · cylinder · fork · cog · api wall · eye · card) */
+                     delivery:{stream:"#06b6d4"},   /* the DELIVERY badge on an endpoint: cyan, 71° off the endpoint body #8b5cf6 (a violet disc on a violet body was invisible — the L3979/L3981 class of bug); POST #3b82f6 sits a badge-width away with a different glyph */   /* D2 (2026-09-05): the HOOK ROLE badge — fetcher=api blue · streamer=endpoint violet · store=store pink · orchestrator=amber · effect=red side channel · deriver=gray like pure */   /* operator 2026-09-05: render-fn + logic were amber/orange ON an amber module — invisible; render-fn now wears the VIEW fuchsia (it draws UI), logic cyan */   // module CLASS badge (operator 2026-09-03): api=blue phone-line · render-fn=component orange · model=table teal · config=grey wiring · lib=lime shared · logic=module amber
                      count:{"*":(typeof KINDS!=="undefined"&&KINDS.schema&&KINDS.schema.col)||"#0e9aa7"} };   // schema fold count — the schema colour
 window.__BADGE_DESC={
   method:{ GET:"reads — returns data, no write", POST:"creates — writes a new row", PUT:"replaces — overwrites a row", PATCH:"updates — mutates fields", DELETE:"removes — deletes a row", BOOT:"boot — runs ONCE at app startup (the lifespan seeder), not a request verb", TASK:"task — runs on a WORKER, dispatched by name from a queue (Celery / ARQ / Taskiq), not a request verb" },
   role:{ accessor:"touches the store — reads/writes a DB table or a durable sink", caller:"orchestrates — calls other functions, no store of its own", gate:"guards — auth / consent / idempotency before the work runs", pure:"pure — computes from its inputs, no store, no callee that writes" },
   feclass:{ connector:"connector — wires data into a view (the FE's controller)", container:"container — composes children, the screen's structure", leaf:"leaf — a shared, reused atom (Button, Chip…)", private:"private — internal to one view, not shared or reused", detached:"detached — no drawn renderer: the app shell, or a piece whose renderer the map cannot see (D1: never a view)" },
   mclass:{ api:"api — fetches the backend (call sites absorbed from the web arm)", "render-fn":"render-fn — a plain function whose body holds JSX", model:"model — the feature's data layer (a model/types/schema path)", config:"config — app wiring (an app/config/setup path)", lib:"lib — shared plumbing (lib/utils/design-system/i18n/assets)", logic:"logic — feature rules and calculations" },
+  pclass:{ llm:"llm — a text/completion model the code calls", embed:"embed — turns text into vectors (embeddings / rerank)", vector:"vector — a similarity store the app searches by meaning", agent:"agent — an orchestration framework (langchain / langgraph) that drives model calls", infra:"infra — rented plumbing: cache, queue, object store, a platform SDK", http:"http — a plain outbound HTTP client, provider unnamed", observability:"observability — where errors and traces are shipped", payments:"payments — money moves through here" },
+  delivery:{ stream:"stream — the handler returns a streaming response (SSE / chunked): pieces leave as they are made, so the client sees the first byte early and an error can land mid-body" },
   hrole:{ fetcher:"fetcher — calls the API (a fetch site is attributed to it, or a query-library cache, or an api module it calls)", streamer:"streamer — its fetch is an event stream (SSE)", store:"store — reads or writes client state (reader/writer split: follow-up)", orchestrator:"orchestrator — composes other hooks, touches no data", effect:"effect — a side channel: analytics · logging · idempotency", deriver:"deriver — computes from its inputs, no store, no API" },
   count:{ "*":"nested-only schemas folded into this one — composition helpers no endpoint or function names; double-click the parent to reveal them" } };
 /* connection KINDS (REL2KIND buckets) — shown on the link card + the connectors legend */
@@ -3995,7 +4001,7 @@ window.__badgeGlyph=function(c, kind, key){
   c.fillStyle=col; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill();
   if(kind==="count"){ var t=String(key==null?"":key); c.fillStyle='#0b0f18'; c.textAlign='center'; c.textBaseline='middle';
     c.font='700 '+(t.length>1?60:72)+'px ui-monospace, Menlo, Consolas, monospace'; c.fillText(t, 64, 68); return; }   // the digits ARE the glyph
-  c.strokeStyle='#0b0f18'; c.lineWidth=(kind==="role"||kind==="feclass"||kind==="mclass"||kind==="hrole"?11:13); c.lineCap='round'; c.lineJoin='round'; c.beginPath();
+  c.strokeStyle='#0b0f18'; c.lineWidth=(kind==="role"||kind==="feclass"||kind==="mclass"||kind==="hrole"||kind==="pclass"||kind==="delivery"?11:13); c.lineCap='round'; c.lineJoin='round'; c.beginPath();
   if(kind==="role"){
     if(key==='accessor'){ c.ellipse(64,42,26,10,0,0,6.2832); c.moveTo(38,42); c.lineTo(38,86); c.moveTo(90,42); c.lineTo(90,86); c.moveTo(38,64); c.bezierCurveTo(38,74,90,74,90,64); c.moveTo(38,86); c.bezierCurveTo(38,96,90,96,90,86); }
     else if(key==='caller'){ c.moveTo(40,64); c.lineTo(70,64); c.moveTo(70,44); c.lineTo(70,84); c.moveTo(70,44); c.lineTo(90,44); c.moveTo(70,84); c.lineTo(90,84); }
@@ -4021,6 +4027,18 @@ window.__badgeGlyph=function(c, kind, key){
     else if(key==='container'){ c.moveTo(40,50); c.lineTo(88,50); c.moveTo(40,66); c.lineTo(88,66); c.moveTo(40,82); c.lineTo(88,82); }   // stacked layers (composes children)
     else if(key==='private'){ c.moveTo(64,34); c.lineTo(72,56); c.lineTo(94,64); c.lineTo(72,72); c.lineTo(64,94); c.lineTo(56,72); c.lineTo(34,64); c.lineTo(56,56); c.closePath(); }   // a compact star (internal / self-contained — the FE's "pure", gray)
     else { c.moveTo(64,32); c.bezierCurveTo(93,46,93,84,64,98); c.bezierCurveTo(35,84,35,46,64,32); c.moveTo(64,40); c.lineTo(64,90); }   // leaf = an actual leaf + midrib (a shared, reused atom)
+  } else if(kind==="delivery"){   /* legend pass 2026-09-06: the STREAM badge = the streamer waves, verbatim */
+    c.moveTo(34,50); c.bezierCurveTo(44,38,54,62,64,50); c.bezierCurveTo(74,38,84,62,94,50); c.moveTo(34,78); c.bezierCurveTo(44,66,54,90,64,78); c.bezierCurveTo(74,66,84,90,94,78);
+  } else if(kind==="pclass"){   /* legend pass 2026-09-06: the PROVIDER CLASS glyphs — five are existing idea-pairs verbatim (api wall · cylinder · cog · fork), three new (bubble · vector arrow · eye · card) */
+    if(key==='llm'){ c.moveTo(36,42); c.lineTo(92,42); c.lineTo(92,76); c.lineTo(60,76); c.lineTo(46,90); c.lineTo(48,76); c.lineTo(36,76); c.closePath(); c.moveTo(50,59); c.lineTo(78,59); }   // a speech bubble — a model that writes
+    else if(key==='embed'){ c.moveTo(36,88); c.lineTo(88,40); c.moveTo(66,40); c.lineTo(88,40); c.lineTo(88,62); }   // a vector arrow — text → numbers
+    else if(key==='vector'){ c.ellipse(64,44,26,10,0,0,6.2832); c.moveTo(38,44); c.lineTo(38,84); c.moveTo(90,44); c.lineTo(90,84); c.moveTo(38,84); c.bezierCurveTo(38,94,90,94,90,84); }   // the cylinder — a store searched by meaning
+    else if(key==='agent'){ c.moveTo(40,64); c.lineTo(64,64); c.moveTo(64,64); c.lineTo(88,44); c.moveTo(64,64); c.lineTo(88,64); c.moveTo(64,64); c.lineTo(88,84); }   // the fork — an orchestrator
+    else if(key==='infra'){ c.arc(64,64,14,0,6.2832); c.moveTo(64,36); c.lineTo(64,46); c.moveTo(64,82); c.lineTo(64,92); c.moveTo(36,64); c.lineTo(46,64); c.moveTo(82,64); c.lineTo(92,64); }   // the cog — rented plumbing
+    else if(key==='http'){ c.moveTo(36,64); c.lineTo(74,64); c.moveTo(60,50); c.lineTo(76,64); c.lineTo(60,78); c.moveTo(90,40); c.lineTo(90,88); }   // the api wall — a call out
+    else if(key==='observability'){ c.moveTo(32,64); c.bezierCurveTo(48,40,80,40,96,64); c.bezierCurveTo(80,88,48,88,32,64); c.moveTo(76,64); c.arc(64,64,12,0,6.2832); }   // an eye — where errors go to be seen
+    else if(key==='payments'){ c.moveTo(34,44); c.lineTo(94,44); c.lineTo(94,84); c.lineTo(34,84); c.closePath(); c.moveTo(34,58); c.lineTo(94,58); }   // a card — money moves
+    else { c.arc(64,64,15,0,6.2832); }
   } else {
     if(key==='GET'){ c.moveTo(64,34); c.lineTo(64,94); c.moveTo(46,78); c.lineTo(64,94); c.lineTo(82,78); }
     else if(key==='PUT'){ c.moveTo(64,94); c.lineTo(64,34); c.moveTo(46,50); c.lineTo(64,34); c.lineTo(82,50); }
@@ -4047,7 +4065,8 @@ window.__uniBadges=[];
   // __uniBadges grew ~+263/toggle (696→2274 over 6). A LIVE badge's grp is still in the scene tree
   // (b.parent.parent truthy); a stale one's grp.parent is null → drop it. Keeps live badges (no flicker).
   for(var i=0;i<arr.length;i++){ var b=arr[i]; if(!b||!b.parent||!b.parent.parent) continue; arr[live++]=b;   // prune detached badges in place (bounded)
-    b.position.set(e[0]*ox+e[4]*oy+e[8]*3, e[1]*ox+e[5]*oy+e[9]*3, e[2]*ox+e[6]*oy+e[10]*3);   // ICON-relative: pinned to the camera's right/up so it rides the billboard icon, never the sphere (operator)
+    var _sx=ox+((b.__slot||0)*(sz*0.72)), _sy=oy;   // slot 0 = the pre-2026-09-06 expression verbatim; slot 1 sits one badge-width further camera-right (the delivery badge)
+    b.position.set(e[0]*_sx+e[4]*_sy+e[8]*3, e[1]*_sx+e[5]*_sy+e[9]*3, e[2]*_sx+e[6]*_sy+e[10]*3);   // ICON-relative: pinned to the camera's right/up so it rides the billboard icon, never the sphere (operator)
     b.scale.set(sz,sz,1); if(b.material) b.material.opacity=op; }
   arr.length=live;
 })();
@@ -4374,6 +4393,8 @@ window.__uniLegRef=function(){
   function _exMc(mc){ return _exNode(function(n){ return n.kind==="module" && n.mclass===mc; }); }
   function _exHr(hr){ return _exNode(function(n){ return n.kind==="hook" && n.hrole===hr; }); }
   function _exMethod(m){ return _exNode(function(n){ return n.kind==="endpoint" && n.m && n.m.method===m; }); }
+  function _exPc(pc){ return _exNode(function(n){ return n.kind==="provider" && n.pclass===pc; }); }
+  function _exStream(){ return _exNode(function(n){ return n.kind==="endpoint" && n.stream; }); }
   function _exRole(r){ var p=_fnPool(); for(var i=0;i<p.length;i++){ if(p[i].role===r) return {label:p[i].label}; } return null; }
   function _esc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   // a real example → a clickable chip; genuinely none (a count badge, or an absorbed kind) → an honest dash, not "enable ƒ"
@@ -4450,6 +4471,8 @@ window.__uniLegRef=function(){
     "count:N":"how many nested shapes are tucked inside this one",
     "x:fk":"one table points at a row in another",
     "x:calls":"one backend function calls another, across areas",
+    "delivery:stream":"the answer arrives in pieces while you wait, not all at once at the end",
+    "pclass:llm":"a model that writes text for you", "pclass:embed":"turns your text into numbers so it can be compared", "pclass:vector":"where the app keeps meanings so it can search by similarity", "pclass:agent":"the conductor that decides which model call comes next", "pclass:infra":"plumbing the app rents — cache, queue, storage, a platform", "pclass:http":"a plain call out to someone else's URL", "pclass:observability":"where errors go to be seen", "pclass:payments":"where money moves",
     "x:dispatches":"a function hands work to a worker or an event bus by name — it names the job and moves on; the job runs later, somewhere else",
     "x:imports":"one file pulls another in, across areas",
     "x:bridge":"the frontend calling the API",
@@ -4521,7 +4544,8 @@ window.__uniLegRef=function(){
   function _beSection(){ var h='<div class="lrsec"><div class="lrsh">BACKEND</div>';
     ["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt"].forEach(function(k){ if(!K[k]) return;
       var _kids=(k==="endpoint"||k==="function"); h+=_typeRow(k, _kids);               // endpoint + function are PARENTS — no header example
-      if(k==="endpoint"){ var _et=_minTierKind("endpoint"); ["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"].forEach(function(m){ h+=_badgeRow("method", m, m, (BD.method&&BD.method[m])||"", _exMethod(m), _et); }); }
+      if(k==="endpoint"){ var _et=_minTierKind("endpoint"); ["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"].forEach(function(m){ h+=_badgeRow("method", m, m, (BD.method&&BD.method[m])||"", _exMethod(m), _et); }); h+=_badgeRow("delivery", "stream", "stream", (BD.delivery&&BD.delivery.stream)||"", _exStream(), _et); }
+      else if(k==="provider"){ var _pt=_minTierKind("provider"); ["llm","embed","vector","agent","infra","http","observability","payments"].forEach(function(pc){ h+=_badgeRow("pclass", pc, pc, (BD.pclass&&BD.pclass[pc])||"", _exPc(pc), _pt); }); }
       else if(k==="function"){ var _ft=_minTierKind("function"); ["accessor","caller","gate","pure"].forEach(function(r){ h+=_badgeRow("role", r, r, (BD.role&&BD.role[r])||"", _exRole(r), _ft); }); }
       else if(k==="schema"){ h+=_badgeRow("count", "N", "fold count", (BD.count&&BD.count["*"])||"", _exNode(function(n){ return n.kind==="schema" && n.__foldN>0; }), _minTierKind("schema")); } });   // fold count = a badge ON a schema that folds nested-only children → its example is such a schema (operator: why no example)
     return h+'</div>'; }
@@ -5345,8 +5369,8 @@ var KINDCARD=(function(){
       {icon:"info",cls:"info",text:"Callee names + count from derive_behind (a BFS floor; cross-file callees inferred by design). Where a callee is a LOADED function node, expand it to walk its own calls."}), body); }
   /* Guards — the level-2 gates/deps that run BEFORE the handler body (C4 _endpoint_middleware):
      Depends()/Security() (signature + route) + non-route decorators. A FLOOR; `gate` is a name hint. */
-  function streamSec(n){ if(!n||!n.stream) return null;   /* class 13b: the handler streams — an async generator, tokens leave as they are made */
-    return E("div",{class:"sec"}, sechd("info","Delivery"), E("div",{class:"sublbl"}, icoEl("link"), "streams to the client ", E("span",{style:"color:var(--muted);font-size:10px"}, "· SSE / chunked — the response is an async generator, not one payload; a token errors mid-stream, not before the status line"))); }
+  function streamSec(n){ if(!n||!n.stream) return null;   /* class 13b: the handler streams — a streaming response (what _streams proves), pieces leave as they are made */
+    return E("div",{class:"sec"}, sechd("info","Delivery"), E("div",{class:"sublbl"}, icoEl("link"), "streams to the client ", E("span",{style:"color:var(--muted);font-size:10px"}, "· SSE / chunked — the handler returns a streaming response, not one payload; an error can land mid-body, after the status line"))); }
   function guardsSec(n){ var mw=n.middleware; if(!mw||!mw.length) return null;
     var nGate=mw.filter(function(m){ return m.gate; }).length;
     var rows=mw.map(function(m){ return E("div",{class:"sublbl"}, icoEl(m.gate?"key":"link"),
@@ -5451,6 +5475,12 @@ var KINDCARD=(function(){
       testsSec(det),
       docSec(det, "Note"),
       fileRowSec(n) || E("div",{class:"sec"}, sechd("file","Source"), kv("file","file", n.label)) ]; },
+    provider:function(n){ var det=n.det||{}; return [   /* legend pass 2026-09-06: a provider card was EMPTY — now usage · its CLASS · live wires · a note · file */
+      usage(usageN(n), usageBreak(n)),
+      (n.pclass?E("div",{class:"sec"}, sechd("info","Class"), E("div",{class:"sublbl"}, icoEl("link"), n.pclass+" ", E("span",{style:"color:var(--muted);font-size:10px"}, (window.__BADGE_DESC&&__BADGE_DESC.pclass&&__BADGE_DESC.pclass[n.pclass])||""))):null),
+      liveConns(n),
+      docSec(det,"Note")||E("div",{class:"sec"}, sechd("doc","Note"), E("div",{class:"doc"},"An outside service a function reaches — the edge of the system, past the last owned line.")),
+      fileRowSec(n) ]; },
     external:function(n){ var det=n.det||{}; return [
       usage(usageN(n), usageBreak(n)),
       liveConns(n),
@@ -5471,8 +5501,11 @@ var KINDCARD=(function(){
     if(d.exports&&d.exports.length) rows.push(kv("function","exports", d.exports.slice(0,12).join(" · ")+(d.exports.length>12?" · +"+(d.exports.length-12):"")));
     rows.push(E("div",{class:"doc"}, KINDTIP[n.kind]||""));   // ONE meaning per kind — the Elements rows + the card share it
     return E.apply(null,[ "div",{class:"sec"}, sechd(n.kind==="type"?"schema":n.kind,"Frontend") ].concat(rows)); }
+  /* the FE homing witness on the card (D6): a config-homed piece says so on EVERY fe kind — hook, component, store, type, route, module */
+  function homeRow(n){ return n.homedBy==="config"?kv("link","home","claimed by "+String(n.ent||"").replace(/^fe·/,"")+"'s config — no feature folder names it"):null; }
   function feBuilder(n){ var det=n.det||{}; return [
     usage(usageN(n), usageBreak(n)),
+    homeRow(n),
     liveConns(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
@@ -5481,6 +5514,7 @@ var KINDCARD=(function(){
   function feDataBuilder(n){ var det=n.det||{}; return [
     usage(usageN(n), usageBreak(n)),
     structureSec(n) || E("div",{class:"sec"}, sechd("table","Structure"), E("div",{style:"font-size:12px;color:var(--muted)"}, n.kind==="store"?"— no fields: the value type has no properties (a function-typed context), or no type argument was written":"— no members captured (a union, mapped or imported type)")),
+    homeRow(n),
     liveConns(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
@@ -5491,6 +5525,7 @@ var KINDCARD=(function(){
     return E("div",{class:"sec"}, sechd("table","Shapes it handles", shapes.length), body); }
   function feHookBuilder(n){ var det=n.det||{}; return [
     usage(usageN(n), usageBreak(n)),
+    homeRow(n),
     liveConns(n),
     shapesSec(n),
     feSec(n),
@@ -5609,16 +5644,20 @@ var KINDCARD=(function(){
         "above its node budget the station opens FOLDED so a large repo stays navigable — open a planet, or raise window.__uniBudget, to draw more"));
       if(st.cross_touches!=null) w.append(srcRow("model","cross-entity touches", String(st.cross_touches),
         "models one entity references while ANOTHER documents them — resolved into the dotted touches wires between entities"));
+      if(st.unparseable&&st.unparseable.count) w.append(srcRow("alert","files skipped", st.unparseable.count+" .py file(s) the scanner could not parse", "Every mapped .py the AST scanners skipped — a NAMED gap, never silence. Whatever those files define is missing from this graph: "+(st.unparseable.files||[]).join(", ")));
+      if(st.route_mounts){ var _ru=st.route_mounts.unresolved||[]; w.append(srcRow("link","route mounts", st.route_mounts.mounted+" router(s) mounted"+(_ru.length?(" · "+_ru.length+" prefix(es) unresolved"):""), "include_router() calls the scanner resolved to a URL prefix. An unresolved prefix is a non-literal expression (settings.API_V1_STR, a router built by a call) — its endpoints' paths are a FLOOR, so a bridge match can miss them."));
+        if(_ru.length) w.append(chipList(_ru.map(function(u){ return u.file+":"+u.line+" — "+u.why; }), "link", "link", 3)); }
+      if(st.fn_similarity) w.append(srcRow("layers","twin pass", "blocked — "+(st.fn_similarity.sizable!=null?(st.fn_similarity.sizable+" sizable function(s) over the "+st.fn_similarity.budget+" budget"):("over the "+st.fn_similarity.budget+"-function budget"))+(st.fn_similarity.pairs!=null?(" · "+st.fn_similarity.pairs+" candidate pair(s) compared on shared rare identifiers"):"")+" — an approximation", "The structural-twin (duplicate-function) pass. Shown only when the pass was blocked — more sizable functions than the exact all-pairs comparison affords, so twins were looked for only among functions that share a rare identifier; the twin verdicts are an approximation, said out loud."));
       if(st.web){ var unm=Array.isArray(st.web.unmatched)?st.web.unmatched:[], unmN=Array.isArray(st.web.unmatched)?unm.length:(st.web.unmatched||0);
-        w.append(srcRow("web","web bridge", (st.web.matched||0)+" fetches matched to endpoints · "+unmN+" unmatched"+(st.web.dynamic?(" · "+st.web.dynamic+" dynamic"):"")+(st.web.unhomed?(" · "+st.web.unhomed+" fetching file(s) unhomed — no screen drawn"):"")+(st.web.other_roots&&st.web.other_roots.length?(" · not scanned: "+st.web.other_roots.join(", ")):""),
-          "every apiFetch call site in the frontend, matched to the endpoint it names — the dashed bridge wires. Unmatched = a fetch naming no declared endpoint (a coverage gap, listed below). Unhomed = a fetching file no entity claims whose fetches matched nothing — counted here, drawn nowhere (review 2026-09-05)."));
+        w.append(srcRow("web","web bridge", (st.web.extractor?("via "+st.web.extractor+" · "):"")+(st.web.matched||0)+" fetches matched to endpoints · "+unmN+" unmatched"+(st.web.dynamic?(" · "+st.web.dynamic+" dynamic"):"")+(st.web.unhomed?(" · "+st.web.unhomed+" fetching file(s) unhomed — no screen drawn"):"")+(st.web.other_roots&&st.web.other_roots.length?(" · not scanned: "+st.web.other_roots.join(", ")):"")+(st.web.sdk_methods?(" · "+st.web.sdk_methods+" SDK method(s) read from the generated client"):""),
+          "every fetch call site in the frontend (the idiom named first), matched to the endpoint it names — the dashed bridge wires. Unmatched = a fetch naming no declared endpoint (a coverage gap, listed below). Unhomed = a fetching file no entity claims whose fetches matched nothing — counted here, drawn nowhere (review 2026-09-05)."));
         if(unm.length) w.append(chipList(unm.map(function(u){ return u.m+" "+u.p; }), "web", "web", 3)); }
       if(st.graft) w.append(srcRow("link","graft wiring",
         st.graft.present===false?("absent — "+(st.graft.reason||"no index")):((st.graft.cross_calls||0)+" calls · "+(st.graft.cross_imports||0)+" imports"),
         "cross-entity call/import wires from the graft code index — inferred-by-design, a FLOOR never a census"));
       if(st.fe) w.append(srcRow("component","frontend arm",
-        st.fe.present===false?("absent — "+(st.fe.reason||"no extractor")):((st.fe.homing==="config"?"homed by the config's web claims (no feature layout) · ":"")+(st.fe.pieces||0)+" pieces · "+(st.fe.edges||0)+" wires · "+(st.fe.screens_absorbed||0)+" screens absorbed · "+((st.fe.excluded||{}).stories||0)+" stories excluded"),
-        "the frontend STRUCTURE — components · hooks · stores · routes · types · modules proven by the TypeScript compiler (the twin's own typescript), wired by renders / uses / typed / fecall / imports. Types start OFF (entity pane toggle)."));
+        st.fe.present===false?("absent — "+(st.fe.reason||"no extractor")):((st.fe.homing==="config"?"homed by the entity config's web claims (no feature layout) · ":st.fe.homing==="layout"?"homed by the feature layout · ":"")+(st.fe.pieces||0)+" pieces · "+(st.fe.edges||0)+" wires · "+(st.fe.screens_absorbed||0)+" screens absorbed · "+((st.fe.excluded||{}).stories||0)+" stories excluded"),
+        "the frontend STRUCTURE — components · hooks · stores · routes · types · modules proven by the TypeScript compiler (the twin's own typescript), wired by renders / uses / typed / fecall / imports. Types start OFF (entity pane toggle). HOW pieces were given a home: by the feature layout, or by the entity config's web claims when the repo has no feature layout — the same home, a different witness."));
       w.append(srcRow("layers","levels feed", window.GABE_LEVELS?"present — functions · communities · journeys":"absent",
         "the 2D levels-lab export: function nodes (the Stars), community clusters, journey walks"));
       pb.append(w); }
@@ -5810,7 +5849,7 @@ function showPanel(n){ var K=_dispK(n); try{ if(window.__uniCardPrune) __uniCard
   // the node's OWN badge on the kind row: endpoint → HTTP method, function → role (accessor/caller/gate/pure).
   // The badge icon sits after the kind, its meaning drops onto a line below, the entity stays after the dot.
   var _bk = (n.kind==="endpoint" && n.m && n.m.method) ? {kind:"method", key:n.m.method}
-          : (n.kind==="function" && n.role) ? {kind:"role", key:n.role} : null;
+          : (n.kind==="function" && n.role) ? {kind:"role", key:n.role} : (n.kind==="provider" && n.pclass) ? {kind:"pclass", key:n.pclass} : null;
   var _bdesc = (_bk && window.__BADGE_DESC && window.__BADGE_DESC[_bk.kind]) ? window.__BADGE_DESC[_bk.kind][_bk.key] : null;
   document.getElementById("phead").innerHTML="<div class='ptitle'><div class='pname'>"+(n.label||K.label)+"</div>"
       +"<div class='ptype' style='color:"+K.col+"'>"+svgInline(_dispGlyph(n),K.col,15)+"<span>"+K.type+"</span>"
@@ -5873,7 +5912,7 @@ var LEGEND={
     ((window.GABE_C4&&GABE_C4.fe)? [{t:"feclass",fc:"view"}] : []),
     [{t:"hd",l:"backend"}],
     ["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt"].filter(function(k){ return order.indexOf(k)>=0; }).map(function(k){ return {t:"kind",k:k}; }),
-    [ {t:"note",l:"boundary colour = ENTITY · icon colour = kind · click a row to hide it (on/off) · the ⓘ on component opens the class key · fold helpers hides single-caller helpers"} ]),
+    [ {t:"note",l:"boundary colour = ENTITY · icon colour = kind · click a row to hide it (on/off) · the ⓘ on a badged row (endpoint · function · schema · component · module · hook · provider) opens its key · fold helpers hides single-caller helpers"} ]),
   Connectors:[ {t:"grp",l:"entity ↔ entity · <i>relationship kind</i>"},
     {t:"ln",k:"fk",l:"fk <i>a foreign-key data coupling</i>"},
     {t:"ln",k:"calls",l:"calls <i>a cross-entity function call</i>"},
@@ -5917,10 +5956,10 @@ var _legSub="Defense";   // active sub-tab within Planet
    SAME __badgeGlyph the 3D chip uses (legend-visual law), beside its one-line meaning. method → the five
    HTTP verbs · role → the four function roles (accessor/caller/gate/pure). ── */
 window.__badgePop=function(anchor, kind, key){ if(window.__badgePopHide) __badgePopHide();
-  var allKeys=(kind==="method")?["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"]:(kind==="count")?["N"]:(kind==="feclass")?["connector","container","leaf","private"]:(kind==="mclass")?["api","render-fn","model","config","lib","logic"]:(kind==="hrole")?["fetcher","streamer","store","orchestrator","effect","deriver"]:["accessor","caller","gate","pure"];
+  var allKeys=(kind==="method")?["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"]:(kind==="count")?["N"]:(kind==="feclass")?["connector","container","leaf","private"]:(kind==="mclass")?["api","render-fn","model","config","lib","logic"]:(kind==="hrole")?["fetcher","streamer","store","orchestrator","effect","deriver"]:(kind==="pclass")?["llm","embed","vector","agent","infra","http","observability","payments"]:(kind==="delivery")?["stream"]:["accessor","caller","gate","pure"];
   var keys=key?[key]:allKeys;   // key given (the node's OWN badge) → single row; else the whole key
   var desc=(window.__BADGE_DESC&&window.__BADGE_DESC[kind])||{};
-  var head=key?((kind==="method")?(key==="BOOT"?"boot event — runs once at startup":key==="TASK"?"worker task — dispatched by name from a queue":"HTTP method"):(kind==="count")?"folded schemas":(kind==="hrole")?"hook role — what the hook DOES (streamer · fetcher · store · orchestrator · effect · deriver), one by precedence":(kind==="mclass")?"module class — what the module DOES (api · render-fn · model · config · lib · logic)":(kind==="feclass")?"component class":"function role"):((kind==="method")?"HTTP method — the endpoint's verb (what it does to the row)":(kind==="count")?"fold count — nested-only schemas hidden under this one (critical); double-click to reveal":(kind==="feclass")?"component class — how each component is drawn":"function role — what it does with the data store");
+  var head=key?((kind==="method")?(key==="BOOT"?"boot event — runs once at startup":key==="TASK"?"worker task — dispatched by name from a queue":"HTTP method"):(kind==="count")?"folded schemas":(kind==="hrole")?"hook role — what the hook DOES (streamer · fetcher · store · orchestrator · effect · deriver), one by precedence":(kind==="mclass")?"module class — what the module DOES (api · render-fn · model · config · lib · logic)":(kind==="feclass")?"component class":(kind==="pclass")?"provider class — what kind of outside service this is":(kind==="delivery")?"delivery — how the answer reaches the client":"function role"):((kind==="method")?"HTTP method — the endpoint's verb (what it does to the row)":(kind==="count")?"fold count — nested-only schemas hidden under this one (critical); double-click to reveal":(kind==="feclass")?"component class — how each component is drawn":(kind==="pclass")?"provider class — what kind of outside service this is (llm · embed · vector · agent · infra · http · observability · payments)":(kind==="delivery")?"delivery — how the answer reaches the client (stream = SSE / chunked)":"function role — what it does with the data store");
   var pop=document.createElement("div"); pop.id="badgepop"; pop.className="badgepop";
   var html='<div class="bph">'+head+'</div>';
   keys.forEach(function(k){ html+='<div class="bprow"><canvas class="bpcv" width="30" height="30" data-k="'+k+'"></canvas><div class="bpt"><b>'+(kind==="count"?"N":k)+'</b><span>'+(desc[k]||desc["*"]||"")+'</span></div></div>'; });
@@ -6014,8 +6053,8 @@ function buildLegend(){ var el=document.getElementById("elegend"), tabs=Object.k
         var _st=(window.__uniKindState&&__uniKindState[it.k])||(it.k==="type"?"off":"all");
         var _cls=(_st==="off")?"lgoff":"";
         var _t=(_st==="off")?"hidden — click to show":"showing — click to hide";
-        var _bik=(it.k==="endpoint")?"method":(it.k==="function")?"role":(it.k==="schema")?"count":(it.k==="component")?"feclass":(it.k==="module")?"mclass":(it.k==="hook")?"hrole":null;   // badged kinds carry a badge-KEY info dot (operator): endpoint methods · function roles · schema fold count · component classes
-        var _bi=_bik?('<button class="lgbi" data-badgeinfo="'+_bik+'" title="badge key — '+(_bik==="method"?"the HTTP methods":(_bik==="role")?"the four function roles":(_bik==="feclass")?"the component classes (how each is drawn)":(_bik==="mclass")?"the module classes (what each file is for)":(_bik==="hrole")?"the hook roles (what each hook does)":"the nested-only fold count")+'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>'):'';
+        var _bik=(it.k==="endpoint")?"method":(it.k==="function")?"role":(it.k==="schema")?"count":(it.k==="component")?"feclass":(it.k==="module")?"mclass":(it.k==="hook")?"hrole":(it.k==="provider")?"pclass":null;   // badged kinds carry a badge-KEY info dot (operator): endpoint methods · function roles · schema fold count · component classes
+        var _bi=_bik?('<button class="lgbi" data-badgeinfo="'+_bik+'" title="badge key — '+(_bik==="method"?"the HTTP methods":(_bik==="role")?"the four function roles":(_bik==="feclass")?"the component classes (how each is drawn)":(_bik==="mclass")?"the module classes (what each file is for)":(_bik==="hrole")?"the hook roles (what each hook does)":(_bik==="pclass")?"the provider classes (what kind of outside service)":"the nested-only fold count")+'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>'):'';
         h+='<div class="lgrow lgk '+_cls+'" data-lgk="'+it.k+'" title="'+_t+' · '+K.type+'"><div class="lgvis">'+svgInline(it.k,K.col,17)+'</div><div class="lglbl"><b style="color:'+K.col+'">'+K.type+'</b>'+_bi+'</div></div>'; return; }   // the node KIND — a 3-STATE control (all · critical · off) + badge-key dot
       if(it.t==="ship"||it.t==="sat"){ var i=thumbs.length; thumbs.push(it);
         h+='<div class="lgrow"><div class="lgvis"><canvas class="lgcv" width="42" height="36" data-i="'+i+'"></canvas></div><div class="lglbl">'+it.l+'</div></div>'; return; }

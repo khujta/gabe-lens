@@ -1413,7 +1413,7 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
             **({"unparseable": {"count": len(_up), "files": [f[0] for f in _up][:12]}} if (_up := amap.get("unparseable")) else {}),
             **({"route_mounts": {"mounted": int(_rm.get("mounted") or 0), "routers": int(_rm.get("routers") or 0), "unresolved": list(_rm.get("unresolved") or [])}}
                if isinstance((_rm := amap.get("route_mounts")), dict) else {}),
-            **({"fn_similarity": {"mode": _fs.get("mode"), "pairs": _fs.get("pairs"), "budget": _fs.get("budget")}}
+            **({"fn_similarity": {"mode": _fs.get("mode"), "pairs": _fs.get("pairs"), "budget": _fs.get("budget"), "sizable": _fs.get("sizable")}}
                if isinstance((_fs := amap.get("fn_similarity")), dict) and _fs.get("mode") else {}),
             "unresolved_tables": unresolved,
             # the graft arm's honesty record: absent → named absent, never silent;

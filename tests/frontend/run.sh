@@ -401,6 +401,8 @@ _fe12 = _a3_fe.build_fe(_X10, frozenset({"group-share"}), [])
 check(all(p["home"] == "app-shell" for p in _fe12["pieces"]) and _fe12["stats"].get("homing") == "layout",
       "D6: entities as a bare slug set carry no claims — layout only, honest app-shell")
 check(fe["stats"].get("homing") == "layout", "D6: the fixture (features/ layout) reads homing=layout — byte-identical homes")
+check(all("homed_by" not in p for p in fe["pieces"]) and all(p.get("homed_by") == "config" for p in _fe10["pieces"] if p["home"].startswith("fe·")),
+      "Step 7: homed_by rides only config-homed pieces — absent on the layout estate, present on the config one")
 # ── D3 (2026-09-05): a screen file with several hooks — the call's `export` decides which piece carries the screen ──
 _X7 = {"byFile": {"src/features/pantry/usePantryMutations.ts": {
     "exports": [{"name": "useApplyReset", "kind": "function", "hasJsx": False, "jsx": []},
