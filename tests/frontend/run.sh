@@ -366,6 +366,19 @@ check(_mc9 == {"client": "api", "mappers": "model", "queryClient": "config", "cx
 check(_fe9["stats"]["by_mclass"] == {"api": 1, "config": 1, "lib": 1, "model": 1},
       "mclass: the by_mclass stat tallies module classes")
 for s in skipped: print("  SKIP ⚠:", s)   # the doctor-recognized coverage-skip marker (else a skipped LIVE-extractor case reads as false CLEAN)
+# ── PASS 2 (review 2026-09-06): a Next.js App Router page file's default export IS the route, whatever its name ──
+_X13 = {"byFile": {
+    "web/src/app/chat/page.tsx": {"exports": [{"name": "ChatHome", "kind": "function", "hasJsx": True, "isDefault": True}], "bindings": {}},
+    "web/src/app/chat/layout.tsx": {"exports": [{"name": "ChatLayout", "kind": "function", "hasJsx": True, "isDefault": True}], "bindings": {}},
+    "web/src/components/chat/ChatHome.tsx": {"exports": [{"name": "ChatHome", "kind": "function", "hasJsx": True, "isDefault": True}], "bindings": {}},
+    "web/src/app/chat/helper.tsx": {"exports": [{"name": "ChatHelper", "kind": "function", "hasJsx": True}], "bindings": {}}}}
+_fe13 = _a3_fe.build_fe(_X13, {}, [])
+_k13 = {p["file"] + "#" + p["name"]: p["kind"] for p in _fe13["pieces"]}
+check(_k13.get("web/src/app/chat/page.tsx#ChatHome") == "route" and _k13.get("web/src/app/chat/layout.tsx#ChatLayout") == "route",
+      f"pass 2 FIRE: app/**/page.tsx + layout.tsx default exports are routes ({_k13})")
+check(_k13.get("web/src/components/chat/ChatHome.tsx#ChatHome") == "component" and _k13.get("web/src/app/chat/helper.tsx#ChatHelper") == "component",
+      f"pass 2 SILENT: the same component outside a page file, and a non-role file under app/, stay components ({_k13})")
+
 # ── D6 (review 2026-09-05): NO feature layout → the config's web claims home the pieces; a feature layout wins outright ──
 _X10 = {"byFile": {
     "web/src/hooks/useGroups.ts": {"exports": [{"name": "useGroups", "kind": "function", "hasJsx": False}], "bindings": {}},

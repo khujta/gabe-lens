@@ -199,6 +199,7 @@ def _index_tbl_models(entities: dict[str, Any]) -> dict[str, str]:
 
 # ── the web→API bridge join (Path A frontend arm) ───────────────────────────
 _API_PREFIX_RE = re.compile(r"^/api/v\d+")
+_API_BARE_RE = re.compile(r"^/api(?=/)")     # a bare `/api` mount (onyx: a proxy prefix the backend never declares; review 2026-09-06: 30 → 251 of 352 fetches match)
 _PATH_PARAM_RE = re.compile(r"\$?\{[^}]*\}")
 
 
@@ -217,6 +218,7 @@ def _norm_path(path: str) -> str:
     p = _PATH_PARAM_RE.sub("{}", p)
     p = re.sub(r"^\{\}(?=/)", "", p)     # ${base}/… → /…  (a fully-dynamic {}{} stays unmatched — honest)
     p = _API_PREFIX_RE.sub("", p)        # /api/vN now leads → strip the mount
+    p = _API_BARE_RE.sub("", p)          # then a bare /api — the backend labels strip the same (pass 1 `_strip_api`)
     p = p.rstrip("/")
     if not p.startswith("/"):
         p = "/" + p
@@ -1387,6 +1389,8 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
                      "unmatched": _unmatched,
                      "sse": (web.get("stats") or {}).get("sse_sites", 0),   # streams now in the denominator, not invisible
                      "sites_with_export": (web.get("stats") or {}).get("sites_with_export", 0),   # D3: call sites attributed to their enclosing export
+                     **({"other_roots": (web.get("stats") or {}).get("other_roots")} if (web.get("stats") or {}).get("other_roots") else {}),   # second frontends not scanned (review 2026-09-06)
+                     **({"sdk_methods": (web.get("stats") or {}).get("sdk_methods")} if (web.get("stats") or {}).get("sdk_methods") else {}),
                      "dynamic": (web.get("stats") or {}).get("dynamic", 0)}
                     if web_present else
                     {"present": False,

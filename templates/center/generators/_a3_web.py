@@ -54,6 +54,27 @@ _NOISE_PARTS = frozenset({"node_modules", "dist", "build", "storybook-static",
                           "__mocks__", "__tests__"})
 
 
+_OTHER_ROOTS = (("mobile", "src"), ("mobile",), ("apps", "mobile", "src"), ("apps", "mobile"),
+                ("desktop", "src"), ("widget", "src"), ("extensions",))   # second frontends the ONE-root rule never scans (review 2026-09-06: onyx's Expo mobile)
+
+
+def other_web_roots(root: Path, chosen: Path | None) -> list[str]:
+    """Every OTHER frontend root that exists and holds .ts/.tsx — named on the stats so a repo with two
+    frontends (onyx: web/ + mobile/) says which one the arm did NOT scan, instead of an invisible half."""
+    out: list[str] = []
+    for parts in _WEB_ROOTS + _OTHER_ROOTS:
+        cand = root.joinpath(*parts)
+        if not cand.is_dir() or (chosen is not None and (cand == chosen or cand in chosen.parents or chosen in cand.parents)):
+            continue
+        for f in cand.rglob("*.ts*"):
+            if f.suffix in (".ts", ".tsx") and not any(p in _NOISE_PARTS for p in f.parts):
+                rel = "/".join(parts)
+                if rel not in out:
+                    out.append(rel)
+                break
+    return [r for r in out if not any(o != r and o.startswith(r + "/") for o in out)]   # keep the deepest (`mobile/src`), not its parent (`mobile`)
+
+
 def _detect_web_root(root: Path):
     """The first candidate web root that exists AND holds ≥1 non-noise .ts/.tsx — the
     web layer's location is project-specific, so we detect it rather than assume one."""
@@ -82,6 +103,53 @@ _CALL_RES: dict[str, re.Pattern] = {
     "openapiFetch": re.compile(
         r"""(?<![\w.])[A-Za-z_$][\w$]*\s*\.\s*(?P<m>GET|POST|PUT|PATCH|DELETE)\s*\(\s*[`'"](?P<path>[^`'"]+)[`'"]"""),
 }
+# ── GENERATED-SDK idiom (review 2026-09-06, tier0 fastapi/full-stack-fastapi-template): components never
+#    write a URL — they call `UsersService.createUser({ body })` and the path lives ONE HOP AWAY in the
+#    generated `client/sdk.gen.ts` (`public static createUser<…>(options) { return (options?.client ??
+#    client).post<…>({ url: '/api/v1/users/', … }) }`, @hey-api/openapi-ts). The only roster idiom that
+#    needs a PRE-PASS: (1) the SDK TABLE — every `*.gen.ts` (or a file with `public static` + `url:`)
+#    yields {(Class, method): (HTTP method, path)}; (2) a CALL SITE is `Class.method(` whose pair is in
+#    the table. Table-driven, so a same-shaped call to a non-SDK class is never a site (no false edges).
+_SDK_FILE_RE = re.compile(r"\.gen\.tsx?$")
+_SDK_CLASS_RE = re.compile(r"export\s+class\s+(?P<cls>[A-Za-z_$][\w$]*)\s*\{")
+_SDK_METHOD_RE = re.compile(r"public\s+static\s+(?P<fn>[A-Za-z_$][\w$]*)\s*[<(]")
+_SDK_HTTP_RE = re.compile(r"\.\s*(?P<m>get|post|put|patch|delete)\s*[<(]")
+_SDK_URL_RE = re.compile(r"""url\s*:\s*[`'"](?P<path>[^`'"]+)[`'"]""")
+_SDK_CALL_RE = re.compile(r"""(?<![\w.$])(?P<cls>[A-Z][\w$]*)\s*\.\s*(?P<fn>[A-Za-z_$][\w$]*)\s*\(""")
+
+
+def _is_sdk_file(name: str, text: str) -> bool:
+    return bool(_SDK_FILE_RE.search(name)) or ("public static" in text and "url:" in text and "export class" in text)
+
+
+def _sdk_table(texts: list[tuple]) -> dict[tuple[str, str], tuple[str, str]]:
+    """{(Class, fn): (METHOD, path)} from every SDK file in ``texts`` ([(Path, text)])."""
+    table: dict[tuple[str, str], tuple[str, str]] = {}
+    for f, text in texts:
+        if not _is_sdk_file(f.name, text):
+            continue
+        classes = list(_SDK_CLASS_RE.finditer(text))
+        for i, cm in enumerate(classes):
+            body = text[cm.end():(classes[i + 1].start() if i + 1 < len(classes) else len(text))]
+            methods = list(_SDK_METHOD_RE.finditer(body))
+            for j, mm in enumerate(methods):
+                seg = body[mm.end():(methods[j + 1].start() if j + 1 < len(methods) else len(body))]
+                hm, um = _SDK_HTTP_RE.search(seg), _SDK_URL_RE.search(seg)
+                if hm and um:
+                    table[(cm.group("cls"), mm.group("fn"))] = (hm.group("m").upper(), um.group("path"))
+    return table
+
+
+def _sdk_sites(text: str, table: dict) -> list:
+    """[(match, METHOD, path)] — the SDK call sites in one file, table-filtered."""
+    out = []
+    for m in _SDK_CALL_RE.finditer(text):
+        hit = table.get((m.group("cls"), m.group("fn")))
+        if hit:
+            out.append((m, hit[0], hit[1]))
+    return out
+
+
 # a bare-identifier first arg (apiFetch(path, …)) — a dynamic call site, NAMED not matched.
 _CALL_DYN: dict[str, re.Pattern] = {
     "apiFetch": re.compile(r"""apiFetch\w*\s*(?:<[^>]*>)?\s*\(\s*[A-Za-z_$][\w$]*\s*[,)]"""),
@@ -195,10 +263,13 @@ def _method_after(text: str, call_start: int) -> str:
     return m.group("m").upper() if m else "GET"
 
 
-def _detect_idiom(texts: list[str]) -> tuple[str | None, dict[str, int]]:
-    """Pick the dominant API-call idiom by literal-call hit-count across the tree."""
+def _detect_idiom(texts: list[str], sdk: dict | None = None) -> tuple[str | None, dict[str, int]]:
+    """Pick the dominant API-call idiom by literal-call hit-count across the tree. ``sdk`` = the
+    generated-SDK table; its hit-count is the number of table-matched call sites ("sdkTable")."""
     counts = {name: sum(len(rx.findall(t)) for t in texts)
               for name, rx in _CALL_RES.items()}
+    if sdk:
+        counts["sdkTable"] = sum(len(_sdk_sites(t, sdk)) for t in texts)
     best = max(sorted(counts), key=lambda k: counts[k])   # sorted → deterministic tie-break
     return (best if counts[best] > 0 else None), counts
 
@@ -235,12 +306,26 @@ def _enclosing_export(decls: list[tuple[int, str]], text: str, pos: int) -> str 
     return name
 
 
-def _extract_file(text: str, idiom: str) -> tuple[list[dict[str, str]], int]:
+def _extract_file(text: str, idiom: str, sdk: dict | None = None) -> tuple[list[dict[str, str]], int]:
     """Return this file's (method, path) call sites (+ the enclosing ``export``, D3) + the dynamic-path
-    site count."""
+    site count. ``idiom == "sdkTable"`` reads (method, path) from the generated-SDK table."""
     calls: list[dict[str, str]] = []
-    rx = _CALL_RES[idiom]
     decls = _decl_starts(text)
+    if idiom == "sdkTable":
+        for m, method, path in _sdk_sites(text, sdk or {}):
+            c: dict[str, str] = {"method": method, "path": path}
+            exp = _enclosing_export(decls, text, m.start())
+            if exp:
+                c["export"] = exp
+            calls.append(c)
+        seen_s: set[tuple[str, str]] = set()
+        uniq_s: list[dict[str, str]] = []
+        for c in sorted(calls, key=lambda c: (c["method"], c["path"], c.get("export") or "")):
+            if (c["method"], c["path"]) not in seen_s:
+                seen_s.add((c["method"], c["path"]))
+                uniq_s.append(c)
+        return uniq_s, 0            # an SDK call outside the table is not a fetch — nothing dynamic to count
+    rx = _CALL_RES[idiom]
     for m in rx.finditer(text):
         path = m.group("path")
         if idiom in ("axios", "openapiFetch"):   # method rides the call itself (group m)
@@ -334,7 +419,11 @@ def web_arm(root: Path, entities: dict[str, Any]) -> dict[str, Any]:
             if _DEF_RE.search(src):
                 continue                       # the apiFetch definition, not a caller
             texts.append((f, src))
-        idiom, counts = _detect_idiom([t for _, t in texts])
+        sdk = _sdk_table(texts)                # the generated-SDK table (empty on a repo without one)
+        if sdk:
+            texts = [(f, t) for f, t in texts if not _is_sdk_file(f.name, t)]   # the table is not a caller
+        idiom, counts = _detect_idiom([t for _, t in texts], sdk)
+        _others = other_web_roots(root, web_root)
         f2s = _file2slug(entities)
         screens: list[dict[str, Any]] = []
         total_sites = total_dyn = total_sse = total_floor = 0
@@ -343,7 +432,7 @@ def web_arm(root: Path, entities: dict[str, Any]) -> dict[str, Any]:
             # the winning REST idiom (byte-identical when no SSE joins) + the always-on
             # SSE pass, MERGED and re-deduped by (method, path). A no-SSE file's `calls`
             # stay exactly the idiom output — only an SSE-bearing file changes.
-            calls, dyn = _extract_file(src, idiom) if idiom else ([], 0)
+            calls, dyn = _extract_file(src, idiom, sdk) if idiom else ([], 0)
             scalls, sdyn, sfloors = _extract_sse(src)
             dyn += sdyn                          # ALWAYS count SSE dynamics — a dynamic-only stream
                                                  # file with no harvestable literal must not vanish
@@ -376,10 +465,12 @@ def web_arm(root: Path, entities: dict[str, Any]) -> dict[str, Any]:
         # no REST idiom AND no SSE anywhere → the honest 'nothing to extract' record
         # (byte-identical to the pre-SSE build; `idiom_hits` kept for the debug trail).
         if idiom is None and total_sse == 0:
+            _st0 = {"screens": 0, "fetch_sites": 0, "dynamic": 0,
+                    "sse_sites": 0, "sse_floor": 0, "extractor": None, "idiom_hits": counts}
+            if _others:
+                _st0["other_roots"] = _others
             return {"present": True, "reason": "no REST api-call idiom detected",
-                    "extractor": None, "screens": [],
-                    "stats": {"screens": 0, "fetch_sites": 0, "dynamic": 0,
-                              "sse_sites": 0, "sse_floor": 0, "extractor": None, "idiom_hits": counts}}
+                    "extractor": None, "screens": [], "stats": _st0}
         screens.sort(key=lambda s: s["id"])
         extractor = idiom or "sse"    # SSE-only app → the extractor IS sse
         reason = (f"{idiom} · {len(screens)} fetching files" if idiom
@@ -389,7 +480,9 @@ def web_arm(root: Path, entities: dict[str, Any]) -> dict[str, Any]:
             "extractor": extractor, "screens": screens,
             "stats": {"screens": len(screens), "fetch_sites": total_sites,
                       "dynamic": total_dyn, "sse_sites": total_sse, "sites_with_export": total_export, "sse_floor": total_floor,
-                      "extractor": extractor},
+                      "extractor": extractor,
+                      **({"sdk_methods": len(sdk)} if sdk else {}),          # the generated-SDK table's size (byte-identical without one)
+                      **({"other_roots": _others} if _others else {})},     # second frontends NOT scanned (named, never invisible)
         }
     except Exception as exc:   # noqa: BLE001 — the arm enhances, never breaks, the build
         return {"present": False, "reason": f"web arm error: {exc}"}

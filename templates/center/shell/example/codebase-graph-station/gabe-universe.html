@@ -5589,7 +5589,7 @@ var KINDCARD=(function(){
       if(st.cross_touches!=null) w.append(srcRow("model","cross-entity touches", String(st.cross_touches),
         "models one entity references while ANOTHER documents them — resolved into the dotted touches wires between entities"));
       if(st.web){ var unm=Array.isArray(st.web.unmatched)?st.web.unmatched:[], unmN=Array.isArray(st.web.unmatched)?unm.length:(st.web.unmatched||0);
-        w.append(srcRow("web","web bridge", (st.web.matched||0)+" fetches matched to endpoints · "+unmN+" unmatched"+(st.web.dynamic?(" · "+st.web.dynamic+" dynamic"):"")+(st.web.unhomed?(" · "+st.web.unhomed+" fetching file(s) unhomed — no screen drawn"):""),
+        w.append(srcRow("web","web bridge", (st.web.matched||0)+" fetches matched to endpoints · "+unmN+" unmatched"+(st.web.dynamic?(" · "+st.web.dynamic+" dynamic"):"")+(st.web.unhomed?(" · "+st.web.unhomed+" fetching file(s) unhomed — no screen drawn"):"")+(st.web.other_roots&&st.web.other_roots.length?(" · not scanned: "+st.web.other_roots.join(", ")):""),
           "every apiFetch call site in the frontend, matched to the endpoint it names — the dashed bridge wires. Unmatched = a fetch naming no declared endpoint (a coverage gap, listed below). Unhomed = a fetching file no entity claims whose fetches matched nothing — counted here, drawn nowhere (review 2026-09-05)."));
         if(unm.length) w.append(chipList(unm.map(function(u){ return u.m+" "+u.p; }), "web", "web", 3)); }
       if(st.graft) w.append(srcRow("link","graft wiring",

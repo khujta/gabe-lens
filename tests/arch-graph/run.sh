@@ -1410,6 +1410,34 @@ check(_gx3_br and all(e.get("export", "").startswith("fe:") and e["export"].ends
 check(_gx3["stats"]["web"].get("sites_with_export") is not None, "D3: stats.web.sites_with_export rides the build")
 check(not any("export" in e for e in gsse_br), "D3 SILENT: a call with no export leaves the bridge byte-identical (no export key)")
 
+# ── PASS 2 (review 2026-09-06, repo-study): a bare /api mount normalizes; the generated-SDK idiom (hey-api) ──
+check(G._norm_path("/api/manage/admin/x") == "/manage/admin/x" and G._norm_path("/api/v1/users/{id}") == "/users/{}",
+      f"pass 2: a bare /api mount is stripped like /api/vN ({G._norm_path('/api/manage/admin/x')}, {G._norm_path('/api/v1/users/{id}')})")
+check(G._norm_path("/apix/y") == "/apix/y" and G._norm_path("/manage/x") == "/manage/x", "pass 2 SILENT: /apix and un-mounted paths untouched")
+_sd = _pl.Path(__import__('tempfile').mkdtemp())
+(_sd / "web" / "src" / "client").mkdir(parents=True); (_sd / "web" / "src" / "hooks").mkdir(parents=True)
+(_sd / "web" / "src" / "client" / "sdk.gen.ts").write_text(
+    "export class ThingsService {\n"
+    "    public static readThing<ThrowOnError extends boolean = true>(options: Options<X, ThrowOnError>) {\n"
+    "        return (options?.client ?? client).get<A, B, ThrowOnError>({ url: '/api/v1/things/{thing_id}', ...options });\n    }\n"
+    "    public static createThing<ThrowOnError extends boolean = true>(options: Options<Y, ThrowOnError>) {\n"
+    "        return (options?.client ?? client).post<A, B, ThrowOnError>({ url: '/api/v1/things/', ...options });\n    }\n}\n")
+(_sd / "web" / "src" / "hooks" / "useThing.ts").write_text(
+    "import { ThingsService } from '@/client'\nexport function useThing(id: string) {\n  return useQuery({ queryFn: () => ThingsService.readThing({ path: { thing_id: id } }) })\n}\n"
+    "export function useCreate() {\n  return useMutation({ mutationFn: (b) => ThingsService.createThing({ body: b }) })\n}\n"
+    "const later = OtherThing.readThing()\n")
+_wsdk = W.web_arm(_sd, {})
+_scr = {s["file"]: s for s in _wsdk.get("screens") or []}
+check(_wsdk.get("extractor") == "sdkTable" and _wsdk["stats"].get("sdk_methods") == 2,
+      f"pass 2 FIRE: the generated-SDK table is the idiom (extractor={_wsdk.get('extractor')}, stats={_wsdk.get('stats')})")
+check(list(_scr) == ["web/src/hooks/useThing.ts"] and [(c["method"], c["path"], c.get("export")) for c in _scr["web/src/hooks/useThing.ts"]["calls"]]
+      == [("GET", "/api/v1/things/{thing_id}", "useThing"), ("POST", "/api/v1/things/", "useCreate")],
+      f"pass 2: SDK call sites carry the table's method+path and the calling export; the .gen.ts table is NOT a screen ({_scr})")
+check(_wsdk["stats"]["fetch_sites"] == 2, "pass 2: a same-shaped call to a class outside the table (OtherThing.readThing) is not a site")
+(_sd / "mobile" / "src").mkdir(parents=True); (_sd / "mobile" / "src" / "App.tsx").write_text("export const A = 1\n")
+_wsdk2 = W.web_arm(_sd, {})
+check(_wsdk2["stats"].get("other_roots") == ["mobile/src"], f"pass 2: a second frontend root is NAMED as not scanned ({_wsdk2['stats'].get('other_roots')})")
+
 print(f"arch-graph battery: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)
 PY

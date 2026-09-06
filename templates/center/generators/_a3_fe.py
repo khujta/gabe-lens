@@ -116,6 +116,9 @@ _PRINCIPAL = {"route": 0, "store": 1, "hook": 2, "component": 3, "fe-unknown": 4
 
 
 # ── classification ──────────────────────────────────────────────────────────────────────
+_NEXT_APP_RX = re.compile(r"(^|/)app/(?:.*/)?(page|layout|template|error|loading|not-found)\.(tsx|jsx)$")   # Next.js App Router file roles (review 2026-09-06: onyx web/src/app/**/page.tsx)
+
+
 def classify_export(ex: dict[str, Any], path: str) -> str | None:
     """ONE kind per exported symbol, or None = folds into the file's `module` piece.
     Order matters: a `useXStore` const from create() is a store, not a hook; a `*Route`
@@ -134,7 +137,8 @@ def classify_export(ex: dict[str, Any], path: str) -> str | None:
     jsx = bool(ex.get("hasJsx"))
     if _PASCAL_RX.match(name) and jsx and kind in ("function", "class") or (
             _PASCAL_RX.match(name) and jsx and callee in ("memo", "forwardRef", "styled", "observer", "lazy")):
-        if name.endswith(("Route", "Router", "Page")) or "/routes/" in path or "/pages/" in path:
+        if (name.endswith(("Route", "Router", "Page")) or "/routes/" in path or "/pages/" in path
+                or (ex.get("isDefault") and _NEXT_APP_RX.search(path))):   # a default export of an app/**/page.tsx IS the route, whatever its name
             return "route"
         return "component"
     return None
@@ -603,6 +607,9 @@ def run_extractor(web_root: Path, repo_root: Path, timeout: int = 180) -> tuple[
                                capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
             return None, f"extractor timed out after {timeout}s"
+        if r.returncode == 3:              # typescript not resolvable — say what fixes it (review 2026-09-06: every study clone lacked node_modules)
+            return None, (f"typescript not resolvable from {web_root} — run the project's frontend install (its node_modules) "
+                          f"or set GABE_TS_DIR=<dir whose node_modules/typescript exists>")
         if r.returncode != 0:
             msg = (r.stderr or r.stdout or "").strip().splitlines()
             return None, (msg[-1] if msg else f"extractor exit {r.returncode}")
@@ -633,6 +640,8 @@ def fe_arm(root: Path, entities: dict[str, Any] | frozenset[str] | None,
         out = build_fe(data, entities, screens)
         out["present"] = True
         out["reason"] = f"typescript {data.get('ts')} · {data.get('files')} files"
+        if not (pkg / "node_modules").is_dir():   # a borrowed typescript parsed the tree, but the project's own deps are absent → third-party imports unresolved
+            out["reason"] += " · node_modules absent — third-party imports unresolved"
         return out
     except Exception as exc:  # noqa: BLE001 — the arm enhances, never breaks, the build
         return {"present": False, "reason": f"fe arm error: {exc}"}
