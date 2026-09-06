@@ -669,7 +669,7 @@ _gpv = G.build_c4_graph(_fixpv, labels=LABELS, status=STATUS)
 _pvn = [n for g in _gpv["l2"].values() for n in g["nodes"] if n.get("kind") == "provider"]
 check(len(_pvn) == 1 and _pvn[0]["id"] == "provider:gemini" and _pvn[0]["slug"] == "alpha",
       "class 9: a fn's externals mints provider:<name> homed to the tagged fn's entity")
-check(_gpv["stats"]["providers"] == {"count": 1, "by_provider": {"gemini": 1}}, "class 9: stats.providers {count, by_provider}")
+check(_gpv["stats"]["providers"] == {"count": 1, "by_provider": {"gemini": 1}, "by_pclass": {"llm": 1}}, "class 9: stats.providers {count, by_provider, by_pclass} (gemini → llm, legend pass 2026-09-06)")
 check("providers" not in G.build_c4_graph(FIX, labels=LABELS, status=STATUS)["stats"],
       "class 9 honest-empty: no externals → no provider node + no stats key (byte-identical)")
 
@@ -1458,6 +1458,30 @@ check(_wsdk["stats"]["fetch_sites"] == 2, "pass 2: a same-shaped call to a class
 (_sd / "mobile" / "src").mkdir(parents=True); (_sd / "mobile" / "src" / "App.tsx").write_text("export const A = 1\n")
 _wsdk2 = W.web_arm(_sd, {})
 check(_wsdk2["stats"].get("other_roots") == ["mobile/src"], f"pass 2: a second frontend root is NAMED as not scanned ({_wsdk2['stats'].get('other_roots')})")
+
+# ── legend pass (2026-09-06) · Step 4: provider CLASS on the node + stats; the three Sources stats ride only when the archmap carries them ──
+_fixpc = json.loads(json.dumps(FIX))
+_ent0 = next(iter(_fixpc["entities"]))
+_pcf = next(f for _l, f, _n in (_fixpc["entities"][_ent0].get("files") or []) if f.endswith(".py"))
+_fixpc.setdefault("function_insight", {})
+_fixpc["function_insight"][_pcf + "::use_lc"] = {"fn": "use_lc", "file": _pcf, "externals": ["langchain", "mystery_sdk"]}
+_gpc = G.build_c4_graph(_fixpc, labels=LABELS, status=STATUS)
+_prov = {n["label"]: n for g in _gpc["l2"].values() for n in g["nodes"] if n.get("kind") == "provider"}
+check(_prov.get("langchain", {}).get("pclass") == "agent" and _prov.get("langchain", {}).get("det", {}).get("pclass") == "agent",
+      f"Step 4 FIRE: a langchain provider node carries pclass agent on the node and in det ({ {k: v.get('pclass') for k, v in _prov.items()} })")
+check("mystery_sdk" not in _prov or _prov["mystery_sdk"].get("pclass") is None, "Step 4: an unknown provider name carries no class (None), never a guess")
+check((_gpc["stats"].get("providers") or {}).get("by_pclass", {}).get("agent") == 1, f"Step 4: stats.providers.by_pclass tallies known classes only ({(_gpc['stats'].get('providers') or {}).get('by_pclass')})")
+_fixst4 = json.loads(json.dumps(FIX))
+_fixst4["unparseable"] = [["a.py", "syntax error at line 3"]]
+_fixst4["route_mounts"] = {"scanned": 8, "routers": 7, "mounted": 11, "unresolved": [{"file": "app/main.py", "line": 12, "why": "non-literal prefix: settings.API_V1_STR"}]}
+_fixst4["fn_similarity"] = {"mode": "blocked", "pairs": 9, "budget": 2, "sizable": 3, "rare_df": 40}
+_gs4 = G.build_c4_graph(_fixst4, labels=LABELS, status=STATUS)["stats"]
+check(_gs4.get("unparseable") == {"count": 1, "files": ["a.py"]} and _gs4.get("route_mounts") == {"mounted": 11, "routers": 7, "unresolved": [{"file": "app/main.py", "line": 12, "why": "non-literal prefix: settings.API_V1_STR"}]}
+      and _gs4.get("fn_similarity") == {"mode": "blocked", "pairs": 9, "budget": 2},
+      f"Step 4 FIRE: unparseable · route_mounts · fn_similarity ride the stats in their Sources shapes ({ {k: _gs4.get(k) for k in ('unparseable', 'route_mounts', 'fn_similarity')} })")
+_gs0 = G.build_c4_graph(FIX, labels=LABELS, status=STATUS)["stats"]
+check(all(k not in _gs0 for k in ("unparseable", "route_mounts", "fn_similarity")), "Step 4 SILENT: an archmap without the blocks emits none of the three keys")
+check(json.dumps(G.build_c4_graph(FIX, labels=LABELS, status=STATUS), sort_keys=True) == json.dumps(_gbt0, sort_keys=True), "Step 4 byte-identical: the plain build is unchanged by the new keys")
 
 print(f"arch-graph battery: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)

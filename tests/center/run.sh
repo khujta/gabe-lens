@@ -785,6 +785,21 @@ print("fn twin scale ok")
 PYS
 ) >"$T/fnscale.out" 2>&1 && ok || { bad "scale: fn twin pass exact under budget, blocked + named above it"; cat "$T/fnscale.out"; }
 
+# ── legend pass (2026-09-06): every provider NAME has a class, and the graph module's mirror equals the roster ──
+( cd "$GEN" && python3 - <<'PY'
+import sys, importlib.util
+sys.path.insert(0, ".")
+import _a3_code as C
+spec = importlib.util.spec_from_file_location("_a3_graph", "_a3_graph.py"); G = importlib.util.module_from_spec(spec); spec.loader.exec_module(G)
+names = set(C._PROVIDER_ROOTS.values())
+missing = sorted(n for n in names if n not in C._PROVIDER_CLASS)
+assert not missing, f"provider names without a class: {missing}"          # FIRE: a new root must get a class the day it joins
+assert C._PROVIDER_CLASS == G._PROVIDER_CLASS, "the graph module's _PROVIDER_CLASS mirror drifted from _a3_code"
+assert set(C._PROVIDER_CLASS.values()) == {"llm", "embed", "vector", "agent", "infra", "http", "observability", "payments"}, sorted(set(C._PROVIDER_CLASS.values()))
+print("provider classes ok")
+PY
+) >"$T/pclass.out" 2>&1 && ok || { bad "legend pass: every provider name has one of the eight classes; the graph mirror equals the roster"; cat "$T/pclass.out"; }
+
 # M04: the single-file set's href carries NO set-name segment.
 grep -q 'proof/solo.png"' "$FIX/docs/site/center/feature-gadget.html" \
   && ok || bad "single-file set: href must be proof-root relative"

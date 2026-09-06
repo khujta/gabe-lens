@@ -29,7 +29,7 @@
 .cbg-root{ --edge:#9aa3ad; --touch:#1f8a53; --touch-bg:#e9f6ee; --blast:#d9821f; --blast-bg:#fbf1e0;
   --drift:#e8590c;
   --c-model:#12b886; --c-schema:#f59f00; --c-fn-api:#4c6ef5; --c-fn-services:#0f766e; --c-fn-web:#e8590c;
-  --m-get:#16794c; --m-post:#4338ca; --m-put:#b45309; --m-delete:#d1443c;
+  --m-get:#16794c; --m-post:#4338ca; --m-put:#b45309; --m-delete:#d1443c; --m-boot:#8a8f98; --m-task:#a78bfa;
   display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden;
   color:var(--ink); font:14px/1.5 var(--font-ui); }
 [data-theme="dark"] .cbg-root{ --edge:#4a525c; --touch:#4cbe83; --touch-bg:#12271c; --blast:#e0a24a; --blast-bg:#271f12; }
@@ -456,7 +456,7 @@
   <a class="navitem" href="releases.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> Releases</a>
   <div class="navlabel g-leaf">Leaf</div>
   <span class="navsub" style="opacity:.5">none wired yet</span>
-  <div class="foot">regen 2026-09-05 23:17Z<br>HEAD 2f586de1 · build_center_a3.py</div>
+  <div class="foot">regen 2026-09-06 15:48Z<br>HEAD 4af05294 · build_center_a3.py</div>
 </aside>
 
 <main class="main" style="display:flex;flex-direction:column;height:100vh;overflow:hidden">
@@ -619,10 +619,10 @@
   var LINE_OPTS = { direct:"Direct", bowed:"Bowed" };
   var ICON_OPTS = { classic:"Classic", lucide:"Lucide", solid:"Solid" };
   var KIND_COLOR = { endpoint:"#4c6ef5", model:"#12b886", schema:"#f59f00", external:"#868e96", web:"#e8590c",
-    middleware:"#7048e8", provider:"#e8590c", flag:"#e03131", prompt:"#ae3ec9" };   // pre-C: wave-C floors
+    middleware:"#7048e8", provider:"#f08c00", flag:"#e03131", prompt:"#ae3ec9" };   /* provider ≠ web (both were #e8590c — a colour collision, legend pass 2026-09-06) */   // pre-C: wave-C floors
   var KIND_LABEL = { endpoint:"Endpoints", model:"Models", schema:"Schemas", external:"External", web:"Screens",
     middleware:"Middleware", provider:"Providers", flag:"Flags", prompt:"Prompts" };
-  var METHOD = { GET:"var(--m-get)", POST:"var(--m-post)", PUT:"var(--m-put)", PATCH:"var(--m-put)", DELETE:"var(--m-delete)" };
+  var METHOD = { GET:"var(--m-get)", POST:"var(--m-post)", PUT:"var(--m-put)", PATCH:"var(--m-put)", DELETE:"var(--m-delete)", BOOT:"var(--m-boot)", TASK:"var(--m-task)" };   /* BOOT + TASK are roots, not request verbs (legend pass 2026-09-06) */
 
   var stage   = document.getElementById("cbg-stage");
   var svg     = document.getElementById("cbg-graph");
@@ -1267,7 +1267,7 @@
       var label = n.label || String(n.id).replace(/^[^:]+:/,"");
       var g = E("g", { class:"node", "data-id":n.id, transform:"translate("+nodePos[n.id].x+","+nodePos[n.id].y+")" });
       halo(g);
-      if(n.kind==="endpoint"){ var m=methodOf(label)||"GET"; epMark(g, 6.5, m);
+      if(n.kind==="endpoint"){ var m=methodOf(label)||null; epMark(g, 6.5, m);
         twoRowLabel(g, label.replace(/^[A-Z]+ /,"").replace(/^\//,"")||m, 0, 17); behindBadge(g, n.behind); }
       else if(n.kind==="model"){ cylinder(g, 8, "var(--c-model)"); twoRowLabel(g, label, 0, 17); }
       else if(n.kind==="schema"){ sBadge(g, 7, "var(--c-schema)"); twoRowLabel(g, label, 0, 17); }
@@ -1481,6 +1481,7 @@
       + (n.kind!=="external" ? layerRowKind(n.kind) : "");
     if(n.kind==="endpoint"){
       var m=methodOf(label); if(m) h+=rowKV("method", m);
+      if(n.stream) h+=rowKV("delivery", "streams — SSE / chunked; the response is an async generator, not one payload");
       if(n.fn)   h+=rowKV("handler", esc(n.fn)+"()");
       if(n.resp) h+=rowKV("returns", esc(n.resp));
       if(n.det && n.det.status) h+=rowKV("status", esc(n.det.status));
@@ -1686,7 +1687,7 @@
         var g=E("g",{class:"xsurf","data-kind":kind,"data-piece":slug+"|"+node.id,
           transform:"translate("+pp.x+","+pp.y+")"});
         halo(g);
-        if(kind==="endpoint"){ var m=methodOf(label)||"GET"; epMark(g, 6.5, m);
+        if(kind==="endpoint"){ var m=methodOf(label)||null; epMark(g, 6.5, m);
           twoRowLabel(g, label.replace(/^[A-Z]+ /,"").replace(/^\//,"")||m, 0, 20); behindBadge(g, node.behind); }
         else if(kind==="schema"){ sBadge(g, 7, "var(--c-schema)"); twoRowLabel(g, label, 0, 22); }
         else if(kind==="web"){ var unm=WEB_UNMATCHED[node.id];   // a fetching screen on the outer ring

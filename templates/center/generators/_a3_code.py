@@ -1699,6 +1699,23 @@ _PROVIDER_ROOTS = {
     "vertexai": "vertex", "mistralai": "mistral", "groq": "groq", "together": "together",
     "sentence_transformers": "sentence-transformers", "transformers": "huggingface",
 }
+# class 9b · the PROVIDER CLASS — what kind of outside service a provider IS (legend pass 2026-09-06). Keyed by the
+# provider NAME (the value side of _PROVIDER_ROOTS); ONE class per name by the ROOT-SDK RULE: what the SDK is, never
+# the one use seen in a repo (cohere is a full LLM SDK — onyx uses it to rerank; mem0 is a memory layer over a vector
+# store; huggingface/transformers is a model runtime; firebase_admin is a platform: auth + firestore + fcm + storage).
+# EIGHT classes: llm · embed · vector · agent · infra · http · observability · payments. No root maps to an `auth`
+# class today — it returns the day an auth-only SDK root joins the roster. The station reads it as the `pclass` badge.
+_PROVIDER_CLASS = {
+    "openai": "llm", "anthropic": "llm", "gemini": "llm", "litellm": "llm", "mistral": "llm", "groq": "llm",
+    "together": "llm", "ollama": "llm", "vertex": "llm", "huggingface": "llm", "cohere": "llm",
+    "voyage": "embed", "sentence-transformers": "embed",
+    "pgvector": "vector", "qdrant": "vector", "pinecone": "vector", "mem0": "vector",
+    "langchain": "agent", "langgraph": "agent",
+    "redis": "infra", "aws": "infra", "firebase": "infra",
+    "http": "http",
+    "sentry": "observability",
+    "stripe": "payments",
+}
 # `google` is NOT a provider root (review fix [11]): google.oauth2/google.cloud/google.auth are NOT
 # the Gemini LLM — only the genai SDK is. Matched by the specific submodule below, never by root.
 _GEMINI_GOOGLE = ("google.genai", "google.generativeai")

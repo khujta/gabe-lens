@@ -198,6 +198,20 @@ def _index_tbl_models(entities: dict[str, Any]) -> dict[str, str]:
 
 
 # ── the web→API bridge join (Path A frontend arm) ───────────────────────────
+# class 9b · provider CLASS — mirrored from _a3_code._PROVIDER_CLASS (tests/center pins the two equal; this module stays import-free of _a3_code)
+_PROVIDER_CLASS = {
+    "openai": "llm", "anthropic": "llm", "gemini": "llm", "litellm": "llm", "mistral": "llm", "groq": "llm",
+    "together": "llm", "ollama": "llm", "vertex": "llm", "huggingface": "llm", "cohere": "llm",
+    "voyage": "embed", "sentence-transformers": "embed",
+    "pgvector": "vector", "qdrant": "vector", "pinecone": "vector", "mem0": "vector",
+    "langchain": "agent", "langgraph": "agent",
+    "redis": "infra", "aws": "infra", "firebase": "infra",
+    "http": "http",
+    "sentry": "observability",
+    "stripe": "payments",
+}
+from collections import Counter
+
 _API_PREFIX_RE = re.compile(r"^/api/v\d+")
 _API_BARE_RE = re.compile(r"^/api(?=/)")     # a bare `/api` mount (onyx: a proxy prefix the backend never declares; review 2026-09-06: 30 → 251 of 352 fetches match)
 _PATH_PARAM_RE = re.compile(r"\$?\{[^}]*\}")
@@ -1337,7 +1351,8 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
         _pnodes_by_home: dict[str, list] = {}
         for _p in sorted(_prov_home):
             _home = _prov_home[_p]
-            _pn = {"id": f"provider:{_p}", "kind": "provider", "slug": _home, "label": _p, "det": {"provider": _p}}
+            _pn = {"id": f"provider:{_p}", "kind": "provider", "slug": _home, "label": _p,
+                   "det": {"provider": _p, "pclass": _PROVIDER_CLASS.get(_p)}, "pclass": _PROVIDER_CLASS.get(_p)}   # class 9b: what kind of outside service (None = unknown, no badge)
             if _home == _UNCLAIMED:
                 _pn["unmapped"] = True
             _pnodes_by_home.setdefault(_home, []).append(_pn)
@@ -1392,7 +1407,14 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
             # class 8: app-level middleware nodes + gated_by wires (count-only when saturated); P5.
             **({"app_middleware": {"count": _app_mw_n, "gated_by": _gated_by}} if _app_mw_n else {}),
             # class 9: external providers reached (SDK/LLM edges); absent when none (P5).
-            **({"providers": {"count": _prov_n, "by_provider": dict(sorted(_prov_by.items()))}} if _prov_n else {}),
+            **({"providers": {"count": _prov_n, "by_provider": dict(sorted(_prov_by.items())),
+                              "by_pclass": dict(sorted(Counter(_PROVIDER_CLASS[p] for p in _prov_by if p in _PROVIDER_CLASS).items()))}} if _prov_n else {}),   # unknown names excluded — honest-empty
+            # the archmap-only facts the station's Sources rows read (legend pass 2026-09-06) — same omitted-when-empty idiom as schema_homing
+            **({"unparseable": {"count": len(_up), "files": [f[0] for f in _up][:12]}} if (_up := amap.get("unparseable")) else {}),
+            **({"route_mounts": {"mounted": int(_rm.get("mounted") or 0), "routers": int(_rm.get("routers") or 0), "unresolved": list(_rm.get("unresolved") or [])}}
+               if isinstance((_rm := amap.get("route_mounts")), dict) else {}),
+            **({"fn_similarity": {"mode": _fs.get("mode"), "pairs": _fs.get("pairs"), "budget": _fs.get("budget")}}
+               if isinstance((_fs := amap.get("fn_similarity")), dict) and _fs.get("mode") else {}),
             "unresolved_tables": unresolved,
             # the graft arm's honesty record: absent → named absent, never silent;
             # present → the index fingerprint + the floor-not-census trust split.
