@@ -799,6 +799,12 @@ bash "$GEN/propagate.sh" "$BS" --check >"$T/prop-stale.out" 2>&1; grep -q "DRIFT
 bash "$GEN/propagate.sh" "$BS" >"$T/prop-stale2.out" 2>&1; [ -f "$BS/scripts/_a3_models.py" ] && grep -q "^import _a3_models" "$BS/scripts/build_center_a3.py" \
   && ok || { bad "propagate (stale twin): the copy lands the generator AND the build that imports it in one pass"; cat "$T/prop-stale2.out" | head; }
 bash "$GEN/bootstrap_center.sh" "$BS" >/dev/null 2>&1   # restore the fixture (bootstrap lands missing files)
+# bootstrap from the INSTALLED layout (~/.claude/templates/gabe/center/{generators,shell}) must land the same files — the script
+# resolves its generators dir from its own location, never from a repo-shaped "../../.." walk (found on the tier0 re-bootstrap 2026-09-06)
+INST="$T/inst/templates/gabe/center"; mkdir -p "$INST"; cp -r "$GEN" "$INST/generators"; cp -r "$SHELL_SRC" "$INST/shell"
+BI="$T/boot-inst"; mkdir -p "$BI"; ( cd "$BI" && git init -q . && git commit -q --allow-empty -m init )
+bash "$INST/generators/bootstrap_center.sh" "$BI" >"$T/boot-inst.out" 2>&1; [ -f "$BI/scripts/build_center_a3.py" ] && [ -f "$BI/scripts/_a3_models.py" ] && [ -f "$BI/templates/center/shell/gabe-universe.html" ] && ! grep -q "cannot stat" "$T/boot-inst.out" \
+  && ok || { bad "bootstrap from the installed layout landed nothing (the generators dir must be resolved from the script's own location)"; head -5 "$T/boot-inst.out"; }
 # a bootstrapped repo with ONE config entity and NO tracker must BUILD (the tier1 install crashed on a synthesized row missing `status`)
 python3 - "$BS" <<'PY'
 import json, sys; from pathlib import Path

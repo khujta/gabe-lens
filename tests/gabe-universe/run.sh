@@ -1196,7 +1196,7 @@ check(page.count('homeEvRow(n), modelRow(n),')==4 and 'function modelRow(n)' in 
 check('function modelSec(ent)' in page and 'var _ms=modelSec(ent); if(_ms) pb.append(_ms);' in page and 'pchip verdict v-' in page,
       "B8: panelEnt carries no model section / verdict badge")
 check('C.element=function(n)' in page and 'sechd("info","Unclaimed file")' in page, "B8: no element card")
-check('srcRow("role","entity model"' in page and 'cluster(s) folded at this model' in page and 'srcRow("info","elements"' in page and 'window.__uniFoldedN=Object.keys(fold).length' in page,
+check('srcRow("role","entity model"' in page and 'cluster(s) folded at this model' in page and '" atoms anchored"' in page and 'srcRow("info","elements"' in page and 'window.__uniFoldedN=Object.keys(fold).length' in page,
       "B9: the Sources rows (entity model per view · elements · the folded count) are missing")
 _ls=page[page.find('function _modelSection()'):page.find('function _planetSection()')]
 check(bool(_ls) and '_connSection()+_planetSection()+_modelSection()' in page and len(re.findall(r'\["(claim|seeded|derived|proposed|aspect|layer|element)","', _ls))==7 and 'lrdef' in _ls and 'stroke-dasharray' in _ls,

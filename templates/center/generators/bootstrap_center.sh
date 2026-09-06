@@ -23,8 +23,10 @@ set -euo pipefail
 REPO="${1:?usage: bootstrap_center.sh <repo-root> [--name <slug>] [--display \"<name>\"]}"; shift || true
 NAME=""; DISPLAY=""
 while [ $# -gt 0 ]; do case "$1" in --name) NAME="$2"; shift 2;; --display) DISPLAY="$2"; shift 2;; *) echo "unknown arg: $1" >&2; exit 2;; esac; done
-SUITE="$(cd "$(dirname "$0")/../../.." && pwd)"
-GEN="$SUITE/templates/center/generators"; SHELL_SRC="$SUITE/templates/center/shell"
+# the generators dir is where THIS script lives and the shell sits beside it — true in the repo (templates/center/{generators,shell})
+# AND in the install (~/.claude/templates/gabe/center/{generators,shell}); the old "../../.. /templates/center" walk resolved to
+# ~/.claude/templates/templates/… from the installed copy and landed nothing (found on the tier0 re-bootstrap, 2026-09-06)
+GEN="$(cd "$(dirname "$0")" && pwd)"; SHELL_SRC="$(cd "$GEN/../shell" && pwd)"
 [ -d "$REPO" ] || { echo "FAIL: $REPO is not a directory"; exit 1; }
 REPO="$(cd "$REPO" && pwd)"
 [ -n "$NAME" ] || NAME="$(basename "$REPO")"
