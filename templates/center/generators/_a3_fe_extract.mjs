@@ -109,10 +109,17 @@ const refsOf = node => {
 const STORE_CALLEES = /^(create|createStore|createContext|createSlice|configureStore|atom|atomWithStorage|atomFamily|signal|observable|makeAutoObservable|proxy|createSignal|writable|readable)$/;
 const typeText = (t, sf) => t ? t.getText(sf).replace(/\s+/g, ' ').slice(0, 80) : '';
 const membersOfNodes = (ms, sf) => { const out = []; for (const m of ms) { if ((ts.isPropertySignature(m) || ts.isMethodSignature(m)) && m.name) { const nm = m.name.getText(sf); out.push([nm, ts.isMethodSignature(m) ? nm + '()' : typeText(m.type, sf)]); } } return out; };
+// an object-like type: an object, or an INTERSECTION of objects (`type Store = State & Actions` — gastify's stores;
+// review 2026-09-05: 3 of its 4 typed stores drew no columns). A union or a primitive stays honest-empty.
+const objLike = t => !!t && (!!(t.flags & ts.TypeFlags.Object) || (!!(t.flags & ts.TypeFlags.Intersection) && (t.types || []).every(x => x.flags & ts.TypeFlags.Object)));
+const propsOf = (t, at) => { const props = t.getProperties(); return props.length ? props.map(p => [p.name, checker.typeToString(checker.getTypeOfSymbolAtLocation(p, at)).replace(/\s+/g, ' ').slice(0, 80)]) : null; };
 const membersOf = d => {
   if (!d) return null; const sf = d.getSourceFile();
   if (ts.isInterfaceDeclaration(d)) return membersOfNodes(d.members, sf);
   if (ts.isTypeAliasDeclaration(d) && ts.isTypeLiteralNode(d.type)) return membersOfNodes(d.type.members, sf);
+  if (ts.isTypeAliasDeclaration(d) && ts.isIntersectionTypeNode(d.type)) {   // the checker merges the constituents' properties
+    try { const t = checker.getTypeAtLocation(d.name); if (objLike(t)) return propsOf(t, d.name); } catch {}
+  }
   return null;
 };
 const shapeOf = d => {
@@ -126,10 +133,7 @@ const shapeOf = d => {
   if (!members) {                         // a named type — exported or NOT (useUiStore's local UiState): ask the checker for its properties
     try {
       let t = checker.getTypeAtLocation(ta); if (t.getNonNullableType) t = t.getNonNullableType();   // AuthContextValue | undefined → AuthContextValue
-      if (t.flags & ts.TypeFlags.Object) {   // object types only — a primitive (string) would list its prototype methods
-        const props = t.getProperties();
-        if (props.length) members = props.map(p => [p.name, checker.typeToString(checker.getTypeOfSymbolAtLocation(p, ta)).replace(/\s+/g, ' ').slice(0, 80)]);
-      }
+      if (objLike(t)) members = propsOf(t, ta);   // object / intersection-of-objects only — a primitive (string) would list its prototype methods
     } catch {}
   }
   return { text: typeText(ta, sf), refs: [...refs].sort(), members };

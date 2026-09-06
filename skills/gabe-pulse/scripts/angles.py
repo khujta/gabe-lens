@@ -353,8 +353,10 @@ def s10_web_bridge(root: Path, plan: dict | None, cfg: dict | None):
         return None
     names = ", ".join(f"{u.get('m')} {u.get('p')}" for u in unmatched[:2])
     more = f" +{len(unmatched) - 2}" if len(unmatched) > 2 else ""
+    unhomed = fetch_bridge.load_unhomed(root)   # fetching files the bridge could home nowhere — counted, drawn nowhere (review 2026-09-05)
     return (f"web-bridge drift — {len(unmatched)} fetch(es) hit no declared endpoint "
-            f"({names}{more})", "/gabe-cc-init")
+            f"({names}{more})"
+            + (f" · {unhomed} fetching file(s) unhomed — no screen drawn" if unhomed else ""), "/gabe-cc-init")
 
 
 def s11_model_census(root: Path, plan: dict | None, cfg: dict | None):

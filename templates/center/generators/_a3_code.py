@@ -151,14 +151,28 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
         tree, _src = _safe_parse(path)
         if tree is None:                       # unparseable file → skip, don't abort the build
             continue
-        prefix = ""
-        for node in ast.walk(tree):
-            if (isinstance(node, ast.Call)
-                    and getattr(node.func, "id", "") == "APIRouter"):
-                for kw in node.keywords:
-                    if (kw.arg == "prefix" and isinstance(kw.value, ast.Constant)
-                            and isinstance(kw.value.value, str)):   # a non-str prefix would break (prefix + sub)
-                        prefix = kw.value.value
+        prefix = ""                       # the file's LAST APIRouter(prefix=…) — the fallback for a decorator on a router this scan cannot name
+        prefixes: dict[str, str] = {}     # router VARIABLE → its own prefix (review 2026-09-05: gastify's groups.py mounts `router` at /groups
+        for node in ast.walk(tree):       #   AND `invites_router` at /invites — ONE prefix per file had labeled all 17 handlers /invites)
+            _call, _names = None, []
+            if (isinstance(node, (ast.Assign, ast.AnnAssign)) and isinstance(node.value, ast.Call)
+                    and getattr(node.value.func, "id", "") == "APIRouter"):
+                _call = node.value
+                _tg = node.targets if isinstance(node, ast.Assign) else [node.target]
+                _names = [t.id for t in _tg if isinstance(t, ast.Name)]
+            elif isinstance(node, ast.Call) and getattr(node.func, "id", "") == "APIRouter":
+                _call = node
+            else:
+                continue
+            _own = ""
+            for kw in _call.keywords:
+                if (kw.arg == "prefix" and isinstance(kw.value, ast.Constant)
+                        and isinstance(kw.value.value, str)):   # a non-str prefix would break (prefix + sub)
+                    _own = kw.value.value
+                    if _call is node:
+                        prefix = _own                            # the file-level fallback keeps the pre-review rule (last wins)
+            for _n in _names:
+                prefixes[_n] = _own
         for node in ast.walk(tree):
             if not isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef)):
                 continue
@@ -168,6 +182,8 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
                 method = dec.func.attr
                 if method not in ("get", "post", "put", "patch", "delete"):
                     continue
+                _rv = dec.func.value                                   # `router` in @router.get(…) → THAT router's prefix
+                _pre = prefixes.get(_rv.id, prefix) if isinstance(_rv, ast.Name) else prefix
                 has_path = (dec.args and isinstance(dec.args[0], ast.Constant)
                             and isinstance(dec.args[0].value, str))   # str-only → (prefix + sub) can't TypeError
                 sub = dec.args[0].value if has_path else ""
@@ -181,7 +197,7 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
                 # with model/schema class names to derive endpoint↔type links.
                 refs = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
                 ep = {
-                    "method": method.upper(), "path": (prefix + sub) or "/",
+                    "method": method.upper(), "path": (_pre + sub) or "/",
                     "fn": node.name, "file": rel, "refs": refs,
                     "doc": _first_sentence(ast.get_docstring(node)),
                     "resp": (resp or "—").removeprefix("PaginatedResponse[").removesuffix("]"),

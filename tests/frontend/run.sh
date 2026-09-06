@@ -54,8 +54,8 @@ kind = {p["name"]: p["kind"] for p in fe["pieces"]}
 home = {p["name"]: p["home"] for p in fe["pieces"]}
 
 # ── classification: the enumeration, exactly ──────────────────────────────────────────
-check(fe["stats"]["pieces"] == 19, f"19 pieces from 22 files (got {fe['stats']['pieces']})")
-check(fe["stats"]["by_kind"] == {"component": 4, "fe-type": 4, "hook": 1, "module": 5, "route": 3, "store": 2},
+check(fe["stats"]["pieces"] == 21, f"21 pieces from 23 files (got {fe['stats']['pieces']})")   # +2 (review 2026-09-05): the intersection-typed store + its type
+check(fe["stats"]["by_kind"] == {"component": 4, "fe-type": 5, "hook": 1, "module": 5, "route": 3, "store": 3},
       f"by_kind matches the enumeration ({fe['stats']['by_kind']})")
 check(kind.get("RecipeCard") == "component" and kind.get("Badge") == "component"
       and kind.get("Chip") == "component" and kind.get("RecipeDetailBody") == "component", "JSX-proven exports are components")
@@ -118,8 +118,8 @@ check(E.get(("useRecipe", "api")) == "fecall", "apiFetch() → fecall onto the a
 check(E.get(("RecipeDetailBody", "Chip")) == "renders" and E.get(("nav", "format")) == "fecall",
       "the nested component renders the deep-bucket atom; a deep helper call wires module→module")
 check(E.get(("scoring", "Recipe")) == "typed", "a module's type import → typed")
-check(fe["stats"]["edges"] == 15 and fe["stats"]["by_rel"] == {"fecall": 3, "renders": 5, "typed": 4, "uses-hook": 1, "uses-store": 2},
-      f"exactly the enumerated 15 wires — recipeFixtures typed→Recipe joined, LazyRoute→RecipeCard lazy-bound ({fe['stats']['by_rel']})")
+check(fe["stats"]["edges"] == 16 and fe["stats"]["by_rel"] == {"fecall": 3, "renders": 5, "typed": 5, "uses-hook": 1, "uses-store": 2},
+      f"exactly the enumerated 16 wires — recipeFixtures typed→Recipe joined, LazyRoute→RecipeCard lazy-bound, useStatementStore typed→StatementStore ({fe['stats']['by_rel']})")
 check(E.get(("LazyRoute", "RecipeCard")) == "renders" and kind.get("LazyRoute") == "route",
       "LAZY binding (2026-09-03): `const Card = lazy(() => import(\"@features/recipe/RecipeCard\").then(m => ({default: m.RecipeCard})))` binds the tag → renders")
 check(fe["stats"].get("samefile_renders", 0) == 0,
@@ -274,7 +274,7 @@ off = _a3_graph.fold_fe(copy.deepcopy(base), {"present": False, "reason": "no we
 check("fe" not in off and off["stats"]["fe"] == {"present": False, "reason": "no web source"},
       "present=False → only stats.fe names the absence")
 on = _a3_graph.fold_fe(copy.deepcopy(base), {**fe, "present": True, "reason": "typescript x"})
-check(sorted(on["fe"]) == ["edges", "homes", "pieces"] and on["stats"]["fe"]["present"] and on["stats"]["fe"]["pieces"] == 19,
+check(sorted(on["fe"]) == ["edges", "homes", "pieces"] and on["stats"]["fe"]["present"] and on["stats"]["fe"]["pieces"] == 21,
       "present → the `fe` key (pieces · edges · homes) + stats.fe")
 check("l2" in on and on["l2"] == {}, "the fold never touches l2")
 # ── honest-empty arm states ────────────────────────────────────────────────────────────
@@ -366,6 +366,27 @@ check(_mc9 == {"client": "api", "mappers": "model", "queryClient": "config", "cx
 check(_fe9["stats"]["by_mclass"] == {"api": 1, "config": 1, "lib": 1, "model": 1},
       "mclass: the by_mclass stat tallies module classes")
 for s in skipped: print("  SKIP ⚠:", s)   # the doctor-recognized coverage-skip marker (else a skipped LIVE-extractor case reads as false CLEAN)
+# ── D6 (review 2026-09-05): NO feature layout → the config's web claims home the pieces; a feature layout wins outright ──
+_X10 = {"byFile": {
+    "web/src/hooks/useGroups.ts": {"exports": [{"name": "useGroups", "kind": "function", "hasJsx": False}], "bindings": {}},
+    "web/src/lib/http.ts": {"exports": [{"name": "http", "kind": "function", "hasJsx": False}], "bindings": {}}}}
+_ENT10 = {"group-share": {"files": [["web", "web/src/hooks/useGroups.ts", 10], ["api", "backend/app/api/groups.py", 900]]}}
+_fe10 = _a3_fe.build_fe(_X10, _ENT10, [])
+_h10 = {p["name"]: p["home"] for p in _fe10["pieces"]}
+check(_h10 == {"useGroups": "fe·group-share", "http": "app-shell"} and _fe10["stats"].get("homing") == "config",
+      f"D6 FIRE: a flat src/ tree homes by the config's web claims — useGroups → fe·group-share, the unclaimed lib stays app-shell ({_h10}, {_fe10['stats'].get('homing')})")
+check(any(h["id"] == "fe·group-share" and h.get("pair") == "group-share" and h["kind"] == "fe" for h in _fe10["homes"])
+      and all(p.get("homed_by") == "config" for p in _fe10["pieces"] if p["home"] == "fe·group-share"),
+      "D6: a config-homed piece PAIRS to its backend twin like a layout home, and says homed_by=config")
+_X11 = dict(_X10); _X11 = {"byFile": dict(_X10["byFile"], **{"src/features/cook/useCook.ts": {"exports": [{"name": "useCook", "kind": "function", "hasJsx": False}], "bindings": {}}})}
+_fe11 = _a3_fe.build_fe(_X11, dict(_ENT10, cook={}), [])
+_h11 = {p["name"]: p["home"] for p in _fe11["pieces"]}
+check(_h11["useCook"] == "fe·cook" and _h11["useGroups"] == "app-shell" and _fe11["stats"].get("homing") == "layout",
+      f"D6 SILENT: a feature layout wins — the config claim is NOT consulted, useGroups stays app-shell ({_h11})")
+_fe12 = _a3_fe.build_fe(_X10, frozenset({"group-share"}), [])
+check(all(p["home"] == "app-shell" for p in _fe12["pieces"]) and _fe12["stats"].get("homing") == "layout",
+      "D6: entities as a bare slug set carry no claims — layout only, honest app-shell")
+check(fe["stats"].get("homing") == "layout", "D6: the fixture (features/ layout) reads homing=layout — byte-identical homes")
 # ── D3 (2026-09-05): a screen file with several hooks — the call's `export` decides which piece carries the screen ──
 _X7 = {"byFile": {"src/features/pantry/usePantryMutations.ts": {
     "exports": [{"name": "useApplyReset", "kind": "function", "hasJsx": False, "jsx": []},
@@ -420,9 +441,12 @@ check(_PF["useUiStore"].get("shape") == "{ dense: boolean }" and _PF["useUiStore
       "D5 FIRE (fixture): create<{ dense: boolean }>() — the zustand store carries its inline shape as fields")
 check(_PF["ThemeContext"].get("shape") == "string" and not _PF["ThemeContext"].get("fields"),
       "D5 (fixture): createContext<string>() — a primitive shape has text and no fields (honest-empty)")
+_ISM = [["rows", "string[]"], ["busy", "boolean"], ["load", "() => void"]]
+check(_PF["useStatementStore"].get("fields") == _ISM and _PF["StatementStore"].get("members") == _ISM,
+      f"D5 FIRE (review 2026-09-05): an INTERSECTION store type (State & Actions) yields its merged members — fields on the store, members on the type ({_PF['useStatementStore'].get('fields')})")
 check(_PF["Recipe"].get("members") == [["id", "string"], ["title", "string"], ["score", "number"]] and _PF["RecipeProps"].get("members") == [["id", "string"]],
       "D5 (fixture): type/interface exports carry their members — the frontend's schema fields")
-check(fe["stats"].get("stores_with_fields") == 1 and fe["stats"].get("types_with_members") == len([p for p in fe["pieces"] if p["kind"] == "fe-type" and p.get("members")]) and fe["stats"].get("types_with_members") >= 2,
+check(fe["stats"].get("stores_with_fields") == 2 and fe["stats"].get("types_with_members") == len([p for p in fe["pieces"] if p["kind"] == "fe-type" and p.get("members")]) and fe["stats"].get("types_with_members") >= 2,
       "D5: stats.stores_with_fields / types_with_members tally the fixture (every typed export with members, Recipe + RecipeProps among them)")
 _X9 = {"byFile": {
     "src/features/cart/types.ts": {"exports": [{"name": "CartState", "kind": "type", "hasJsx": False, "members": [["items", "Item[]"], ["total", "number"]]}], "bindings": {}},

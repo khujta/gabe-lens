@@ -1,20 +1,50 @@
 {
+ "version": 1,
+ "web": ".",
+ "ts": "5.9.3",
+ "files": 23,
  "byFile": {
   "src/app/router.tsx": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "react-router-dom",
+     "to": null,
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "../routes/HomeRoute",
+     "to": "src/routes/HomeRoute.tsx",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "HomeRoute": {
      "file": "src/routes/HomeRoute.tsx",
-     "kind": "function",
-     "name": "HomeRoute"
+     "name": "HomeRoute",
+     "kind": "function"
     }
    },
    "exports": [
     {
+     "name": "router",
+     "isDefault": false,
+     "kind": "call:createBrowserRouter",
+     "reexport": null,
+     "hasJsx": true,
+     "jsx": [
+      "HomeRoute"
+     ],
      "calls": [
       "createBrowserRouter"
      ],
-     "ctxArgs": [],
-     "hasJsx": true,
+     "types": [],
      "idents": [
       "HomeRoute",
       "createBrowserRouter",
@@ -22,221 +52,262 @@
       "path",
       "router"
      ],
-     "isDefault": false,
-     "jsx": [
-      "HomeRoute"
-     ],
-     "kind": "call:createBrowserRouter",
-     "name": "router",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       3,
       3
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [
      "createBrowserRouter"
     ],
-    "hasJsx": true,
     "jsx": [
      "HomeRoute"
-    ]
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "react-router-dom",
-     "to": null,
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "../routes/HomeRoute",
-     "to": "src/routes/HomeRoute.tsx",
-     "typeOnly": false
-    }
-   ],
-   "story": false
+    ],
+    "hasJsx": true
+   }
   },
   "src/design-system/Badge.tsx": {
+   "story": false,
+   "imports": [],
    "bindings": {},
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "Badge",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": true,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "Badge",
       "className",
       "n",
       "span"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "Badge",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       1,
       1
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": true,
-    "jsx": []
-   },
-   "imports": [],
-   "story": false
+    "jsx": [],
+    "hasJsx": true
+   }
   },
   "src/design-system/atoms/Chip.tsx": {
+   "story": false,
+   "imports": [],
    "bindings": {},
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "Chip",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": true,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "Chip",
       "className",
       "em",
       "label"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "Chip",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       1,
       1
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": true,
-    "jsx": []
-   },
-   "imports": [],
-   "story": false
+    "jsx": [],
+    "hasJsx": true
+   }
   },
   "src/features/recipe/RecipeCard.stories.tsx": {
+   "story": true,
+   "imports": [
+    {
+     "spec": "./RecipeCard",
+     "to": "src/features/recipe/RecipeCard.tsx",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "RecipeCard": {
      "file": "src/features/recipe/RecipeCard.tsx",
-     "kind": "function",
-     "name": "RecipeCard"
+     "name": "RecipeCard",
+     "kind": "function"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "Primary",
+     "isDefault": false,
+     "kind": "const",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "Primary",
       "args",
       "id"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "const",
-     "name": "Primary",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       3,
       3
-     ],
-     "types": []
+     ]
     },
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "default",
+     "isDefault": true,
+     "kind": "other",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "RecipeCard",
       "component"
      ],
-     "isDefault": true,
-     "jsx": [],
-     "kind": "other",
-     "name": "default",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       2,
       2
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "./RecipeCard",
-     "to": "src/features/recipe/RecipeCard.tsx",
-     "typeOnly": false
-    }
-   ],
-   "story": true
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/features/recipe/RecipeCard.tsx": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "react",
+     "to": null,
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "@design-system/Badge",
+     "to": "src/design-system/Badge.tsx",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "@store/theme",
+     "to": "src/store/theme.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "@store/ui",
+     "to": "src/store/ui.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "./useRecipe",
+     "to": "src/features/recipe/useRecipe.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "./scoring",
+     "to": "src/features/recipe/scoring.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "./types",
+     "to": "src/features/recipe/types.ts",
+     "external": false,
+     "typeOnly": true,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "Badge": {
      "file": "src/design-system/Badge.tsx",
-     "kind": "function",
-     "name": "Badge"
-    },
-    "RecipeProps": {
-     "file": "src/features/recipe/types.ts",
-     "kind": "interface",
-     "name": "RecipeProps"
-    },
-    "ScorePreviewSpike": {
-     "file": "src/features/recipe/scoring.ts",
-     "kind": "function",
-     "name": "ScorePreviewSpike"
+     "name": "Badge",
+     "kind": "function"
     },
     "ThemeContext": {
      "file": "src/store/theme.ts",
-     "kind": "call:createContext",
-     "name": "ThemeContext"
-    },
-    "score": {
-     "file": "src/features/recipe/scoring.ts",
-     "kind": "function",
-     "name": "score"
-    },
-    "useRecipe": {
-     "file": "src/features/recipe/useRecipe.ts",
-     "kind": "function",
-     "name": "useRecipe"
+     "name": "ThemeContext",
+     "kind": "call:createContext"
     },
     "useUiStore": {
      "file": "src/store/ui.ts",
-     "kind": "call:create",
-     "name": "useUiStore"
+     "name": "useUiStore",
+     "kind": "call:create"
+    },
+    "useRecipe": {
+     "file": "src/features/recipe/useRecipe.ts",
+     "name": "useRecipe",
+     "kind": "function"
+    },
+    "score": {
+     "file": "src/features/recipe/scoring.ts",
+     "name": "score",
+     "kind": "function"
+    },
+    "ScorePreviewSpike": {
+     "file": "src/features/recipe/scoring.ts",
+     "name": "ScorePreviewSpike",
+     "kind": "function"
+    },
+    "RecipeProps": {
+     "file": "src/features/recipe/types.ts",
+     "name": "RecipeProps",
+     "kind": "interface"
     }
    },
    "exports": [
     {
+     "name": "RecipeCard",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
+     "hasJsx": true,
+     "jsx": [
+      "Badge"
+     ],
      "calls": [
       "ScorePreviewSpike",
       "score",
@@ -244,10 +315,9 @@
       "useRecipe",
       "useUiStore"
      ],
-     "ctxArgs": [
-      "ThemeContext"
+     "types": [
+      "RecipeProps"
      ],
-     "hasJsx": true,
      "idents": [
       "Badge",
       "RecipeCard",
@@ -270,19 +340,12 @@
       "useRecipe",
       "useUiStore"
      ],
-     "isDefault": false,
-     "jsx": [
-      "Badge"
+     "ctxArgs": [
+      "ThemeContext"
      ],
-     "kind": "function",
-     "name": "RecipeCard",
-     "reexport": null,
      "span": [
       8,
       14
-     ],
-     "types": [
-      "RecipeProps"
      ]
     }
    ],
@@ -294,145 +357,114 @@
      "useRecipe",
      "useUiStore"
     ],
-    "hasJsx": true,
     "jsx": [
      "Badge"
-    ]
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "react",
-     "to": null,
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "@design-system/Badge",
-     "to": "src/design-system/Badge.tsx",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "@store/theme",
-     "to": "src/store/theme.ts",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "@store/ui",
-     "to": "src/store/ui.ts",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "./useRecipe",
-     "to": "src/features/recipe/useRecipe.ts",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "./scoring",
-     "to": "src/features/recipe/scoring.ts",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "./types",
-     "to": "src/features/recipe/types.ts",
-     "typeOnly": true
-    }
-   ],
-   "story": false
+    ],
+    "hasJsx": true
+   }
   },
   "src/features/recipe/apiAliases.ts": {
+   "story": false,
+   "imports": [],
    "bindings": {},
    "exports": [
     {
+     "name": "PantryItemDTO",
+     "isDefault": false,
+     "kind": "type",
+     "reexport": null,
      "apiAlias": true,
-     "calls": [],
-     "ctxArgs": [],
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [
+      "components"
+     ],
      "idents": [
       "PantryItemDTO",
       "components"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "type",
-     "name": "PantryItemDTO",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       2,
       2
-     ],
-     "types": [
-      "components"
      ]
     },
     {
+     "name": "Recipe2",
+     "isDefault": false,
+     "kind": "type",
+     "reexport": null,
      "apiAlias": true,
-     "calls": [],
-     "ctxArgs": [],
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [
+      "components"
+     ],
      "idents": [
       "Recipe2",
       "components"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "type",
-     "name": "Recipe2",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       1,
       1
-     ],
-     "types": [
-      "components"
      ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/features/recipe/components/detail/RecipeDetailBody.tsx": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "@design-system/atoms/Chip",
+     "to": "src/design-system/atoms/Chip.tsx",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "../../apiAliases",
+     "to": "src/features/recipe/apiAliases.ts",
+     "external": false,
+     "typeOnly": true,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "Chip": {
      "file": "src/design-system/atoms/Chip.tsx",
-     "kind": "function",
-     "name": "Chip"
+     "name": "Chip",
+     "kind": "function"
     },
     "Recipe2": {
      "file": "src/features/recipe/apiAliases.ts",
-     "kind": "type",
-     "name": "Recipe2"
+     "name": "Recipe2",
+     "kind": "type"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "RecipeDetailBody",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": true,
+     "jsx": [
+      "Chip"
+     ],
+     "calls": [],
+     "types": [
+      "Recipe2"
+     ],
      "idents": [
       "Chip",
       "Recipe2",
@@ -441,197 +473,187 @@
       "dto",
       "label"
      ],
-     "isDefault": false,
-     "jsx": [
-      "Chip"
-     ],
-     "kind": "function",
-     "name": "RecipeDetailBody",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       3,
       3
-     ],
-     "types": [
-      "Recipe2"
      ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": true,
     "jsx": [
      "Chip"
-    ]
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "@design-system/atoms/Chip",
-     "to": "src/design-system/atoms/Chip.tsx",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "../../apiAliases",
-     "to": "src/features/recipe/apiAliases.ts",
-     "typeOnly": true
-    }
-   ],
-   "story": false
+    ],
+    "hasJsx": true
+   }
   },
   "src/features/recipe/index.ts": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "./RecipeCard",
+     "to": "src/features/recipe/RecipeCard.tsx",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": true
+    },
+    {
+     "spec": "./useRecipe",
+     "to": "src/features/recipe/useRecipe.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": true
+    },
+    {
+     "spec": "./types",
+     "to": "src/features/recipe/types.ts",
+     "external": false,
+     "typeOnly": true,
+     "dynamic": false,
+     "reexport": true
+    }
+   ],
    "bindings": {},
    "exports": [
     {
+     "name": "Recipe",
      "isDefault": false,
      "kind": "type",
-     "name": "Recipe",
      "reexport": "src/features/recipe/types.ts"
     },
     {
+     "name": "RecipeCard",
      "isDefault": false,
      "kind": "function",
-     "name": "RecipeCard",
      "reexport": "src/features/recipe/RecipeCard.tsx"
     },
     {
+     "name": "RecipeProps",
      "isDefault": false,
      "kind": "interface",
-     "name": "RecipeProps",
      "reexport": "src/features/recipe/types.ts"
     },
     {
+     "name": "useRecipe",
      "isDefault": false,
      "kind": "function",
-     "name": "useRecipe",
      "reexport": "src/features/recipe/useRecipe.ts"
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": true,
-     "spec": "./RecipeCard",
-     "to": "src/features/recipe/RecipeCard.tsx",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": true,
-     "spec": "./useRecipe",
-     "to": "src/features/recipe/useRecipe.ts",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": true,
-     "spec": "./types",
-     "to": "src/features/recipe/types.ts",
-     "typeOnly": true
-    }
-   ],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/features/recipe/mealApi.ts": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "../../lib/apiTypes",
+     "to": "src/lib/apiTypes.ts",
+     "external": false,
+     "typeOnly": true,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "components": {
      "file": "src/lib/apiTypes.ts",
-     "kind": "interface",
-     "name": "components"
+     "name": "components",
+     "kind": "interface"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "Meal",
+     "isDefault": false,
+     "kind": "interface",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "Meal",
       "id"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "interface",
+     "ctxArgs": [],
      "members": [
       [
        "id",
        "string"
       ]
      ],
-     "name": "Meal",
-     "reexport": null,
      "span": [
       2,
       2
-     ],
-     "types": []
+     ]
     },
     {
+     "name": "MealDTO",
+     "isDefault": false,
+     "kind": "type",
+     "reexport": null,
      "apiAlias": true,
-     "calls": [],
-     "ctxArgs": [],
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [
+      "components"
+     ],
      "idents": [
       "MealDTO",
       "components"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "type",
-     "name": "MealDTO",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       3,
       3
-     ],
-     "types": [
-      "components"
      ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "../../lib/apiTypes",
-     "to": "src/lib/apiTypes.ts",
-     "typeOnly": true
-    }
-   ],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/features/recipe/recipeFixtures.ts": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "./types",
+     "to": "src/features/recipe/types.ts",
+     "external": false,
+     "typeOnly": true,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "Recipe": {
      "file": "src/features/recipe/types.ts",
-     "kind": "type",
-     "name": "Recipe"
+     "name": "Recipe",
+     "kind": "type"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "SAMPLE_RECIPES",
+     "isDefault": false,
+     "kind": "const",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [
+      "Recipe"
+     ],
      "idents": [
       "Recipe",
       "SAMPLE_RECIPES",
@@ -639,93 +661,93 @@
       "score",
       "title"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "const",
-     "name": "SAMPLE_RECIPES",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       2,
       2
-     ],
-     "types": [
-      "Recipe"
      ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "./types",
-     "to": "src/features/recipe/types.ts",
-     "typeOnly": true
-    }
-   ],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/features/recipe/scoring.ts": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "./types",
+     "to": "src/features/recipe/types.ts",
+     "external": false,
+     "typeOnly": true,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "Recipe": {
      "file": "src/features/recipe/types.ts",
-     "kind": "type",
-     "name": "Recipe"
+     "name": "Recipe",
+     "kind": "type"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "ScorePreviewSpike",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [
+      "Recipe"
+     ],
      "idents": [
       "Recipe",
       "ScorePreviewSpike",
       "r",
       "score"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "ScorePreviewSpike",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       4,
       4
-     ],
-     "types": [
-      "Recipe"
      ]
     },
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "WEIGHTS",
+     "isDefault": false,
+     "kind": "const",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "WEIGHTS",
       "easy",
       "fresh"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "const",
-     "name": "WEIGHTS",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       2,
       2
-     ],
-     "types": []
+     ]
     },
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "score",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [
+      "Recipe"
+     ],
      "idents": [
       "Recipe",
       "WEIGHTS",
@@ -733,50 +755,50 @@
       "r",
       "score"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "score",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       3,
       3
-     ],
-     "types": [
-      "Recipe"
      ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "./types",
-     "to": "src/features/recipe/types.ts",
-     "typeOnly": true
-    }
-   ],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/features/recipe/spikes/CardLayoutSpike.tsx": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "@design-system/Badge",
+     "to": "src/design-system/Badge.tsx",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "Badge": {
      "file": "src/design-system/Badge.tsx",
-     "kind": "function",
-     "name": "Badge"
+     "name": "Badge",
+     "kind": "function"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "CardLayoutSpike",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": true,
+     "jsx": [
+      "Badge"
+     ],
+     "calls": [],
+     "types": [],
      "idents": [
       "Badge",
       "CardLayoutSpike",
@@ -784,73 +806,60 @@
       "div",
       "n"
      ],
-     "isDefault": false,
-     "jsx": [
-      "Badge"
-     ],
-     "kind": "function",
-     "name": "CardLayoutSpike",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       2,
       2
-     ],
-     "types": []
+     ]
     },
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "SPIKE_VARIANTS",
+     "isDefault": false,
+     "kind": "const",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "SPIKE_VARIANTS"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "const",
-     "name": "SPIKE_VARIANTS",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       3,
       3
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": true,
     "jsx": [
      "Badge"
-    ]
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "@design-system/Badge",
-     "to": "src/design-system/Badge.tsx",
-     "typeOnly": false
-    }
-   ],
-   "story": false
+    ],
+    "hasJsx": true
+   }
   },
   "src/features/recipe/types.ts": {
+   "story": false,
+   "imports": [],
    "bindings": {},
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "Recipe",
+     "isDefault": false,
+     "kind": "type",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "Recipe",
       "id",
       "score",
       "title"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "type",
+     "ctxArgs": [],
      "members": [
       [
        "id",
@@ -865,70 +874,99 @@
        "number"
       ]
      ],
-     "name": "Recipe",
-     "reexport": null,
      "span": [
       1,
       1
-     ],
-     "types": []
+     ]
     },
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "RecipeProps",
+     "isDefault": false,
+     "kind": "interface",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "RecipeProps",
       "id"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "interface",
+     "ctxArgs": [],
      "members": [
       [
        "id",
        "string"
       ]
      ],
-     "name": "RecipeProps",
-     "reexport": null,
      "span": [
       2,
       2
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/features/recipe/useRecipe.ts": {
-   "bindings": {
-    "Recipe": {
-     "file": "src/features/recipe/types.ts",
-     "kind": "type",
-     "name": "Recipe"
+   "story": false,
+   "imports": [
+    {
+     "spec": "react",
+     "to": null,
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
     },
+    {
+     "spec": "@lib/api",
+     "to": "src/lib/api.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "./types",
+     "to": "src/features/recipe/types.ts",
+     "external": false,
+     "typeOnly": true,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
+   "bindings": {
     "apiFetch": {
      "file": "src/lib/api.ts",
-     "kind": "function",
-     "name": "apiFetch"
+     "name": "apiFetch",
+     "kind": "function"
+    },
+    "Recipe": {
+     "file": "src/features/recipe/types.ts",
+     "name": "Recipe",
+     "kind": "type"
     }
    },
    "exports": [
     {
+     "name": "useRecipe",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
      "calls": [
       "apiFetch",
       "useEffect",
       "useState"
      ],
-     "ctxArgs": [],
-     "hasJsx": false,
+     "types": [
+      "Recipe"
+     ],
      "idents": [
       "Recipe",
       "apiFetch",
@@ -940,17 +978,10 @@
       "useRecipe",
       "useState"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "useRecipe",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       4,
       8
-     ],
-     "types": [
-      "Recipe"
      ]
     }
    ],
@@ -960,47 +991,31 @@
      "useEffect",
      "useState"
     ],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "react",
-     "to": null,
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "@lib/api",
-     "to": "src/lib/api.ts",
-     "typeOnly": false
-    },
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "./types",
-     "to": "src/features/recipe/types.ts",
-     "typeOnly": true
-    }
-   ],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/lib/api.ts": {
+   "story": false,
+   "imports": [],
    "bindings": {},
    "exports": [
     {
+     "name": "apiFetch",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
      "calls": [
       "fetch",
       "r"
      ],
-     "ctxArgs": [],
-     "hasJsx": false,
+     "types": [
+      "Promise",
+      "RequestInit",
+      "T"
+     ],
      "idents": [
       "Promise",
       "RequestInit",
@@ -1012,19 +1027,10 @@
       "path",
       "r"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "apiFetch",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       1,
       1
-     ],
-     "types": [
-      "Promise",
-      "RequestInit",
-      "T"
      ]
     }
    ],
@@ -1033,60 +1039,67 @@
      "fetch",
      "r"
     ],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/lib/apiTypes.ts": {
+   "story": false,
+   "imports": [],
    "bindings": {},
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "components",
+     "isDefault": false,
+     "kind": "interface",
+     "reexport": null,
      "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [],
      "idents": [
       "Meal",
       "components",
       "id",
       "schemas"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "interface",
+     "ctxArgs": [],
      "members": [
       [
        "schemas",
        "{ Meal: { id: string } }"
       ]
      ],
-     "name": "components",
-     "reexport": null,
      "span": [
       1,
       1
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/lib/utils/format.ts": {
+   "story": false,
+   "imports": [],
    "bindings": {},
    "exports": [
     {
+     "name": "fmtDate",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
      "calls": [
       "d"
      ],
-     "ctxArgs": [],
-     "hasJsx": false,
+     "types": [
+      "Date"
+     ],
      "idents": [
       "Date",
       "d",
@@ -1094,17 +1107,10 @@
       "slice",
       "toISOString"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "fmtDate",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       1,
       1
-     ],
-     "types": [
-      "Date"
      ]
     }
    ],
@@ -1112,158 +1118,167 @@
     "calls": [
      "d"
     ],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [],
-   "story": false
+    "jsx": [],
+    "hasJsx": false
+   }
   },
   "src/routes/HomeRoute.tsx": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "@features/recipe",
+     "to": "src/features/recipe/index.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "RecipeCard": {
      "file": "src/features/recipe/RecipeCard.tsx",
-     "kind": "function",
-     "name": "RecipeCard"
+     "name": "RecipeCard",
+     "kind": "function"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "HomeRoute",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": true,
+     "jsx": [
+      "RecipeCard"
+     ],
+     "calls": [],
+     "types": [],
      "idents": [
       "HomeRoute",
       "RecipeCard",
       "id",
       "main"
      ],
-     "isDefault": false,
-     "jsx": [
-      "RecipeCard"
-     ],
-     "kind": "function",
-     "name": "HomeRoute",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       2,
       2
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [],
-    "hasJsx": true,
     "jsx": [
      "RecipeCard"
-    ]
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "@features/recipe",
-     "to": "src/features/recipe/index.ts",
-     "typeOnly": false
-    }
-   ],
-   "story": false
+    ],
+    "hasJsx": true
+   }
   },
   "src/routes/LazyRoute.tsx": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "react",
+     "to": null,
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    },
+    {
+     "spec": "@features/recipe/RecipeCard",
+     "to": "src/features/recipe/RecipeCard.tsx",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": true,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "Card": {
      "file": "src/features/recipe/RecipeCard.tsx",
-     "kind": "lazy",
-     "name": "RecipeCard"
+     "name": "RecipeCard",
+     "kind": "lazy"
     }
    },
    "exports": [
     {
-     "calls": [],
-     "ctxArgs": [],
+     "name": "LazyRoute",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
      "hasJsx": true,
+     "jsx": [
+      "Card"
+     ],
+     "calls": [],
+     "types": [],
      "idents": [
       "Card",
       "LazyRoute",
       "id",
       "section"
      ],
-     "isDefault": false,
-     "jsx": [
-      "Card"
-     ],
-     "kind": "function",
-     "name": "LazyRoute",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       5,
       5
-     ],
-     "types": []
+     ]
     }
    ],
    "file_refs": {
     "calls": [
      "lazy"
     ],
-    "hasJsx": true,
     "jsx": [
      "Card"
-    ]
-   },
-   "imports": [
-    {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "react",
-     "to": null,
-     "typeOnly": false
-    },
-    {
-     "dynamic": true,
-     "external": false,
-     "reexport": false,
-     "spec": "@features/recipe/RecipeCard",
-     "to": "src/features/recipe/RecipeCard.tsx",
-     "typeOnly": false
-    }
-   ],
-   "story": false
+    ],
+    "hasJsx": true
+   }
   },
   "src/routes/utils/nav.ts": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "../../lib/utils/format",
+     "to": "src/lib/utils/format.ts",
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
    "bindings": {
     "fmtDate": {
      "file": "src/lib/utils/format.ts",
-     "kind": "function",
-     "name": "fmtDate"
+     "name": "fmtDate",
+     "kind": "function"
     }
    },
    "exports": [
     {
+     "name": "crumb",
+     "isDefault": false,
+     "kind": "function",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
      "calls": [
       "fmtDate"
      ],
-     "ctxArgs": [],
-     "hasJsx": false,
+     "types": [
+      "Date"
+     ],
      "idents": [
       "Date",
       "crumb",
       "d",
       "fmtDate"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "function",
-     "name": "crumb",
-     "reexport": null,
+     "ctxArgs": [],
      "span": [
       2,
       2
-     ],
-     "types": [
-      "Date"
      ]
     }
    ],
@@ -1271,128 +1286,220 @@
     "calls": [
      "fmtDate"
     ],
-    "hasJsx": false,
-    "jsx": []
-   },
+    "jsx": [],
+    "hasJsx": false
+   }
+  },
+  "src/store/statement.ts": {
+   "story": false,
    "imports": [
     {
-     "dynamic": false,
+     "spec": "zustand",
+     "to": null,
      "external": false,
-     "reexport": false,
-     "spec": "../../lib/utils/format",
-     "to": "src/lib/utils/format.ts",
-     "typeOnly": false
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
     }
    ],
-   "story": false
-  },
-  "src/store/theme.ts": {
    "bindings": {},
    "exports": [
     {
-     "calls": [
-      "createContext"
+     "name": "StatementStore",
+     "isDefault": false,
+     "kind": "type",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
+     "calls": [],
+     "types": [
+      "StatementActions",
+      "StatementState"
+     ],
+     "idents": [
+      "StatementActions",
+      "StatementState",
+      "StatementStore"
      ],
      "ctxArgs": [],
-     "hasJsx": false,
-     "idents": [
-      "ThemeContext",
-      "createContext"
+     "members": [
+      [
+       "rows",
+       "string[]"
+      ],
+      [
+       "busy",
+       "boolean"
+      ],
+      [
+       "load",
+       "() => void"
+      ]
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "call:createContext",
-     "name": "ThemeContext",
-     "reexport": null,
-     "shape": {
-      "members": null,
-      "refs": [],
-      "text": "string"
-     },
      "span": [
-      2,
-      2
-     ],
-     "types": []
-    }
-   ],
-   "file_refs": {
-    "calls": [
-     "createContext"
-    ],
-    "hasJsx": false,
-    "jsx": []
-   },
-   "imports": [
+      4,
+      4
+     ]
+    },
     {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "react",
-     "to": null,
-     "typeOnly": false
-    }
-   ],
-   "story": false
-  },
-  "src/store/ui.ts": {
-   "bindings": {},
-   "exports": [
-    {
+     "name": "useStatementStore",
+     "isDefault": false,
+     "kind": "call:create",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
      "calls": [
       "create"
      ],
-     "ctxArgs": [],
-     "hasJsx": false,
-     "idents": [
-      "create",
-      "dense",
-      "useUiStore"
+     "types": [
+      "StatementStore"
      ],
-     "isDefault": false,
-     "jsx": [],
-     "kind": "call:create",
-     "name": "useUiStore",
-     "reexport": null,
+     "idents": [
+      "StatementStore",
+      "busy",
+      "create",
+      "load",
+      "rows",
+      "useStatementStore"
+     ],
+     "ctxArgs": [],
      "shape": {
+      "text": "StatementStore",
+      "refs": [
+       "StatementStore"
+      ],
       "members": [
        [
-        "dense",
+        "rows",
+        "string[]"
+       ],
+       [
+        "busy",
         "boolean"
+       ],
+       [
+        "load",
+        "() => void"
        ]
-      ],
-      "refs": [],
-      "text": "{ dense: boolean }"
+      ]
      },
      "span": [
-      2,
-      2
-     ],
-     "types": []
+      5,
+      5
+     ]
     }
    ],
    "file_refs": {
     "calls": [
      "create"
     ],
-    "hasJsx": false,
-    "jsx": []
-   },
+    "jsx": [],
+    "hasJsx": false
+   }
+  },
+  "src/store/theme.ts": {
+   "story": false,
    "imports": [
     {
-     "dynamic": false,
-     "external": false,
-     "reexport": false,
-     "spec": "zustand",
+     "spec": "react",
      "to": null,
-     "typeOnly": false
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
     }
    ],
-   "story": false
+   "bindings": {},
+   "exports": [
+    {
+     "name": "ThemeContext",
+     "isDefault": false,
+     "kind": "call:createContext",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
+     "calls": [
+      "createContext"
+     ],
+     "types": [],
+     "idents": [
+      "ThemeContext",
+      "createContext"
+     ],
+     "ctxArgs": [],
+     "shape": {
+      "text": "string",
+      "refs": [],
+      "members": null
+     },
+     "span": [
+      2,
+      2
+     ]
+    }
+   ],
+   "file_refs": {
+    "calls": [
+     "createContext"
+    ],
+    "jsx": [],
+    "hasJsx": false
+   }
+  },
+  "src/store/ui.ts": {
+   "story": false,
+   "imports": [
+    {
+     "spec": "zustand",
+     "to": null,
+     "external": false,
+     "typeOnly": false,
+     "dynamic": false,
+     "reexport": false
+    }
+   ],
+   "bindings": {},
+   "exports": [
+    {
+     "name": "useUiStore",
+     "isDefault": false,
+     "kind": "call:create",
+     "reexport": null,
+     "hasJsx": false,
+     "jsx": [],
+     "calls": [
+      "create"
+     ],
+     "types": [],
+     "idents": [
+      "create",
+      "dense",
+      "useUiStore"
+     ],
+     "ctxArgs": [],
+     "shape": {
+      "text": "{ dense: boolean }",
+      "refs": [],
+      "members": [
+       [
+        "dense",
+        "boolean"
+       ]
+      ]
+     },
+     "span": [
+      2,
+      2
+     ]
+    }
+   ],
+   "file_refs": {
+    "calls": [
+     "create"
+    ],
+    "jsx": [],
+    "hasJsx": false
+   }
   }
- },
- "files": 22,
- "ts": "5.9.3",
- "version": 1,
- "web": "."
+ }
 }

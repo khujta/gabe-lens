@@ -571,6 +571,32 @@ print("generators clean · floors intact")
 PY
 ) >"$T/r10.out" 2>&1 && ok || { bad "R10: no generator may compute or read the flag"; cat "$T/r10.out"; }
 
+# ── per-router prefix (review 2026-09-05): a file mounting TWO routers labels each handler by ITS router's prefix ──
+( cd "$GEN" && python3 - "$T" <<'PY'
+import sys, tempfile
+from pathlib import Path
+sys.path.insert(0, ".")
+import _a3_code as C
+root = Path(tempfile.mkdtemp(dir=sys.argv[1])); (root / "src").mkdir()
+(root / "src" / "two.py").write_text(
+    'router = APIRouter(prefix="/groups")\n'
+    'invites_router = APIRouter(prefix="/invites")\n'
+    'stray = APIRouter()\n'
+    '@router.get("/{gid}")\ndef one(): return 1\n'
+    '@invites_router.post("/{token}/accept")\ndef two(): return 2\n'
+    '@stray.get("/loose")\ndef three(): return 3\n'
+    '@app.get("/raw")\ndef four(): return 4\n')
+eps = {e["fn"]: e["path"] for e in C.parse_endpoints(root, ["src/two.py"])}
+assert eps["one"] == "/groups/{gid}", eps             # FIRE: the pre-review rule (last prefix wins) labeled this /invites/{gid}
+assert eps["two"] == "/invites/{token}/accept", eps
+assert eps["three"] == "/loose", eps                   # a router declared WITHOUT a prefix keeps none, whatever its siblings declare
+assert eps["four"] == "/invites/raw", eps              # an object the scan cannot name falls back to the file's last prefix (the unchanged rule)
+(root / "src" / "one.py").write_text('router = APIRouter(prefix="/gadgets")\n@router.get("/x")\ndef gx(): return 1\n')
+assert {e["path"] for e in C.parse_endpoints(root, ["src/one.py"])} == {"/gadgets/x"}   # SILENT: a single router reads exactly as before
+print("per-router prefix ok")
+PY
+) >"$T/prefix.out" 2>&1 && ok || { bad "per-router prefix: each handler wears ITS router's prefix"; cat "$T/prefix.out"; }
+
 # M04: the single-file set's href carries NO set-name segment.
 grep -q 'proof/solo.png"' "$FIX/docs/site/center/feature-gadget.html" \
   && ok || bad "single-file set: href must be proof-root relative"

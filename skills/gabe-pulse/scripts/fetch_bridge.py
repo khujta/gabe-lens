@@ -57,6 +57,18 @@ def _center(root: Path) -> Path:
     return root / "docs" / "site" / "center"
 
 
+def load_unhomed(root: Path) -> int:
+    """``stats.web.unhomed`` — fetching files the bridge could HOME to no entity and whose fetches matched
+    nothing: counted at emit time, drawn nowhere (review 2026-09-05: gastify dropped 13 of 24 from the
+    Screens column and no surface said so). 0 when absent or unreadable — a count that rides the S10
+    line, never its own trigger."""
+    try:
+        web = json.loads((root / "docs" / "site" / "center" / "c4-graph.json").read_text()).get("stats", {}).get("web") or {}
+        return int(web.get("unhomed") or 0)
+    except Exception:  # noqa: BLE001 — honest 0
+        return 0
+
+
 def load_unmatched(root: Path) -> tuple[bool, list[dict], str]:
     """``(present, unmatched, reason)`` from the committed c4-graph.json stats.web."""
     c4 = _center(root) / "c4-graph.json"
@@ -156,13 +168,14 @@ def main() -> int:
 
     try:
         present, unmatched, reason = load_unmatched(root)
+        unhomed = load_unhomed(root) if present else 0
     except FileNotFoundError as exc:
         if args.one_line:
             return 0            # pulse convention: honest silence — no center, no signal
         print(f"fetch_bridge: {exc}", file=sys.stderr)
         return 0                # report-never-gate: never a non-zero exit
     if args.json:
-        print(json.dumps({"present": present, "unmatched": unmatched, "reason": reason},
+        print(json.dumps({"present": present, "unmatched": unmatched, "unhomed": unhomed, "reason": reason},
                          indent=1, sort_keys=True))
         return 0
     if args.one_line:
@@ -170,12 +183,14 @@ def main() -> int:
             names = ", ".join(f"{u.get('m')} {u.get('p')}" for u in unmatched[:2])
             more = f" +{len(unmatched) - 2}" if len(unmatched) > 2 else ""
             print(f"web-bridge drift: {len(unmatched)} fetch(es) hit no declared endpoint "
-                  f"({names}{more})")
+                  f"({names}{more})"
+                  + (f" · {unhomed} fetching file(s) unhomed — no screen drawn" if unhomed else ""))
         return 0
     if not present:
         print(f"web bridge absent ({reason})")
     else:
         print(f"web bridge — {len(unmatched)} unmatched fetch(es)"
+              + (f" · {unhomed} fetching file(s) unhomed (no screen drawn)" if unhomed else "")
               + (f": {reason}" if reason else ""))
         for u in unmatched:
             print(f"  UNMATCHED {u.get('m')} {u.get('p')}  (from {u.get('from')})")

@@ -428,6 +428,27 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                 elif c in _CACHE_CALLEES:                 # a module-scope query/cache call → cache sink (F1)
                     pieces[src]["cache"] = True
 
+    # ── D6 (review 2026-09-05): NO FEATURE LAYOUT → the config's own web claims home the pieces. _fe_home routes
+    #    by directory idiom (features/<x>, <entity>/); a flat src/{routes,hooks,components} tree (gastify) landed
+    #    EVERY piece in app-shell — one bucket, no per-entity fleet rows, every journey's frontend leg in one planet.
+    #    Precedence: layout FIRST (a feature layout wins outright — gustify byte-identical); only when the layout
+    #    homed NOTHING to an entity or candidate do center.config.json's `code.web` claims — carried expanded on
+    #    the archmap as entities[slug].files [['web', path, lines]] — home a piece to fe·<slug> (paired to its
+    #    backend twin exactly like a layout home). Said in stats.homing = 'layout' | 'config' so the station names it.
+    homing = "layout"
+    if isinstance(entities, dict) and pieces and not any(
+            p["home"].startswith("fe·") or p.get("candidate") for p in pieces.values()):
+        _claim: dict[str, str] = {}
+        for _slug in sorted(entities):
+            for _f in (entities[_slug] or {}).get("files") or []:
+                if isinstance(_f, (list, tuple)) and len(_f) >= 2 and _f[0] == "web" and isinstance(_f[1], str):
+                    _claim.setdefault(_f[1], _slug)            # sorted slugs → the first claimant wins, deterministically
+        for p in pieces.values():
+            _slug = _claim.get(p.get("file") or "")
+            if _slug:
+                p["home"] = "fe·" + _slug
+                p["homed_by"] = "config"
+                homing = "config"
     edge_list = [{"from": s, "to": t, "rel": r, "cross": pieces[s]["home"] != pieces[t]["home"]}
                  for (s, t), r in sorted(edges.items())]
     # ── STORE DETECTOR (F2) + feClass. A call wire is STATE if it (transitively) reaches a STORE, a
@@ -553,7 +574,7 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                    else [order[e["from"]], order[e["to"]], e["rel"]]) for e in edge_list],
         "homes": homes,
         "stats": {"files": len(by_file), "pieces": len(pieces), "by_kind": dict(sorted(by_kind.items())),
-                  "by_home": dict(sorted(by_home.items())), "edges": len(edge_list),
+                  "by_home": dict(sorted(by_home.items())), "homing": homing, "edges": len(edge_list),
                   "by_rel": dict(sorted(by_rel.items())), "cross": sum(1 for e in edge_list if e["cross"]),
                   "screens_absorbed": absorbed, "screens_by_export": by_export, "unresolved": unresolved, "local_refs": local["refs"],
                   "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "by_hrole": dict(sorted(by_hrole.items())), "stores_with_fields": sum(1 for _p in pieces.values() if _p["kind"] == "store" and _p.get("fields")), "types_with_members": sum(1 for _p in pieces.values() if _p["kind"] == "fe-type" and _p.get("members")), "promoted": promoted,

@@ -156,6 +156,11 @@ mkc4() { mkdir -p "$1/docs/site/center"
 # FIRES: >=2 unmatched fetches named in stats.web.unmatched
 r=$(repo s10a); mkc4 "$r" '{"stats":{"web":{"present":true,"unmatched":[{"m":"GET","p":"/api/v1/equipment","from":"web:useEquip"},{"m":"GET","p":"/api/v1/notifications","from":"web:useNotifs"}]}}}'
 run "$r" | grep -q "web-bridge drift" && ok "S10 fires: >=2 fetches hit no declared endpoint" || bad "S10 did not fire on unmatched fetches"
+# the UNHOMED count rides the line (review 2026-09-05: gastify drew no screen for 13 of 24 fetching files and no surface said so)
+r=$(repo s10e); mkc4 "$r" '{"stats":{"web":{"present":true,"unhomed":3,"unmatched":[{"m":"GET","p":"/api/v1/a","from":"web:x"},{"m":"GET","p":"/api/v1/b","from":"web:y"}]}}}'
+run "$r" | grep -q "3 fetching file(s) unhomed" && ok "S10 names the unhomed fetching files beside the unmatched count" || bad "S10 hid the unhomed count"
+r=$(repo s10f); mkc4 "$r" '{"stats":{"web":{"present":true,"unmatched":[{"m":"GET","p":"/api/v1/a","from":"web:x"},{"m":"GET","p":"/api/v1/b","from":"web:y"}]}}}'
+run "$r" | grep -q "unhomed" && bad "S10 said 'unhomed' with nothing unhomed" || ok "S10 silent on unhomed when the count is absent"
 
 # SILENT below threshold (1 < 2) — the mutation of the fire case: one stray is not a pattern
 r=$(repo s10b); mkc4 "$r" '{"stats":{"web":{"present":true,"unmatched":[{"m":"GET","p":"/api/v1/equipment","from":"web:useEquip"}]}}}'
