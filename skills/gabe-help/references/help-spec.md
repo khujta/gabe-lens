@@ -116,7 +116,7 @@ The Gabe Suite — 30 skills (each skill IS its slash command).
 | gabe-init | /gabe-init | Project setup — creates .kdbp/, installs hooks, configures by project type and maturity |
 | gabe-kdbp | /gabe-kdbp status \| register \| probe [root] | The suite's second MCP server — a project's .kdbp/ lifecycle state as 7 read-only tools the spine skills reach for (kdbp_snapshot · phase_context · review_ta… |
 | gabe-lens | /gabe-lens | Cognitive translation — analogies, spatial maps, constraint boxes, one-line handles, adapted to your cognitive suit |
-| gabe-map | /gabe-map status \| register \| probe [root] | The suite's MCP server — the project's committed codebase map as 17 tools the agent reaches for mid-reasoning (who_calls · touches · owner_of · cases_for · e… |
+| gabe-map | /gabe-map status \| register \| probe [root] | The suite's MCP server — the project's committed codebase map as 18 tools the agent reaches for mid-reasoning (who_calls · touches · owner_of · cases_for · e… |
 | gabe-meme | /gabe-meme | Oblique memes as visual metaphors — persona-matched template, text that lands by tangent, rendered via memegen.link and verified as PNG. Punch-up only |
 | gabe-mockup | /gabe-mockup | UI/mockup work over a per-project manifest — the lift SOP (L0 resolve → L1 inventory → L2 spike → L3 lift → L4 wire+verify), Storybook discipline, legacy-HTM… |
 | gabe-myopic | /gabe-myopic | Short-sighted-user walkthrough — role-plays shallow planning horizons (1/1.5/2 steps) to flag foresight traps, overwhelm, recall demands, and no-undo dead-en… |
