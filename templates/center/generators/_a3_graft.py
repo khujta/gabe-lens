@@ -893,8 +893,10 @@ def graft_arm(root: Path, entities: dict[str, Any],
         if boot_roots:
             bentities = {**entities}
             _bu = dict(bentities.get("__unclaimed__") or {})
-            _bu["files"] = list(_bu.get("files") or []) + [["boot", r["file"], 0] for r in boot_roots]
-            _bu["endpoints"] = list(_bu.get("endpoints") or []) + list(boot_roots)
+            _f2s0 = _file2slug(bentities)
+            _unowned = [r for r in boot_roots if r["file"] not in _f2s0]   # a task root in a CLAIMED file keeps its entity (review 2026-09-06)
+            _bu["files"] = list(_bu.get("files") or []) + [["boot", r["file"], 0] for r in _unowned]
+            _bu["endpoints"] = list(_bu.get("endpoints") or []) + list(_unowned)
             bentities["__unclaimed__"] = _bu
         out = derive_cross(wiring, entities)       # ORIGINAL wiring + entities — L1 kinds untouched (P5)
         fout = derive_functions(wiring, bentities, dispatches=_disp)   # ORIGINAL calls + dispatches appended once; boot-homed

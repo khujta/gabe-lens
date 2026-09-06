@@ -2022,6 +2022,12 @@ def main() -> int:
         amap["dispatch"] = _dm
     # class 7 (boot): the lifespan/startup root — main.py is unclaimed, so its seeder write-path
     # never drew. Emit non-empty-only (P5); the graft arm homes main.py → __unclaimed__ for it.
+    # class 13 (tasks): queue dispatch BY NAME (Celery/ARQ/Taskiq) — enqueue site → task fn, folded beside the
+    # event-bus edges; the task fns are trace ROOTS. Emitted non-empty-only (P5).
+    _tm = _a3_code.task_map(REPO_ROOT)
+    if _tm:
+        amap["tasks"] = {"tasks": _tm.get("tasks") or [], "stats": _tm.get("stats") or {}}
+        amap["task_roots"] = _a3_code.parse_task_roots(REPO_ROOT)
     _boot = _a3_code.parse_boot_roots(REPO_ROOT)
     if _boot:
         amap["boot_roots"] = _boot
@@ -2074,8 +2080,8 @@ def main() -> int:
                           "externals": _v.get("externals")}   # class 9: providers this fn reaches
                      for _k, _v in _a3_code.function_insight(REPO_ROOT).items()
                      if _v.get("access") or _v.get("sinks") or _v.get("externals")},   # A2+C4+prov: joined onto the call-tree
-            dispatches=(_dm.get("dispatches") or []),   # class 6: event-bus edges folded into the adjacency + drawn distinct
-            boot_roots=(amap.get("boot_roots") or []))  # class 7: home main.py → __unclaimed__ for the boot behind/calls
+            dispatches=(_dm.get("dispatches") or []) + (_tm.get("dispatches") or []),   # class 6 + 13: event-bus and task edges, one wire
+            boot_roots=(amap.get("boot_roots") or []) + (amap.get("task_roots") or []))  # class 7 + 13: boot + task roots homed for behind/calls
         # the web→API bridge arm (Path A frontend): a SEPARATE module with its own
         # try/except so a fetch-parser bug degrades the bridge to honest-empty and
         # NEVER masquerades as graft absence (two arms, two presence flags). Read-only

@@ -620,6 +620,27 @@ check(any(n["kind"] == "unclaimed" for n in _gbt["l1"]["nodes"]),
 _gbt0 = G.build_c4_graph(FIX, labels=LABELS, status=STATUS)
 check(not any(str(n.get("label", "")).startswith("BOOT") for g in _gbt0["l2"].values() for n in g["nodes"]),
       "class 7 honest-empty: no boot_roots → no BOOT node (byte-identical)")
+# ── PASS 3 (review 2026-09-06): TASK roots mint `endpoint:TASK <name>` nodes — homed to the CLAIMING entity, else __unclaimed__; a streaming endpoint carries `stream` ──
+_fixtk = json.loads(json.dumps(FIX))
+_claimed_file = next(f for _e in _fixtk["entities"].values() for _l, f, _n in (_e.get("files") or []) if f.endswith(".py"))
+_claim_slug = next(s for s, _e in _fixtk["entities"].items() for _l, f, _n in (_e.get("files") or []) if f == _claimed_file)
+_fixtk["task_roots"] = [
+    {"method": "TASK", "path": "index_docs", "fn": "index_docs", "file": _claimed_file, "touches": [], "touches_x": [], "doc": "Index one connector.", "resp": "—", "status": "—"},
+    {"method": "TASK", "path": "nightly", "fn": "nightly", "file": "apps/api/worker.py", "touches": [], "touches_x": [], "doc": "", "resp": "—", "status": "—"}]
+_gtk = G.build_c4_graph(_fixtk, labels=LABELS, status=STATUS)
+_taskn = {n["id"]: n["slug"] for g in _gtk["l2"].values() for n in g["nodes"] if n.get("kind") == "endpoint" and str(n["id"]).startswith("endpoint:TASK ")}
+check(_taskn.get("endpoint:TASK index_docs") == _claim_slug and _taskn.get("endpoint:TASK nightly") == "__unclaimed__",
+      f"pass 3 FIRE: a task root in a claimed file mints into ITS entity, an unclaimed one into __unclaimed__ ({_taskn})")
+check(not any(str(n["id"]).startswith("endpoint:TASK ") for g in _gbt0["l2"].values() for n in g["nodes"]),
+      "pass 3 SILENT: no task_roots → no TASK node (byte-identical)")
+_fixst = json.loads(json.dumps(FIX))
+_ep0 = next(iter(next(iter(_fixst["entities"].values()))["endpoints"]))
+_ep0["stream"] = True
+_gst = G.build_c4_graph(_fixst, labels=LABELS, status=STATUS)
+_stn = [n for g in _gst["l2"].values() for n in g["nodes"] if n.get("kind") == "endpoint" and n.get("stream")]
+check(len(_stn) == 1 and _stn[0]["id"] == f"endpoint:{_ep0['method']} {_ep0['path']}", f"pass 3: the streaming marker rides the endpoint node ({[n['id'] for n in _stn]})")
+check(not any(n.get("stream") for g in _gbt0["l2"].values() for n in g["nodes"]), "pass 3 SILENT: no stream flag → no stream key")
+
 # review fix [9]: a boot endpoint writing an UNMAPPED model is co-homed in __unclaimed__ → the write
 # edge must land INTRA (source/target), not be dropped as a self-slug skip
 _gb9 = G.build_c4_graph(_fixbt, labels=LABELS, status=STATUS,

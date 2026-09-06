@@ -627,6 +627,8 @@ def _l2(slug: str, code: dict[str, Any], tbl2slug: dict[str, str],
             enode["middleware"] = ep["middleware"]
         if ep.get("flags"):                         # class 12: the feature-flag walls on this endpoint
             enode["flags"] = ep["flags"]
+        if ep.get("stream"):                        # class 13b: streams to the client (SSE / chunked)
+            enode["stream"] = True
         edet = with_journeys(det_of("endpoint", ep),
                              f"{ep.get('file')}::{ep.get('fn')}")
         _rsp = _bare_cls(ep.get("resp"))     # response PAYLOAD: unwrap list[X]/Optional[X] → X, then the field-count
@@ -1021,6 +1023,34 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
     # carries its behind pill + the seeder write-path rollup (main.py was homed to __unclaimed__ in
     # the graft arm, so behind[main.py#lifespan] + its endpoint_access resolve). Merges with the
     # existing bucket if the census already made one. Honest-empty: no boot root → nothing.
+    # class 13 · TASK roots: mint an `endpoint:TASK <name>` node per worker task, homed to the entity that
+    # claims the task file (merged into its l2) — else into __unclaimed__ beside BOOT. Honest-empty.
+    _troots = amap.get("task_roots") or []
+    if _troots:
+        _tf2s: dict[str, str] = {}
+        for _s, _e in (amap.get("entities") or {}).items():
+            for _l, _f, _n in ((_e or {}).get("files") or []):
+                _tf2s.setdefault(_f, _s)
+        _byhome: dict[str, list] = {}
+        for _r in _troots:
+            _byhome.setdefault(_tf2s.get(_r["file"], _UNCLAIMED), []).append(_r)
+        for _home, _rs in sorted(_byhome.items()):
+            _tcode = {"endpoints": _rs, "models": [], "schemas": [],
+                      "files": [["task", _r["file"], 0] for _r in _rs]}
+            _tg = _l2(_home, _tcode, tbl2slug, labels, insight, None, behind,
+                      journeys, schema_fields, endpoint_access=endpoint_access)
+            if _home in l2:
+                _seen_ids = {n["id"] for n in l2[_home]["nodes"]}
+                l2[_home]["nodes"].extend(n for n in _tg["nodes"] if n["id"] not in _seen_ids)
+                l2[_home]["edges"].extend(_tg["edges"])
+                l2[_home]["nodes"].sort(key=lambda n: (_L2_KINDS.index(n["kind"]), n["id"]))
+                _stamp_l2(l2[_home])
+            else:
+                _stamp_l2(_tg)
+                l2[_home] = _tg
+            if _home == _UNCLAIMED and not any(n["kind"] == "unclaimed" for n in l1_nodes):
+                l1_nodes.append({"id": _UNCLAIMED, "label": "unclaimed", "kind": "unclaimed",
+                                 "slug": _UNCLAIMED, "status": None, "counts": None})
     _broots = amap.get("boot_roots") or []
     if _broots:
         _bcode = {"endpoints": _broots, "models": [], "schemas": [],
@@ -1266,7 +1296,7 @@ def build_c4_graph(amap: dict[str, Any], labels: dict[str, str] | None = None,
         # not a request CORS/rate-limit middleware wraps — counting it inflates `gates` + draws a false wire.
         _all_eps = [(_n["id"], _sl) for _sl, _g in l2.items()
                     for _n in _g.get("nodes", [])
-                    if _n.get("kind") == "endpoint" and not _n["id"].startswith("endpoint:BOOT ")]
+                    if _n.get("kind") == "endpoint" and not _n["id"].startswith(("endpoint:BOOT ", "endpoint:TASK "))]   # BOOT + TASK are pseudo-endpoints (roots), not HTTP requests
         _mw_seen: set = set()                              # review fix [5]: node ids are unique — dedup the mint
         for _m in _app_mw:
             _scope = _m.get("scope", "all")

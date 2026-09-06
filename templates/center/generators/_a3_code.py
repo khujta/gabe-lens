@@ -480,6 +480,8 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
                     "resp": (resp or "—").removeprefix("PaginatedResponse[").removesuffix("]"),
                     "status": status or "200",
                 }
+                if _streams(node, dec):                                # class 13b: the handler streams (SSE / chunked) — an async generator, not one payload
+                    ep["stream"] = True
                 mw = _endpoint_middleware(node, dec, _aliases)   # C4: the level-2 gates (auth/consent/idempotency) run before the body
                 if mw:
                     ep["middleware"] = mw
@@ -488,6 +490,22 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
                     ep["flags"] = _fl
                 out.append(ep)
     return out
+
+
+_STREAM_CLASSES = frozenset({"StreamingResponse", "EventSourceResponse"})
+
+
+def _streams(node, route_dec) -> bool:
+    """True when the handler returns a streaming response — `StreamingResponse(...)` / sse-starlette's
+    `EventSourceResponse(...)` in its body, or `response_class=StreamingResponse` on the route (review
+    2026-09-06: tier2's chat stream read as a plain POST; the token's path had no marker)."""
+    for kw in getattr(route_dec, "keywords", []):
+        if kw.arg == "response_class" and (getattr(kw.value, "id", None) or getattr(kw.value, "attr", None)) in _STREAM_CLASSES:
+            return True
+    for n in ast.walk(node):
+        if isinstance(n, ast.Call) and (getattr(n.func, "id", None) or getattr(n.func, "attr", None)) in _STREAM_CLASSES:
+            return True
+    return False
 
 
 def _schema_orm(node: ast.ClassDef) -> bool:
@@ -1656,6 +1674,14 @@ _PROVIDER_ROOTS = {
     "sentry_sdk": "sentry", "openai": "openai", "anthropic": "anthropic",
     "stripe": "stripe", "boto3": "aws", "redis": "redis",
     "httpx": "http", "requests": "http", "aiohttp": "http",
+    # the AI stack (review 2026-09-06, tier2/tier3): an LLM, agent, embedding or vector provider is an
+    # edge of the system like any other SDK — one wire per bound name, never a tag on every import
+    "langchain": "langchain", "langchain_core": "langchain", "langchain_community": "langchain",
+    "langchain_openai": "openai", "langchain_anthropic": "anthropic", "langgraph": "langgraph",
+    "litellm": "litellm", "mem0": "mem0", "pgvector": "pgvector", "qdrant_client": "qdrant",
+    "pinecone": "pinecone", "cohere": "cohere", "voyageai": "voyage", "ollama": "ollama",
+    "vertexai": "vertex", "mistralai": "mistral", "groq": "groq", "together": "together",
+    "sentence_transformers": "sentence-transformers", "transformers": "huggingface",
 }
 # `google` is NOT a provider root (review fix [11]): google.oauth2/google.cloud/google.auth are NOT
 # the Gemini LLM — only the genai SDK is. Matched by the specific submodule below, never by root.
@@ -2259,6 +2285,193 @@ def dispatch_map(repo: Path) -> dict:
                       "edges": len(edges)}}
            if edges else {})
     _DISPATCH = out
+    return out
+
+
+
+
+# ── TASK DISPATCH BY NAME (review 2026-09-06, repo-study — class 13). A queue hands work to a worker by a
+#    NAME, never a call: Celery `app.send_task("x")` / `fn.delay()` / `fn.apply_async()` reaches
+#    `@shared_task(name="x")`; ARQ `enqueue_job("fn")` reaches a function listed in `WorkerSettings.functions`;
+#    Taskiq `fn.kiq()` reaches `@broker.task`. graft sees none of it (onyx: 46 @shared_task · 33 send_task,
+#    every indexing mission dark past the enqueue). Two AST passes over the entity-mapped files — the
+#    TASK REGISTRY (name → `<file>#<fn>`, names resolved through string constants / class attributes such as
+#    `OnyxCeleryTask.CHECK_FOR_INDEXING`) and the DISPATCH SITES (enclosing fn → task) — joined into the same
+#    `dispatches` shape the event-bus map emits (rel 'dispatches', conf 'extracted'), so the station draws
+#    them with the wire it already has. Task functions are also TRACE ROOTS (`parse_task_roots`) — a
+#    worker's chain was unreachable even with the edge, because only handlers rooted the levels walk.
+_TASK_DECOS = frozenset({"shared_task", "task"})              # @shared_task(…) · @celery_app.task(…) · @broker.task(…)
+_TASK_SEND = frozenset({"send_task", "enqueue_job", "enqueue"})  # <app>.send_task(NAME) · <pool>.enqueue_job("fn")
+_TASK_CALL = frozenset({"delay", "apply_async", "kiq"})          # <fn>.delay(…) · <fn>.apply_async(…) · <fn>.kiq(…)
+_TASKS: dict | None = None
+_TASK_ROOTS: list | None = None
+
+
+def _mapped_trees(repo: Path) -> dict[str, ast.AST]:
+    trees: dict[str, ast.AST] = {}
+    for slug in ENTITY_CODE:
+        v = collect_entity_map(slug, repo)
+        if not v:
+            continue
+        for _layer, f, _n in v.get("files", []):
+            if f.endswith(".py") and f not in trees:
+                t, _ = _safe_parse(repo / f)
+                if t is not None:
+                    trees[f] = t
+    return trees
+
+
+def _str_constants(trees: dict) -> dict[str, str]:
+    """{`NAME` | `Class.NAME`: literal} — module-level and class-body string assignments (the task-name
+    registries: `class OnyxCeleryTask: CHECK_FOR_INDEXING = "check_for_indexing"`). An f-string stays
+    unresolved (named, never guessed)."""
+    out: dict[str, str] = {}
+    for t in trees.values():
+        for node in t.body:
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                for tg in node.targets:
+                    if isinstance(tg, ast.Name):
+                        out.setdefault(tg.id, node.value.value)
+            elif isinstance(node, ast.ClassDef):
+                for item in node.body:
+                    if isinstance(item, ast.Assign) and isinstance(item.value, ast.Constant) and isinstance(item.value.value, str):
+                        for tg in item.targets:
+                            if isinstance(tg, ast.Name):
+                                out.setdefault(f"{node.name}.{tg.id}", item.value.value)
+    return out
+
+
+def _name_arg(expr, consts: dict) -> str | None:
+    """A task name from a literal, a bare constant, or a `Class.ATTR` — else None."""
+    if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
+        return expr.value
+    if isinstance(expr, ast.Name):
+        return consts.get(expr.id)
+    if isinstance(expr, ast.Attribute) and isinstance(expr.value, ast.Name):
+        return consts.get(f"{expr.value.id}.{expr.attr}")
+    return None
+
+
+def _task_registry(trees: dict, consts: dict) -> tuple[dict[str, str], list[dict]]:
+    """({task name: `<file>#<fn>`}, [task records]) — every decorated task fn + every fn an ARQ
+    `WorkerSettings.functions` list names. A task answers to its declared `name=`, its bare fn name and
+    its dotted `module.fn` (Celery's default name)."""
+    reg: dict[str, str] = {}
+    recs: list[dict] = []
+    for f, t in trees.items():
+        mod = f[:-3].replace("/", ".")
+        arq: set[str] = set()
+        for node in ast.walk(t):
+            if isinstance(node, ast.ClassDef) and node.name == "WorkerSettings":
+                for item in node.body:
+                    if isinstance(item, ast.Assign) and isinstance(item.value, (ast.List, ast.Tuple)):
+                        arq.update(e.id for e in item.value.elts if isinstance(e, ast.Name))
+        for node in ast.walk(t):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            declared = None
+            is_task = node.name in arq
+            for dec in node.decorator_list:
+                leaf = _dec_name(dec)
+                if leaf in _TASK_DECOS:
+                    is_task = True
+                    if isinstance(dec, ast.Call):
+                        for kw in dec.keywords:
+                            if kw.arg == "name":
+                                declared = _name_arg(kw.value, consts) or declared
+            if not is_task:
+                continue
+            tid = f"{f}#{node.name}"
+            names = [n for n in (declared, node.name, f"{mod}.{node.name}") if n]
+            for n in names:
+                reg.setdefault(n, tid)
+            recs.append({"name": declared or node.name, "fn": node.name, "file": f,
+                         "doc": _first_sentence(ast.get_docstring(node)), "line": node.lineno})
+    return reg, sorted(recs, key=lambda r: (r["file"], r["fn"]))
+
+
+def task_map(repo: Path) -> dict:
+    """{dispatches: [{s, t, event, conf}], stats} — enqueue site → task fn, joined by NAME. `{}`
+    honest-empty (no task, no dispatch → byte-identical). Deterministic (sorted)."""
+    global _TASKS
+    if _TASKS is not None:
+        return _TASKS
+    trees = _mapped_trees(repo)
+    consts = _str_constants(trees)
+    reg, recs = _task_registry(trees, consts)
+    name2file: dict[str, list[str]] = {}
+    for f, t in trees.items():
+        for node in ast.walk(t):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                name2file.setdefault(node.name, []).append(f)
+    dispatches: set[tuple] = set()
+    unresolved: list[str] = []
+    sites = 0
+    for f, t in trees.items():
+        for fnnode in ast.walk(t):
+            if not isinstance(fnnode, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            pid = f"{f}#{fnnode.name}"
+            stack = list(ast.iter_child_nodes(fnnode))
+            while stack:                                   # this fn's OWN body — never a nested def's
+                n = stack.pop()
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                    continue
+                stack.extend(ast.iter_child_nodes(n))
+                if not isinstance(n, ast.Call):
+                    continue
+                attr = _call_attr(n.func)
+                tid = None
+                label = None
+                if attr in _TASK_SEND and n.args:           # send_task(NAME) · enqueue_job("fn")
+                    sites += 1
+                    label = _name_arg(n.args[0], consts)
+                    if label:
+                        tid = reg.get(label)
+                        if tid is None and attr != "send_task":
+                            cands = name2file.get(label) or []
+                            tid = f"{cands[0]}#{label}" if len(cands) == 1 else None
+                    if tid is None:
+                        unresolved.append(label or ast.unparse(n.args[0])[:60])
+                elif attr in _TASK_CALL and isinstance(n.func, ast.Attribute):   # fn.delay(…) · fn.apply_async(…)
+                    recv = n.func.value
+                    fname = getattr(recv, "id", None) or getattr(recv, "attr", None)
+                    if not fname:
+                        continue
+                    sites += 1
+                    label = fname
+                    tid = reg.get(fname)
+                    if tid is None:
+                        cands = name2file.get(fname) or []
+                        tid = f"{cands[0]}#{fname}" if len(cands) == 1 else None
+                    if tid is None:
+                        unresolved.append(fname)
+                if tid and tid != pid:
+                    dispatches.add((pid, tid, label or tid.rsplit("#", 1)[-1]))
+    edges = [{"s": s, "t": t, "event": e, "conf": "extracted"} for (s, t, e) in sorted(dispatches)]
+    out = ({"dispatches": edges, "tasks": recs,
+            "stats": {"tasks": len(recs), "sites": sites, "edges": len(edges),
+                      "unresolved": sorted(set(unresolved))[:20]}}
+           if (edges or recs) else {})
+    _TASKS = out
+    return out
+
+
+def parse_task_roots(repo: Path) -> list[dict]:
+    """TASK roots (class 13): every task fn as an endpoint-shaped record `{method:'TASK', path:<name>, fn,
+    file, touches, touches_x, doc, resp, status}` — the C4 mints an `endpoint:TASK <name>` node homed to
+    the task file's entity (else __unclaimed__) and the levels walk ROOTS on it, so a worker's chain
+    (fetch → chunk → embed → index) draws downstream of the queue. `[]` honest-empty."""
+    global _TASK_ROOTS
+    if _TASK_ROOTS is not None:
+        return _TASK_ROOTS
+    tm = task_map(repo)
+    out: list[dict] = []
+    for r in tm.get("tasks") or []:
+        out.append({"method": "TASK", "path": r["name"], "fn": r["fn"], "file": r["file"],
+                    "touches": [], "touches_x": [], "doc": r.get("doc") or "",
+                    "resp": "—", "status": "—"})
+    _TASK_ROOTS = out
     return out
 
 

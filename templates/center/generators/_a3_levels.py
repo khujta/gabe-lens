@@ -243,6 +243,13 @@ def build_levels(amap: dict[str, Any], graph: dict[str, Any],
         _bid = str(_r.get("file")) + "#" + str(_r.get("fn"))
         drawn_fn.setdefault(_bid, "__unclaimed__")
         _handlers.add(_bid)
+    # rule 0b · class 13 · TASK roots (Celery/ARQ/Taskiq workers) join the handler set too — homed to the
+    # entity that claims the task file, else __unclaimed__ — so a worker's chain draws past the queue.
+    _f2s_t = {f: s for s, e in (amap.get("entities") or {}).items() if e for _l, f, _n in (e.get("files") or [])}
+    for _r in amap.get("task_roots") or []:
+        _tid = str(_r.get("file")) + "#" + str(_r.get("fn"))
+        drawn_fn.setdefault(_tid, _f2s_t.get(str(_r.get("file")), "__unclaimed__"))
+        _handlers.add(_tid)
     # 2 · use_edges + usefns — a fn references a model owned elsewhere
     usefns_by: dict[str, dict[str, int]] = {}
     for cls in sorted(MI):

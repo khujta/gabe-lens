@@ -667,6 +667,59 @@ print("pass-1 resilience ok")
 PY
 ) >"$T/pass1.out" 2>&1 && ok || { bad "pass 1: SQLModel tables · mount chain · alias/factory Depends · globs · unparseable"; cat "$T/pass1.out"; }
 
+# ── PASS 3 · dispatch by NAME (Celery/ARQ/Taskiq) → task edges + task roots · the streaming marker. FIRE + SILENT. ──
+( cd "$GEN" && python3 - "$T" <<'PY'
+import sys, tempfile
+from pathlib import Path
+sys.path.insert(0, ".")
+import _a3_code as C
+root = Path(tempfile.mkdtemp(dir=sys.argv[1])); (root / "svc").mkdir()
+(root / "svc" / "consts.py").write_text("class Tasks:\n    INDEX = 'index_docs'\n    BAD = f'{x}_dyn'\n")
+(root / "svc" / "tasks.py").write_text(
+    "from svc.consts import Tasks\n"
+    "@shared_task(name=Tasks.INDEX)\ndef index_docs(cc_id):\n    '''Index one connector.'''\n    return 1\n"
+    "@celery_app.task\ndef cleanup():\n    return 2\n"
+    "class WorkerSettings:\n    functions = [nightly]\n"
+    "async def nightly(ctx):\n    return 3\n"
+    "def helper():\n    return 4\n")
+(root / "svc" / "api.py").write_text(
+    "from svc.consts import Tasks\n"
+    "def kick(app):\n    app.send_task(Tasks.INDEX, args=[1])\n    cleanup.delay()\n    pool.enqueue_job('nightly')\n    app.send_task(Tasks.BAD)\n    app.send_task(name_var)\n"
+    "def noop():\n    helper()\n")
+trees = {f: C._safe_parse(root / f)[0] for f in ("svc/consts.py", "svc/tasks.py", "svc/api.py")}
+consts = C._str_constants(trees)
+assert consts.get("Tasks.INDEX") == "index_docs" and "Tasks.BAD" not in consts, consts      # an f-string constant is NOT resolved
+reg, recs = C._task_registry(trees, consts)
+assert reg.get("index_docs") == "svc/tasks.py#index_docs" and reg.get("svc.tasks.index_docs") == "svc/tasks.py#index_docs", reg
+assert reg.get("cleanup") == "svc/tasks.py#cleanup" and reg.get("nightly") == "svc/tasks.py#nightly" and "helper" not in reg, reg   # decorated + ARQ-listed are tasks; a plain fn is not
+assert [r["name"] for r in recs] == ["cleanup", "index_docs", "nightly"], recs
+# task_map end to end over a fake ENTITY_CODE (the mapped corpus)
+C.ENTITY_CODE = {"svc": {"services": ["svc/*.py"]}}
+C._TASKS = None; C._TASK_ROOTS = None
+import _a3_code
+_a3_code._ENTITY_MAPS = {} if hasattr(_a3_code, "_ENTITY_MAPS") else None
+tm = C.task_map(root)
+edges = {(e["s"], e["t"], e["event"]) for e in tm.get("dispatches") or []}
+assert ("svc/api.py#kick", "svc/tasks.py#index_docs", "index_docs") in edges, edges       # FIRE: send_task(Class.CONST) → the named task
+assert ("svc/api.py#kick", "svc/tasks.py#cleanup", "cleanup") in edges, edges              # fn.delay() → the task fn
+assert ("svc/api.py#kick", "svc/tasks.py#nightly", "nightly") in edges, edges              # enqueue_job('fn') → the ARQ fn
+assert len(edges) == 3 and tm["stats"]["sites"] == 5 and set(tm["stats"]["unresolved"]) >= {"name_var"}, tm["stats"]   # SILENT: the dynamic + f-string names are NAMED unresolved, never guessed
+roots = C.parse_task_roots(root)
+assert [(r["method"], r["path"], r["fn"]) for r in roots] == [("TASK", "cleanup", "cleanup"), ("TASK", "index_docs", "index_docs"), ("TASK", "nightly", "nightly")], roots
+assert roots[1]["doc"] == "Index one connector.", roots
+# the streaming marker
+(root / "svc" / "routes.py").write_text(
+    "router = APIRouter(prefix='/chat')\n"
+    "@router.post('/stream')\nasync def stream():\n    return StreamingResponse(gen(), media_type='text/event-stream')\n"
+    "@router.get('/events', response_class=EventSourceResponse)\nasync def events():\n    return x\n"
+    "@router.post('/plain')\nasync def plain():\n    return {'ok': 1}\n")
+C._MOUNTS.clear()
+eps = {e["fn"]: e.get("stream") for e in C.parse_endpoints(root, ["svc/routes.py"])}
+assert eps == {"stream": True, "events": True, "plain": None}, eps
+print("pass-3 ok")
+PY
+) >"$T/pass3.out" 2>&1 && ok || { bad "pass 3: task dispatch by name · task roots · streaming marker"; cat "$T/pass3.out"; }
+
 # M04: the single-file set's href carries NO set-name segment.
 grep -q 'proof/solo.png"' "$FIX/docs/site/center/feature-gadget.html" \
   && ok || bad "single-file set: href must be proof-root relative"
