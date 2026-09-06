@@ -597,6 +597,76 @@ print("per-router prefix ok")
 PY
 ) >"$T/prefix.out" 2>&1 && ok || { bad "per-router prefix: each handler wears ITS router's prefix"; cat "$T/prefix.out"; }
 
+# ── PASS 1 · foreign-repo resilience (review 2026-09-06, repo-study): SQLModel tables · router mount chain ·
+#    Annotated alias + factory Depends · config globs · unparseable-file signal. FIRE + SILENT each. ──
+( cd "$GEN" && python3 - "$T" <<'PY'
+import sys, tempfile
+from pathlib import Path
+sys.path.insert(0, ".")
+import _a3_code as C
+root = Path(tempfile.mkdtemp(dir=sys.argv[1]))
+# 1 · SQLModel `table=True` is a table (name = class lowercased); a base without it is not; __tablename__ wins
+(root / "m.py").write_text(
+    "class UserBase(SQLModel):\n    email: str\n"
+    "class User(UserBase, table=True):\n    id: int\n"
+    "class Item(SQLModel, table=True):\n    __tablename__ = 'items_t'\n    id: int\n"
+    "class Plain(Base):\n    id: int\n")
+tabs = dict(C._table_classes(C._safe_parse(root / "m.py")[0]))
+assert tabs == {"User": "user", "Item": "items_t"}, tabs                       # FIRE: the __tablename__-only rule saw ZERO tables here
+ms = {m["cls"]: m["table"] for m in C.parse_models(root, ["m.py"], None)}
+assert ms.get("User") == "user" and ms.get("Item") == "items_t" and "UserBase" not in ms and "Plain" not in ms, ms
+# 2 · the app → include_router chain: mount prefixes resolve through imports; /api/vN is stripped; non-literal is NAMED
+(root / "app").mkdir(); (root / "app" / "__init__.py").write_text("")
+(root / "app" / "api").mkdir(); (root / "app" / "api" / "__init__.py").write_text("")
+(root / "app" / "api" / "routes").mkdir(); (root / "app" / "api" / "routes" / "__init__.py").write_text("")
+(root / "app" / "main.py").write_text(
+    "from app.api.main import api_router\nfrom app.api.routes import health\n"
+    "app = FastAPI()\napp.include_router(api_router, prefix='/api/v1')\napp.include_router(health.router)\n")
+(root / "app" / "api" / "main.py").write_text(
+    "from app.api.routes import login, users\nfrom app.api.routes.items import router as items_router\n"
+    "api_router = APIRouter()\napi_router.include_router(login.router)\n"
+    "api_router.include_router(users.router, prefix='/users')\napi_router.include_router(items_router, prefix=settings.ITEMS)\n")
+(root / "app" / "api" / "routes" / "login.py").write_text("router = APIRouter(prefix='/login')\n@router.post('/access-token')\ndef login(): return 1\n")
+(root / "app" / "api" / "routes" / "users.py").write_text("router = APIRouter()\n@router.get('/{user_id}')\ndef read(): return 1\n")
+(root / "app" / "api" / "routes" / "items.py").write_text("router = APIRouter()\n@router.get('/')\ndef items(): return 1\n")
+(root / "app" / "api" / "routes" / "health.py").write_text("router = APIRouter()\n@router.get('/healthz')\ndef hz(): return 1\n")
+C._MOUNTS.clear()
+files = ["app/api/routes/login.py", "app/api/routes/users.py", "app/api/routes/items.py", "app/api/routes/health.py"]
+eps = {e["fn"]: e["path"] for e in C.parse_endpoints(root, files)}
+assert eps["login"] == "/login/access-token", eps            # own prefix under a stripped /api/v1 mount
+assert eps["read"] == "/users/{user_id}", eps                # FIRE: the leaf-only rule labeled this /{user_id}
+assert eps["items"] == "/", eps                              # a non-literal include prefix contributes "" — never a guess
+assert eps["hz"] == "/healthz", eps                          # mounted on the app directly — untouched
+st = C.mount_stats(root)
+assert st["mounted"] >= 2 and any("non-literal prefix: settings.ITEMS" in u["why"] for u in st["unresolved"]), st
+# 3 · Annotated alias (imported) + factory Depends callee
+(root / "app" / "deps.py").write_text("CurrentUser = Annotated[dict, Depends(get_current_user)]\n")
+(root / "app" / "api" / "routes" / "me.py").write_text(
+    "from app.deps import CurrentUser\nrouter = APIRouter()\n"
+    "@router.get('/me', dependencies=[Depends(require_permission(Perm.ADMIN))])\ndef me(user: CurrentUser): return 1\n")
+C._MOUNTS.clear(); C._ALIASES.clear()
+mw = {m["name"]: m for m in C.parse_endpoints(root, ["app/api/routes/me.py"])[0]["middleware"]}
+assert "get_current_user" in mw and mw["get_current_user"]["gate"], mw          # FIRE: a bare-Name alias annotation drew nothing
+fac = mw.get("require_permission(Perm.ADMIN)")
+assert fac and fac.get("callee") == "require_permission" and fac["gate"], mw   # the factory's leaf resolves; the display name stays exact
+# 4 · config globs expand (recursive **), literals pass through
+(root / "mods").mkdir(); (root / "mods" / "a").mkdir(); (root / "mods" / "b").mkdir(); (root / "mods" / "b" / "deep").mkdir()
+for f in ("a/routes.py", "b/routes.py", "b/deep/routes.py"): (root / "mods" / f).write_text("router = APIRouter()\n")
+assert C._expand_globs(root, ["mods/*/routes.py"]) == ["mods/a/routes.py", "mods/b/routes.py"]
+assert C._expand_globs(root, ["mods/**/routes.py"]) == ["mods/a/routes.py", "mods/b/deep/routes.py", "mods/b/routes.py"]
+assert C._expand_globs(root, ["mods/a/routes.py", "nope.py"]) == ["mods/a/routes.py", "nope.py"]   # SILENT: literals untouched
+# 5 · an unparseable file is NAMED, not silently skipped
+(root / "bad.py").write_text("def broken(:\n    pass\n")
+C._UNPARSEABLE.clear(); C._safe_parse(root / "bad.py")
+assert any("bad.py" in k and "syntax error" in v for k, v in C.unparseable_files()), C.unparseable_files()
+# 5b · a NEWER-Python spelling (PEP 758 `except A, B:` — tier0 requires 3.14) parses through the shim; a real error still does not
+(root / "new.py").write_text("def f():\n    try:\n        pass\n    except ValueError, KeyError:\n        raise\n")
+C._UNPARSEABLE.clear(); t, _ = C._safe_parse(root / "new.py")
+assert t is not None and not C.unparseable_files(), C.unparseable_files()   # FIRE: the plain 3.12 parse rejects this line
+print("pass-1 resilience ok")
+PY
+) >"$T/pass1.out" 2>&1 && ok || { bad "pass 1: SQLModel tables · mount chain · alias/factory Depends · globs · unparseable"; cat "$T/pass1.out"; }
+
 # M04: the single-file set's href carries NO set-name segment.
 grep -q 'proof/solo.png"' "$FIX/docs/site/center/feature-gadget.html" \
   && ok || bad "single-file set: href must be proof-root relative"

@@ -236,6 +236,12 @@ adopt_path = CENTER / "adoption.json"
 if adopt_path.exists():
     adoption = json.loads(adopt_path.read_text())
 sections = adoption.get("sections", [])
+if not adopt_path.exists():
+    # review 2026-09-06 (repo-study): a repo adopted by config alone has no adoption record yet —
+    # its center.config.json entities ARE the registry. Said out loud, never a SystemExit.
+    sections = [{"entity": _s, "display_name": _s} for _s in sorted(ENTITY_CODE)]
+    print(f"  ⚠ adoption.json absent at {adopt_path} — entity registry taken from center.config.json "
+          f"({len(sections)} entities); /gabe-cc-init records the adoption sections")
 
 walks = []
 _walks_path = REPO_ROOT / ".kdbp" / "walks.jsonl"
@@ -1976,6 +1982,12 @@ def main() -> int:
     # read-as-found graft pass — the "how close to the request path" rank the cc-init adopt rail
     # and pulse S13 read; honest-empty without a built index. A claim under a layer center.config
     # never declared is a silent no-op today → report it so the operator sees the drop.
+    _mts = _a3_code.mount_stats(REPO_ROOT)          # the app → include_router chain the labels were resolved through (review 2026-09-06)
+    if _mts:
+        amap["route_mounts"] = _mts
+    _unp = _a3_code.unparseable_files()
+    if _unp:
+        amap["unparseable"] = _unp                    # every mapped .py the scanners skipped — a NAMED gap
     _rcen = _a3_code.route_census(REPO_ROOT)
     if _rcen:
         amap["route_census"] = _rcen

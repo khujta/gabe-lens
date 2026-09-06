@@ -44,7 +44,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-_INDEX_REL = Path("graft") / ".graph" / "wiring.json"
+import os as _os
+_INDEX_REL = Path(_os.environ.get("GABE_GRAFT_INDEX") or (Path("graft") / ".graph" / "wiring.json"))   # an ABSOLUTE GABE_GRAFT_INDEX reads an index built out of tree (`graft --dir <out> build <repo>`; review 2026-09-06) — unset keeps byte-identical behaviour
 _NOISE_SUFFIXES = (".js", ".mjs", ".jsx")
 _NOISE_PARTS = ("node_modules", "dist", "build", "storybook-static", "__pycache__")
 # P1 (graft adoption): consume ALL of graft's edge relations, not just calls/imports.

@@ -99,7 +99,35 @@ _LAYER_CLS = {"api": "l-api", "services": "l-services", "models": "l-models",
 # generator source stays project-agnostic (everything rendered from it is
 # measured, not asserted).
 _ENTITIES = _cd.CFG.get("entities", {})
+def _expand_globs(repo: Path, pats) -> list[str]:
+    """center.config.json ``code.api`` / ``code.models`` / ``code.schemas`` entries — literal paths OR
+    globs. Review 2026-09-06 (repo-study): a glob silently yielded NOTHING — the parsers test
+    ``path.exists()`` on the pattern itself. A literal path passes through untouched (every existing
+    config byte-identical); a pattern expands to its sorted repo-relative matches, ``**`` recursive,
+    deduplicated in order. Foreign repos (tier1's ``modules/*/routes.py``, onyx's ``server/**``) become
+    expressible without listing a hundred files by hand."""
+    out: list[str] = []
+    for pat in pats or []:
+        if any(ch in pat for ch in "*?["):
+            for h in sorted(_glob.glob(str(repo / pat), recursive=True)):
+                hp = Path(h)
+                if not hp.is_file():
+                    continue
+                try:
+                    rel = str(hp.relative_to(repo))
+                except ValueError:
+                    rel = h
+                if rel not in out:
+                    out.append(rel)
+        elif pat not in out:
+            out.append(pat)
+    return out
+
+
 ENTITY_CODE = {slug: e["code"] for slug, e in _ENTITIES.items() if e.get("code")}
+ENTITY_CODE = {slug: {**code, **{k: _expand_globs(_cd.REPO_ROOT, code.get(k))
+                                 for k in ("api", "models", "schemas") if code.get(k)}}
+               for slug, code in ENTITY_CODE.items()}
 # Entity classes to document from the model files (absent = all classes found).
 ENTITY_MODELS = {slug: e["models"] for slug, e in _ENTITIES.items() if e.get("models")}
 
@@ -126,31 +154,279 @@ def _safe_read(path) -> str | None:
         return None
 
 
+_UNPARSEABLE: dict[str, str] = {}     # rel file → why (review 2026-09-06: a skipped file removed a whole module with no signal anywhere)
+
+
+def _relkey(path) -> str:
+    try:
+        return str(Path(path).relative_to(_cd.REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def unparseable_files() -> list[list[str]]:
+    """[[rel, why]] — every mapped Python file the scanners could NOT parse this build (bad encoding,
+    a syntax error, newer syntax than the running interpreter). Surfaced on the archmap
+    (``unparseable``) so an absent module reads as a NAMED gap, never as silence. [] honest-empty."""
+    return [[k, v] for k, v in sorted(_UNPARSEABLE.items())]
+
+
+# NEWER-SYNTAX SHIMS (review 2026-09-06): the scanners parse with the SUITE's interpreter (3.12 here); a
+# project on a newer Python (tier0 requires 3.14 and writes PEP 758 `except A, B:`) turned its auth
+# module unparseable — the whole dependency chain vanished. A shim is a SOURCE-LEVEL rewrite of one
+# known construct into its older-spelling equivalent, applied ONLY after the plain parse fails and only
+# if the rewritten text then parses. Semantics-preserving by construction (`except A, B:` ≡ `except (A, B):`).
+_SYNTAX_SHIMS = (
+    (_re_mod.compile(r"^(\s*except\s+)([A-Za-z_][\w.]*(?:\s*,\s*[A-Za-z_][\w.]*)+)(\s*:)", _re_mod.M), r"\1(\2)\3"),   # PEP 758
+)
+
+
+def _shim_parse(src: str):
+    """ast.parse after the known newer-syntax rewrites, or None."""
+    text = src
+    for rx, rep in _SYNTAX_SHIMS:
+        text = rx.sub(rep, text)
+    if text == src:
+        return None
+    try:
+        return ast.parse(text)
+    except (SyntaxError, ValueError):
+        return None
+
+
 def _safe_parse(path):
     """(tree, src) for a Python file, or (None, src|None) — NEVER raises. A file that
     is not valid Python for the running interpreter (a WIP syntax error, newer syntax on
-    an older interpreter, or non-Python mapped into a Python layer) is skipped, not fatal.
+    an older interpreter, or non-Python mapped into a Python layer) is skipped, not fatal —
+    and RECORDED (``unparseable_files``) so the skip is said out loud.
     Mirrors the try/except the newer detectors (function_insight/_def_spans) already use."""
     src = _safe_read(path)
     if src is None:
+        _UNPARSEABLE[_relkey(path)] = "unreadable"
         return None, None
     try:
         return ast.parse(src), src
-    except (SyntaxError, ValueError):
+    except SyntaxError as exc:
+        shimmed = _shim_parse(src)                # a newer-Python spelling the running interpreter lacks
+        if shimmed is not None:
+            return shimmed, src
+        _UNPARSEABLE[_relkey(path)] = f"syntax error at line {exc.lineno}"
         return None, src
+    except ValueError as exc:
+        _UNPARSEABLE[_relkey(path)] = f"unparseable: {str(exc)[:60]}"
+        return None, src
+
+
+def _table_of(node: ast.ClassDef) -> str | None:
+    """The TABLE a class maps, or None. A string ``__tablename__`` (SQLAlchemy declarative) — or the
+    SQLModel idiom ``class User(SQLModel, table=True)`` whose table defaults to the class name
+    lowercased (review 2026-09-06: tier0 and tier2 drew ZERO tables, so the schema-vs-model mission had
+    no model to point at). A computed/f-string name stays undocumented, never a guess."""
+    for item in node.body:
+        if (isinstance(item, ast.Assign) and item.targets
+                and getattr(item.targets[0], "id", "") == "__tablename__"
+                and isinstance(item.value, ast.Constant)
+                and isinstance(item.value.value, str)):
+            return item.value.value
+    for kw in node.keywords:
+        if kw.arg == "table" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+            return node.name.lower()
+    return None
+
+
+
+# ── ROUTER MOUNTS (review 2026-09-06, repo-study). The URL a handler really serves is the CHAIN
+#    app → include_router(…, prefix) → … → APIRouter(prefix) → decorator path. The scanner read only the
+#    leaf's APIRouter(prefix=): tier1 (Fastro) mounts prefix-less module routers at include time
+#    (`router.include_router(users_router, prefix="/users")` under `/v1` under `/api`) so 88% of its
+#    endpoints carried a wrong URL and the URL-domain lens read garbage; tier0/tier2 lost 100%/84%.
+#    Resolved ONCE per repo: every .py under the api files' top-level dirs that mentions include_router
+#    is parsed; routers are keyed (file, variable); imports resolve a name / `mod.router` attribute to
+#    the declaring file; mount(leaf) = mount(parent) + parent's own prefix + the include prefix, rooted
+#    at the FastAPI app (or any receiver the scan cannot name — a factory's `application` param).
+#    A NON-LITERAL include prefix (`settings.API_V1_STR`) contributes "" and is NAMED in the stats,
+#    never guessed. The leading API mount (`/api`, `/api/v1`) is then STRIPPED from every label — the
+#    normalization the web arm applies to fetch paths — so the twins' labels (mounted under /api/v1)
+#    stay byte-identical while a foreign repo's domains come out right.
+_MOUNTS: dict[str, dict] = {}
+_MOUNT_SKIP = ("/.venv/", "/venv/", "/node_modules/", "/site-packages/", "/__pycache__/",
+               "/tests/", "/test/", "/alembic/", "/migrations/")
+_API_MOUNT_RE = _re_mod.compile(r"^/api(?:/v\d+)?(?=/|$)")
+
+
+def _strip_api(path: str) -> str:
+    """`/api/v1/users/{id}` → `/users/{id}`; `/api/manage/x` → `/manage/x`; a bare mount → `/`."""
+    return _API_MOUNT_RE.sub("", path) or "/"
+
+
+def _resolve_module(repo: Path, from_rel: str, module: str | None, level: int) -> str | None:
+    """`from .x import y` / `from app.api import z` → the repo-relative FILE that declares the module
+    (``x.py`` or ``x/__init__.py``), searched from the importing file's package outward. None = unknown."""
+    parts = [p for p in (module or "").split(".") if p]
+    start = Path(from_rel).parent
+    if level:
+        for _ in range(max(level - 1, 0)):
+            start = start.parent
+        bases = [start]
+    else:
+        bases = [start, *start.parents]
+    for base in bases:
+        cands = []
+        if parts:
+            cands.append((base / Path(*parts)).with_suffix(".py"))
+            cands.append(base / Path(*parts) / "__init__.py")
+        else:
+            cands.append(base / "__init__.py")
+        for cand in cands:
+            p = repo / cand
+            if p.is_file():
+                try:
+                    return str(p.relative_to(repo))
+                except ValueError:
+                    return str(cand)
+    return None
+
+
+def _mounts_for(repo: Path, files) -> dict:
+    """{'mount': {(file, router_var): prefix}, 'unresolved': [...], 'scanned', 'routers', 'mounted'} —
+    cached per repo; the scan covers the top-level dirs of ``files`` ∪ every configured api file."""
+    key = str(repo)
+    if key in _MOUNTS:
+        return _MOUNTS[key]
+    tops = {Path(f).parts[0] for f in (files or []) if Path(f).parts}
+    for _slug in ENTITY_CODE:
+        for f in (ENTITY_CODE[_slug].get("api") or []):
+            if Path(f).parts:
+                tops.add(Path(f).parts[0])
+    decl: dict[tuple, str] = {}          # (file, var) → the router's OWN APIRouter(prefix)
+    edges: list[tuple] = []              # (parent_key, child_key, include_prefix)
+    unresolved: list[dict] = []
+    scanned = 0
+    for top in sorted(tops):
+        root = repo / top
+        if not root.is_dir():
+            continue
+        for py in sorted(root.rglob("*.py")):
+            s = str(py)
+            if any(k in s for k in _MOUNT_SKIP):
+                continue
+            src = _safe_read(py)
+            if not src or "include_router" not in src:
+                continue
+            tree, _ = _safe_parse(py)
+            if tree is None:
+                continue
+            rel = str(py.relative_to(repo))
+            scanned += 1
+            imports: dict[str, tuple] = {}     # local name → (module file, symbol|None, submodule file|None)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom):
+                    mf = _resolve_module(repo, rel, node.module, node.level)
+                    for a in node.names:
+                        sub = _resolve_module(repo, rel, (node.module + "." + a.name) if node.module else a.name, node.level)
+                        imports[a.asname or a.name] = (mf, a.name, sub)
+                elif isinstance(node, ast.Import):
+                    for a in node.names:
+                        mf = _resolve_module(repo, rel, a.name, 0)
+                        imports[a.asname or a.name.split(".")[0]] = (mf, None, mf)
+                elif isinstance(node, (ast.Assign, ast.AnnAssign)) and isinstance(node.value, ast.Call):
+                    fn = getattr(node.value.func, "id", "") or getattr(node.value.func, "attr", "")
+                    tg = node.targets if isinstance(node, ast.Assign) else [node.target]
+                    names = [t.id for t in tg if isinstance(t, ast.Name)]
+                    if fn == "APIRouter":
+                        pf = ""
+                        for kw in node.value.keywords:
+                            if (kw.arg == "prefix" and isinstance(kw.value, ast.Constant)
+                                    and isinstance(kw.value.value, str)):
+                                pf = kw.value.value
+                        for n in names:
+                            decl[(rel, n)] = pf
+
+            def _key(expr):
+                if isinstance(expr, ast.Name):
+                    if (rel, expr.id) in decl:
+                        return (rel, expr.id)
+                    imp = imports.get(expr.id)
+                    if imp and imp[0] and imp[1]:
+                        return (imp[0], imp[1])
+                    return None
+                if isinstance(expr, ast.Attribute) and isinstance(expr.value, ast.Name):
+                    imp = imports.get(expr.value.id)
+                    if imp:
+                        if imp[2]:                      # `from . import users` → users.router
+                            return (imp[2], expr.attr)
+                        if imp[0] and imp[1] is None:   # `import pkg.mod as m` → m.router
+                            return (imp[0], expr.attr)
+                    return None
+                return None
+
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                        and node.func.attr == "include_router" and node.args):
+                    continue
+                child = _key(node.args[0])
+                if child is None:
+                    unresolved.append({"file": rel, "line": node.lineno,
+                                       "why": "child router not resolvable: " + ast.unparse(node.args[0])[:60]})
+                    continue
+                parent = _key(node.func.value)
+                if parent is None:                       # the app / a factory param / an unknown receiver → a ROOT
+                    parent = ("app", rel + "#" + (getattr(node.func.value, "id", None) or "app"))
+                inc = ""
+                for kw in node.keywords:
+                    if kw.arg == "prefix":
+                        if isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
+                            inc = kw.value.value
+                        else:
+                            unresolved.append({"file": rel, "line": node.lineno,
+                                               "why": "non-literal prefix: " + ast.unparse(kw.value)[:60]})
+                edges.append((parent, child, inc))
+    parent_of: dict[tuple, list] = {}
+    for p, c, inc in edges:
+        parent_of.setdefault(c, []).append((p, inc))
+    memo: dict[tuple, str] = {}
+
+    def _mount(k, seen=()):
+        if k in memo:
+            return memo[k]
+        if k in seen or k not in parent_of:
+            memo[k] = ""
+            return ""
+        p, inc = parent_of[k][0]                 # a router mounted twice keeps its FIRST mount (deterministic: file order)
+        m = _mount(p, seen + (k,)) + (decl.get(p, "") if p[0] != "app" else "") + inc
+        memo[k] = m
+        return m
+
+    mounts = {k: _mount(k) for k in parent_of}
+    out = {"mount": mounts, "unresolved": unresolved, "scanned": scanned,
+           "routers": len(decl), "mounted": sum(1 for v in mounts.values() if v)}
+    _MOUNTS[key] = out
+    return out
+
+
+def mount_stats(repo: Path) -> dict:
+    """The archmap's ``route_mounts`` block — {scanned, routers, mounted, unresolved:[…]} for THIS repo's
+    resolved chain, or {} when no include_router chain was found (honest-empty, byte-identical)."""
+    m = _MOUNTS.get(str(repo))
+    if not m or not (m["mount"] or m["unresolved"]):
+        return {}
+    return {"scanned": m["scanned"], "routers": m["routers"], "mounted": m["mounted"],
+            "unresolved": m["unresolved"]}
 
 
 def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
     """FastAPI surface via ast: decorator method+path, router prefix, the
     handler's REAL docstring, response_model and status_code when literal."""
     out: list[dict] = []
+    _mts = _mounts_for(repo, files)["mount"]
     for rel in files:
         path = repo / rel
         if not path.exists():
             continue
         tree, _src = _safe_parse(path)
-        if tree is None:                       # unparseable file → skip, don't abort the build
+        if tree is None:                       # unparseable file → skip, don't abort the build (it is NAMED in unparseable_files)
             continue
+        _aliases = _dep_aliases(repo, rel, tree)   # `user: CurrentUserDep` — module-level Annotated[…, Depends()] aliases, this file + one import hop
         prefix = ""                       # the file's LAST APIRouter(prefix=…) — the fallback for a decorator on a router this scan cannot name
         prefixes: dict[str, str] = {}     # router VARIABLE → its own prefix (review 2026-09-05: gastify's groups.py mounts `router` at /groups
         for node in ast.walk(tree):       #   AND `invites_router` at /invites — ONE prefix per file had labeled all 17 handlers /invites)
@@ -184,6 +460,7 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
                     continue
                 _rv = dec.func.value                                   # `router` in @router.get(…) → THAT router's prefix
                 _pre = prefixes.get(_rv.id, prefix) if isinstance(_rv, ast.Name) else prefix
+                _mp = _mts.get((rel, _rv.id), "") if isinstance(_rv, ast.Name) else ""   # + the app → include_router chain above it
                 has_path = (dec.args and isinstance(dec.args[0], ast.Constant)
                             and isinstance(dec.args[0].value, str))   # str-only → (prefix + sub) can't TypeError
                 sub = dec.args[0].value if has_path else ""
@@ -197,13 +474,13 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
                 # with model/schema class names to derive endpoint↔type links.
                 refs = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
                 ep = {
-                    "method": method.upper(), "path": (_pre + sub) or "/",
+                    "method": method.upper(), "path": _strip_api(_mp + _pre + sub),
                     "fn": node.name, "file": rel, "refs": refs,
                     "doc": _first_sentence(ast.get_docstring(node)),
                     "resp": (resp or "—").removeprefix("PaginatedResponse[").removesuffix("]"),
                     "status": status or "200",
                 }
-                mw = _endpoint_middleware(node, dec)      # C4: the level-2 gates (auth/consent/idempotency) run before the body
+                mw = _endpoint_middleware(node, dec, _aliases)   # C4: the level-2 gates (auth/consent/idempotency) run before the body
                 if mw:
                     ep["middleware"] = mw
                 _fl = _flag_gates(node, parse_flags(repo))   # class 12: the feature-flag walls in the handler body
@@ -363,17 +640,12 @@ def parse_models(repo: Path, files: list[str], only: list[str] | None) -> list[d
                 continue
             if only and node.name not in only:
                 continue
-            tab = None
+            tab = _table_of(node)                 # __tablename__ string, or the SQLModel table=True default (review 2026-09-06)
             cols: list[tuple[str, str]] = []
             fks: dict[str, str] = {}
             rels: list[dict] = []
             uqs: list[str] = []
             for item in node.body:
-                if (isinstance(item, ast.Assign) and item.targets
-                        and getattr(item.targets[0], "id", "") == "__tablename__"
-                        and isinstance(item.value, ast.Constant)
-                        and isinstance(item.value.value, str)):   # a computed/f-string/prefixed name stays UNDOCUMENTED, never crashes (mirrors _model_table_map)
-                    tab = item.value.value
                 if (isinstance(item, ast.Assign) and
                         getattr(item.targets[0], "id", "") == "__table_args__"):
                     uqs = [ast.unparse(e)[:90] for e in getattr(item.value, "elts", [])
@@ -422,7 +694,7 @@ def code_map(repo: Path, layers: dict) -> list[tuple[str, str, int]]:
     rows: list[tuple[str, str, int]] = []
     for layer in _CODE_LAYERS:
         for pat in layers.get(layer, []):
-            for f in sorted(_glob.glob(str(repo / pat))):
+            for f in sorted(_glob.glob(str(repo / pat), recursive=True)):
                 p = Path(f)
                 if p.is_file() and ".test." not in p.name:
                     rows.append((layer, str(p.relative_to(repo)),
@@ -555,13 +827,9 @@ def _table_classes(tree) -> list[tuple[str, str]]:
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
             continue
-        for item in node.body:
-            if (isinstance(item, ast.Assign) and item.targets
-                    and getattr(item.targets[0], "id", "") == "__tablename__"
-                    and isinstance(item.value, ast.Constant)
-                    and isinstance(item.value.value, str)):
-                out.append((node.name, item.value.value))
-                break
+        tab = _table_of(node)
+        if tab is not None:
+            out.append((node.name, tab))
     return out
 
 
@@ -588,14 +856,14 @@ def model_census(repo: Path, entity_code: dict | None = None,
     em = ENTITY_MODELS if entity_models is None else entity_models
     claimed_files: dict[str, str] = {}          # rel file → owning slug (first wins)
     for slug in sorted(ec):
-        for f in (ec[slug].get("models") or []):
+        for f in _expand_globs(repo, ec[slug].get("models")):
             claimed_files.setdefault(f, slug)
     if not claimed_files:
         out: dict = {}
     else:
         claimed_cls: set[str] = set()
         for slug in sorted(ec):
-            for m in parse_models(repo, ec[slug].get("models", []), em.get(slug)):
+            for m in parse_models(repo, _expand_globs(repo, ec[slug].get("models")), em.get(slug)):
                 claimed_cls.add(m["cls"])
         dirs = sorted({str(Path(f).parent) for f in claimed_files})
         unclaimed: list[dict] = []
@@ -708,7 +976,7 @@ def file_census(repo: Path, entity_code: dict | None = None) -> dict:
     for slug in sorted(ec):
         for layer in _CODE_LAYERS:
             for pat in (ec[slug].get(layer) or []):
-                for f in sorted(_glob.glob(str(repo / pat))):
+                for f in sorted(_glob.glob(str(repo / pat), recursive=True)):
                     p = Path(f)
                     if p.is_file() and p.suffix == ".py":
                         rel = str(p.relative_to(repo))
@@ -772,7 +1040,7 @@ def parse_boot_roots(repo: Path, entity_code: dict | None = None) -> list[dict]:
     ec = ENTITY_CODE if entity_code is None else entity_code
     _dset: set = set()
     for slug in sorted(ec):
-        for f in (ec[slug].get("api") or []):
+        for f in _expand_globs(repo, ec[slug].get("api")):
             _dset.add(str(Path(f).parent))
             _dset.add(str(Path(f).parent.parent))       # main.py/app.py sit one dir up from the routes
     out: list[dict] = []
@@ -837,7 +1105,7 @@ def parse_flags(repo: Path, entity_code: dict | None = None) -> dict:
     for slug in sorted(ec):
         for layer in _CODE_LAYERS:
             for pat in (ec[slug].get(layer) or []):
-                for f in sorted(_glob.glob(str(repo / pat))):
+                for f in sorted(_glob.glob(str(repo / pat), recursive=True)):
                     p = Path(f)
                     if p.is_file() and p.suffix == ".py":
                         dirs.add(p.parent)
@@ -1253,12 +1521,9 @@ def _model_table_map(trees: dict) -> dict[str, str]:
         for node in getattr(tree, "body", []):
             if not isinstance(node, ast.ClassDef):
                 continue
-            for item in node.body:
-                if (isinstance(item, ast.Assign) and item.targets
-                        and getattr(item.targets[0], "id", "") == "__tablename__"
-                        and isinstance(item.value, ast.Constant)
-                        and isinstance(item.value.value, str)):
-                    m2t[node.name] = item.value.value
+            tab = _table_of(node)
+            if tab is not None:
+                m2t[node.name] = tab
     return m2t
 
 
@@ -1558,6 +1823,52 @@ def _depends_target(call) -> str | None:
     return ast.unparse(call.args[0])
 
 
+def _depends_callee(call) -> str | None:
+    """`Depends(require_permission(Permission.X))` → ``require_permission`` — the FACTORY's leaf name, so the
+    gate resolves to a function even though its display name keeps the full expression (review
+    2026-09-06: 405 of onyx's permission gates drew nothing — the resolver looked the whole expression up
+    by bare function name). None when the dep is not a call."""
+    if not isinstance(call, ast.Call) or not call.args or not isinstance(call.args[0], ast.Call):
+        return None
+    f = call.args[0].func
+    return getattr(f, "id", None) or getattr(f, "attr", None)
+
+
+_ALIASES: dict[tuple, dict] = {}
+
+
+def _dep_aliases(repo: Path, rel: str, tree, depth: int = 0) -> dict[str, list[str]]:
+    """{AliasName: [dep exprs]} — module-level ``X = Annotated[T, Depends(f)]`` in this file, plus the
+    aliases it imports by name (one hop). tier1 declares ``CurrentUserDep`` in
+    infrastructure/dependencies.py and handlers annotate ``user: CurrentUserDep`` — a bare Name the
+    signature scan could not see (review 2026-09-06: 2 of 35 endpoints showed any dependency)."""
+    ck = (rel, depth)
+    if ck in _ALIASES:
+        return _ALIASES[ck]
+    out: dict[str, list[str]] = {}
+    for node in getattr(tree, "body", []):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
+            deps = _annotated_depends(node.value)
+            if deps:
+                tg = node.targets if isinstance(node, ast.Assign) else [node.target]
+                for t in tg:
+                    if isinstance(t, ast.Name):
+                        out[t.id] = deps
+        elif isinstance(node, ast.ImportFrom) and depth < 1:
+            mf = _resolve_module(repo, rel, node.module, node.level)
+            if not mf:
+                continue
+            sub_tree, _ = _safe_parse(repo / mf)
+            if sub_tree is None:
+                continue
+            theirs = _dep_aliases(repo, mf, sub_tree, depth + 1)
+            for a in node.names:
+                if a.name in theirs:
+                    out[a.asname or a.name] = theirs[a.name]
+    _ALIASES[ck] = out
+    return out
+
+
 def _dec_name(dec) -> str | None:
     if isinstance(dec, ast.Call):
         dec = dec.func
@@ -1585,31 +1896,38 @@ def _annotated_depends(ann) -> list[str]:
     return out
 
 
-def _endpoint_middleware(node, route_dec) -> list[dict]:
-    """[{'name','via','gate'}] — the gates/deps that run before the handler body, or []
-    (honest). via ∈ {route-dep, param-dep, decorator}; gate-first, then name-sorted."""
+def _endpoint_middleware(node, route_dec, aliases: dict | None = None) -> list[dict]:
+    """[{'name','via','gate'[,'callee']}] — the gates/deps that run before the handler body, or []
+    (honest). via ∈ {route-dep, param-dep, decorator}; gate-first, then name-sorted. ``aliases`` =
+    the file's ``Name = Annotated[…, Depends()]`` table (``_dep_aliases``) so a bare-Name annotation
+    resolves; ``callee`` = a factory dep's leaf function (``_depends_callee``)."""
     found: dict[str, dict] = {}
 
-    def _add(name, via):
+    def _add(name, via, callee=None):
         if name and name not in found:
             found[name] = {"name": name, "via": via, "gate": _is_mw_gate(name)}
+            if callee and callee != name:
+                found[name]["callee"] = callee
 
     for kw in getattr(route_dec, "keywords", []):                 # 1 · @router.x(..., dependencies=[Depends(..)])
         if kw.arg == "dependencies" and isinstance(kw.value, (ast.List, ast.Tuple)):
             for el in kw.value.elts:
-                _add(_depends_target(el), "route-dep")
+                _add(_depends_target(el), "route-dep", _depends_callee(el))
     args = node.args                                              # 2 · def h(..., x = Depends(fn))
     params = list(getattr(args, "posonlyargs", [])) + list(args.args)
     defs = list(args.defaults)
     for p, d in zip(params[len(params) - len(defs):], defs):
-        _add(_depends_target(d), "param-dep")
+        _add(_depends_target(d), "param-dep", _depends_callee(d))
     for d in args.kw_defaults:
         if d is not None:
-            _add(_depends_target(d), "param-dep")
+            _add(_depends_target(d), "param-dep", _depends_callee(d))
     for p in params + list(args.kwonlyargs):                      # 2b · x: Annotated[T, Depends(fn)] (the modern idiom)
         if p.annotation is not None:
             for nm in _annotated_depends(p.annotation):
                 _add(nm, "param-dep")
+            if isinstance(p.annotation, ast.Name) and aliases and p.annotation.id in aliases:   # 2c · x: CurrentUserDep (a module-level alias)
+                for nm in aliases[p.annotation.id]:
+                    _add(nm, "param-dep")
     for dec in node.decorator_list:                               # 3 · non-route decorator (@require_household)
         if dec is route_dec:
             continue
@@ -1786,7 +2104,7 @@ def resolve_middleware_targets(entities: dict, repo: Path) -> int:
             for mw in ep.get("middleware") or []:
                 if not mw.get("gate") or mw.get("fn"):
                     continue
-                cands = by_name.get(mw["name"])
+                cands = by_name.get(mw["name"]) or by_name.get(mw.get("callee") or "")   # a factory dep resolves by its callee (review 2026-09-06)
                 if cands and len(cands) == 1:           # unique → resolve; ambiguous → honest floor
                     mw["fn"] = cands[0]
                     resolved += 1
@@ -1804,7 +2122,7 @@ def parse_app_middleware(repo: Path, entity_code: dict | None = None) -> list[di
     dirs: set = set()
     for slug in sorted(ec):
         for pat in (ec[slug].get("api") or []):
-            for f in sorted(_glob.glob(str(repo / pat))):
+            for f in sorted(_glob.glob(str(repo / pat), recursive=True)):
                 p = Path(f)
                 if p.is_file():
                     dirs.add(p.parent)
