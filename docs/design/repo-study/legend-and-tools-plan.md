@@ -494,6 +494,8 @@ The one tool that reads no map; the arm-difference IS its health signal. Note fo
 
 # Part C — location is an indicator, never the definition
 
+> **Continued (2026-09-06, after the "Entities from Evidence" analysis):** the four entity models — claim · seeded · derived · proposed — switched by a pill in the universe station: [docs/design/entity-models/plan.md](../entity-models/plan.md).
+
 **Status: BUILT 2026-09-06** — C1 `_a3_homing.py` · C2 build order (levels → evidence → c4 emit) · C3 the station rows · C4 pulse S17 · C5 gabe-map fields + census section · C6 batteries · C7 estates · C8 docs. Evidence only — nothing re-homed; the opt-in switch waits on its trigger.
 
 ## C.0 The ruling and today's definition
