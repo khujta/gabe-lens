@@ -349,7 +349,8 @@ C4WF='{"head":"abc1234","l2":{
    {"id":"endpoint:GET /cooking/active","kind":"endpoint","label":"GET /cooking/active","slug":"cooking","access":{"ops":[{"model":"CookingSession","rw":"r"}]}},
    {"id":"endpoint:POST /_e2e/seed","kind":"endpoint","label":"POST /_e2e/seed","slug":"cooking","access":{"ops":[{"model":"CookingSession","rw":"w"}]}},
    {"id":"model:CookingSession","kind":"model","label":"CookingSession","slug":"cooking"}]},
- "__unclaimed__":{"nodes":[{"id":"endpoint:BOOT lifespan","kind":"endpoint","label":"BOOT lifespan","slug":"__unclaimed__","access":{"ops":[]}}]}},
+ "__unclaimed__":{"nodes":[{"id":"endpoint:BOOT lifespan","kind":"endpoint","label":"BOOT lifespan","slug":"__unclaimed__","access":{"ops":[]}},
+   {"id":"endpoint:TASK reindex","kind":"endpoint","label":"TASK reindex","slug":"__unclaimed__","access":{"ops":[{"model":"PantryItem","rw":"w"}]}}]}},
  "cross_edges":[
    {"kind":"bridge","from":"web:src/features/pantry/usePantry","to":"endpoint:GET /pantry/history"},
    {"kind":"bridge","from":"web:src/features/pantry/usePantry","to":"endpoint:POST /pantry/reset"},
@@ -361,7 +362,7 @@ C4WF='{"head":"abc1234","l2":{
    {"id":"fe:src/features/cooking/useCooking.ts#useCooking","name":"useCooking","kind":"hook","file":"src/features/cooking/useCooking.ts","screen":"web:src/features/cooking/useCooking"}],
   "edges":[[0,1,"uses-hook"],[2,3,"uses-hook"]]}}'
 r=$(repo s16a); mkc4 "$r" "$C4WF"
-run "$r" | grep -q "workflow coverage — 3/3 endpoint(s) in no curated workflow" && ok "S16 fires: 3 screen-reachable endpoints sit in no curated workflow (>= threshold 3; infra + BOOT never counted)" || bad "S16 did not fire on uncovered endpoints"
+run "$r" | grep -q "workflow coverage — 3/3 endpoint(s) in no curated workflow" && ok "S16 fires: 3 screen-reachable endpoints sit in no curated workflow (>= threshold 3; infra + BOOT + TASK never counted)" || bad "S16 did not fire on uncovered endpoints"
 run "$r" | grep -q "curate-workflows" && ok "S16 names the drafter as the move" || bad "S16 move is not the drafter"
 r=$(repo s16b); mkc4 "$r" "$C4WF"; printf 'window.GABE_WORKFLOWS = [{"name":"cook","steps":["GET /cooking/active"]}];\n' > "$r/docs/site/center/workflows.js"
 run "$r" | grep -q "workflow coverage" && bad "S16 fired below the threshold (2 uncovered < 3)" || ok "S16 silent below the >=3 uncovered threshold (the mutation of the fire case)"

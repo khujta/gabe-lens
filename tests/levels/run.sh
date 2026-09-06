@@ -373,6 +373,23 @@ ck(_lh["schema_edges"] == [{"s": "svc/a.py#mk", "t": "schema:OrderResponse", "re
                            {"s": "svc/lane.py#ingest", "t": "schema:OrderResponse", "rel": "returns"}], "schema_edges emitted from fn_wires, sorted, schema: ids (%r)" % _lh["schema_edges"])
 ck(_lh["fn_edges"] == lv["fn_edges"], "fn_edges untouched by the homing feed (its consumers assume fn→fn)")
 
+# ── legend pass (2026-09-06) · class 13: a handler-rooted graft call carrying rel:'dispatches' survives as its own rel;
+#    a TASK root (archmap.task_roots) joins the handler set so the worker's chain draws downstream of the queue ──
+_GWx = {"present": True, "functions": {"fn_slug": dict(_GW["functions"]["fn_slug"], **{"svc/tasks.py#reindex": "orders"}),
+        "calls": [{"s": "api/orders.py#list_orders", "t": "svc/tasks.py#reindex", "ss": "orders", "ts": "orders", "conf": "extracted", "rel": "dispatches"},
+                  {"s": "svc/tasks.py#reindex", "t": "svc/o.py#svc_write", "ss": "orders", "ts": "orders", "conf": "inferred"}]}}
+_lvx = _a3_levels.build_levels(AMAP, graph, graft=_GWx)
+_dx = [e for e in _lvx["fn_edges"] if e.get("rel") == "dispatches"]
+ck(len(_dx) == 1 and _dx[0]["t"] == "svc/tasks.py#reindex", "class 13: a handler's dispatch edge keeps rel:'dispatches' in fn_edges")
+ck(not any(e["s"] == "svc/tasks.py#reindex" for e in _lvx["fn_edges"]), "class 13 SILENT: without a task root the task fn is not a root — its own calls do not draw")
+AMAPt = json.loads(json.dumps(AMAP)); AMAPt["task_roots"] = [{"method": "TASK", "path": "reindex", "fn": "reindex", "file": "svc/tasks.py", "touches": [], "touches_x": [], "doc": "", "resp": "—", "status": "—"}]
+_lvt = _a3_levels.build_levels(AMAPt, graph, graft=_GWx)
+ck(any(e["s"] == "svc/tasks.py#reindex" and e["t"] == "svc/o.py#svc_write" for e in _lvt["fn_edges"]) and any(n["id"] == "svc/tasks.py#reindex" for n in _lvt["fn_nodes"]),
+   "class 13 FIRE: a task root joins the handler set — the worker's downstream call draws")
+AMAPn = json.loads(json.dumps(AMAPt)); AMAPn.pop("task_roots", None)
+ck(json.dumps(_a3_levels.build_levels(AMAPn, graph, graft=_GWx)["fn_edges"], sort_keys=True) == json.dumps(_lvx["fn_edges"], sort_keys=True)
+   and json.dumps(_a3_levels.build_levels(AMAPn, graph, graft=_GWx)["fn_edges"], sort_keys=True) != json.dumps(_lvt["fn_edges"], sort_keys=True),
+   "class 13 byte-identical: the task-root arm changes nothing when task_roots is absent — and something when present")
 print(f"levels battery: {p} passed, {f} failed")
 sys.exit(1 if f else 0)
 PY

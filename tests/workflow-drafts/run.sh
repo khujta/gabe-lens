@@ -36,7 +36,8 @@ c4() { cat <<'JSON'
    {"id":"endpoint:GET /cooking/active","kind":"endpoint","label":"GET /cooking/active","slug":"cooking","access":{"ops":[{"model":"CookingSession","rw":"r"}]}},
    {"id":"endpoint:POST /_e2e/seed","kind":"endpoint","label":"POST /_e2e/seed","slug":"cooking","access":{"ops":[{"model":"CookingSession","rw":"w"}]}},
    {"id":"model:CookingSession","kind":"model","label":"CookingSession","slug":"cooking"}]},
- "__unclaimed__":{"nodes":[{"id":"endpoint:BOOT lifespan","kind":"endpoint","label":"BOOT lifespan","slug":"__unclaimed__","access":{"ops":[]}}]}},
+ "__unclaimed__":{"nodes":[{"id":"endpoint:BOOT lifespan","kind":"endpoint","label":"BOOT lifespan","slug":"__unclaimed__","access":{"ops":[]}},
+   {"id":"endpoint:TASK reindex","kind":"endpoint","label":"TASK reindex","slug":"__unclaimed__","access":{"ops":[{"model":"PantryItem","rw":"w"}]}}]}},
  "cross_edges":[
    {"kind":"bridge","from":"web:src/features/pantry/usePantry","to":"endpoint:GET /pantry/history"},
    {"kind":"bridge","from":"web:src/features/pantry/usePantry","to":"endpoint:POST /pantry/reset"},
@@ -52,7 +53,7 @@ JSON
 
 # ── FIRE: only the cooking read is curated → the two pantry endpoints draft as ONE cluster ──
 r=$(mkcenter fire); c4 > "$r/docs/site/center/c4-graph.json"
-printf 'window.GABE_WORKFLOWS = [\n  { name: "Cook", level: 2, steps: ["GET /cooking/active", "GET /recipes/{recipe_id}"] }\n];\n' > "$r/docs/site/center/workflows.js"
+printf 'window.GABE_WORKFLOWS = [\n  { name: "Cook", level: 2, steps: ["TASK reindex", "GET /cooking/active", "GET /recipes/{recipe_id}"] }\n];\n' > "$r/docs/site/center/workflows.js"
 out=$(python3 "$D" "$r" --json); echo "$out" > "$T/fire.json"
 python3 - "$T/fire.json" <<'PY' && ok || bad "FIRE: one pantry·PantryRoute draft, steps read→write, level 2, draft:true"
 import json,sys; r=json.load(open(sys.argv[1])); d=r["drafts"]
@@ -61,7 +62,7 @@ x=d[0]; assert x["draft"] is True and x["cluster"]=={"entity":"pantry","screen":
 assert x["steps"]==["GET /pantry/history","POST /pantry/reset"], x["steps"]
 assert x["level"]==2 and x["why"]["writes"]==1 and x["name"]=="Add pantry — history · reset", x   # NAMED in the user's words (2026-09-05)
 assert "from the PantryRoute screen" in x["note"] and "Core (level 2)" in x["note"], x["note"]
-assert r["endpoints"]==5 and r["covered"]==1 and r["uncovered"]==2 and r["skipped_infra"]==["BOOT lifespan","POST /_e2e/seed"], r
+assert r["endpoints"]==6 and r["covered"]==1 and r["uncovered"]==2 and r["skipped_infra"]==["BOOT lifespan","POST /_e2e/seed","TASK reindex"], r   # a TASK root is infra like BOOT (legend pass 2026-09-06): counted, never drafted, never uncovered
 PY
 grep -q 'window.GABE_WORKFLOWS_DRAFT = \[' "$r/docs/site/center/workflows.draft.js" && grep -q '"name": "Add pantry — history · reset"' "$r/docs/site/center/workflows.draft.js" \
   && ok || bad "FIRE: the draft file carries window.GABE_WORKFLOWS_DRAFT with the named draft"

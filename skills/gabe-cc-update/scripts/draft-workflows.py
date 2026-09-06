@@ -18,7 +18,7 @@ it, because it is now covered. Regenerated wholesale — never hand-edit the dra
 Laws: DETERMINISTIC (everything sorted; no wallclock — the c4 `head` sha is the only provenance
 stamp; an unchanged input re-writes nothing) · HONEST-EMPTY (no center config / no c4-graph → the
 reason is printed, NOTHING is written, exit 0) · REPORT-NEVER-GATE (exit 1 only on a write failure) ·
-NO PROJECT NAME-LISTS (infra endpoints are skipped by idiom: BOOT events, and paths whose first
+NO PROJECT NAME-LISTS (infra endpoints are skipped by idiom: BOOT events, TASK roots (a worker entrypoint dispatched by name is not a user workflow), and paths whose first
 segment starts with "_"; an endpoint with no screen is REPORTED as unreached, never drafted).
 
 usage: python3 draft-workflows.py <project-root> [--out <path>] [--json] [--min N]
@@ -37,7 +37,7 @@ import re
 import sys
 from pathlib import Path
 
-LABEL_RX = re.compile(r'"((?:GET|POST|PUT|PATCH|DELETE|BOOT) [^"]+)"')
+LABEL_RX = re.compile(r'"((?:GET|POST|PUT|PATCH|DELETE|BOOT|TASK) [^"]+)"')
 NAME_RX = re.compile(r'name\s*:\s*"([^"]*)"')
 SCREENISH_RX = re.compile(r"(Page|Screen|View)$")
 CFG_RX = re.compile(r"(^|/)(router|routes)\.[jt]sx?$")
@@ -193,7 +193,7 @@ def analyse(c4: dict, covered: set[str], min_size: int) -> dict:
         label = n.get("label") or ""
         verb, _, path = label.partition(" ")
         first = path.strip("/").split("/")[0] if path else ""
-        if verb == "BOOT" or first.startswith("_"):
+        if verb in ("BOOT", "TASK") or first.startswith("_"):   # a worker task (dispatched by name) is not a user workflow — skipped like BOOT (legend pass 2026-09-06)
             skipped.append(label)
             continue
         if label in covered:

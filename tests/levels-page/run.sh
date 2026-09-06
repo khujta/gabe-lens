@@ -423,6 +423,14 @@ ck('_EMU.keepCam=' in js and 'if(_EMU.keepCam){' in js,
 ck('if(!e.cross) next.push(e.id)' in js,
    "FIX: a click's highlight BFS lights cross-entity neighbours but does NOT expand through them (no whole-model-universe select)")
 
+# ── legend pass (2026-09-06): the levels lab draws `dispatches` fn_edges as their own stroke, calls untouched ──
+ck(".e-dispatches{" in page and 'ed.rel==="dispatches"?"dispatches"' in page and 'ed.rel==="dispatches"?"dispatch"' in page and ".e-calls{" in page,
+   "legend pass: a rel:'dispatches' fn_edge gets its own class + edge word; a calls edge still .e-calls")
+ck('sw("long dash = dispatches' in page and 'kind==="longdash"' in page and 'TASK:"var(--m-task)"' in page,
+   "legend pass: the lab's legend draws the dispatches stroke and its METHOD roster knows BOOT/TASK")
+ck('--m-task:#a78bfa' in page and '--m-boot:#8a8f98' in page and page.count('if (method === "TASK") { taskMark(g, r, col); return; }') == 3 and 'function taskMark(g, r, col)' in page,
+   "legend pass: the lab declares the BOOT/TASK colour vars and its three ep builders draw the TASK queue (parity with graph-grammar)")
+
 print(f"levels-page battery: {p} passed, {f} failed")
 sys.exit(1 if f else 0)
 PY

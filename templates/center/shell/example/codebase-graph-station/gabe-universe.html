@@ -1612,10 +1612,11 @@ function onShipsReady(){ rebuildNodes(); if(Graph) updateClusters(true); buildTr
 /* ── TYPED CONNECTORS — the ELEMENTS-LAB connector language applied to EVERY link: each edge re-renders as its
    mapped KIND's styled wire (dashed/dotted · kind colour · trust opacity), and the plain force-graph edges hide.
    Kind styles VERBATIM from ELEMENTS-LAB-SPEC.md §Inter-entity connectors. ── */
-var CONN={ fk:{color:0x5893ad,style:'sparse',density:2.7,trust:0.9,grad:true,thick:1,gmode:'ent'}, bridge:{color:0xe8f443,style:'sparse',density:1.7,trust:0.62,thick:1,gmode:'ent'}, calls:{color:0x817536,style:'solid',density:2,trust:0.6,grad:false,thick:1,gmode:'type'}, imports:{color:0xa855f7,style:'dotted',density:2.2,trust:0.52,thick:1,gmode:'ent'}, rollup:{color:0x8b5cf6,style:'sparse',density:0.9,trust:0.4,thick:1,grad:true,gmode:'type-ent'}, access:{color:0xe5484d,style:'solid',density:2.5,trust:0.85,thick:1.6,grad:false,gmode:'type-ent'} };
-var CONN_KINDS=['fk','bridge','calls','imports','rollup','access'];
+var CONN={ fk:{color:0x5893ad,style:'sparse',density:2.7,trust:0.9,grad:true,thick:1,gmode:'ent'}, bridge:{color:0xe8f443,style:'sparse',density:1.7,trust:0.62,thick:1,gmode:'ent'}, calls:{color:0x817536,style:'solid',density:2,trust:0.6,grad:false,thick:1,gmode:'type'}, imports:{color:0xa855f7,style:'dotted',density:2.2,trust:0.52,thick:1,gmode:'ent'}, rollup:{color:0x8b5cf6,style:'sparse',density:0.9,trust:0.4,thick:1,grad:true,gmode:'type-ent'}, access:{color:0xe5484d,style:'solid',density:2.5,trust:0.85,thick:1.6,grad:false,gmode:'type-ent'},
+  dispatches:{color:0xf76707,style:'longdash',density:1.9,trust:0.55,grad:false,thick:1,gmode:'type'} };   /* a hand-off BY NAME (a queue or the event bus): long dashes, the RELCOL amber (#f76707) — NB the #e8590c provider/reaches neighbourhood; legend pass 2026-09-06 */
+var CONN_KINDS=['fk','bridge','calls','imports','rollup','access','dispatches'];
 /* each graph REL → its connector KIND (fk=data coupling · calls=fn/data access · imports=component wiring · bridge=web→API fetch) */
-var REL2KIND={ fk:'fk', pk:'fk', nests:'fk', handler:'calls', touch:'calls', touches:'calls', resp:'calls', uses:'calls', calls:'calls', consumes:'calls', fetches:'bridge', bridge:'bridge', renders:'imports', mounts:'imports', reads:'imports', imports:'imports', typed:'imports', fecall:'calls', bundle:'calls', reads_from:'rollup', writes_to:'rollup', fnreads:'access', fnwrites:'access', depends:'calls', gated_by:'calls', dispatches:'calls', serializes:'fk', reaches:'calls', walls:'access', fnprompts:'calls' };
+var REL2KIND={ fk:'fk', pk:'fk', nests:'fk', handler:'calls', touch:'calls', touches:'calls', resp:'calls', uses:'calls', calls:'calls', consumes:'calls', fetches:'bridge', bridge:'bridge', renders:'imports', mounts:'imports', reads:'imports', imports:'imports', typed:'imports', fecall:'calls', bundle:'calls', reads_from:'rollup', writes_to:'rollup', fnreads:'access', fnwrites:'access', depends:'calls', gated_by:'calls', dispatches:'dispatches', serializes:'fk', reaches:'calls', walls:'access', fnprompts:'calls' };
 function __uniCurve(A,B,dir,len){ var mid=A.clone().add(B).multiplyScalar(0.5);
   var up=new T.Vector3(0,1,0), perp=new T.Vector3().crossVectors(dir,up);
   if(perp.lengthSq()<1e-4) perp.set(1,0,0);
@@ -1645,7 +1646,7 @@ function connectorWire(grp, a, b, kind, R, hf, ea, eb, hov, sel, band){ var cfg=
     for(var _i=0;_i<_n;_i++){ _tc.copy(_ca).lerp(_cb, _n>1?_i/(_n-1):0); _arr[_i*3]=_tc.r; _arr[_i*3+1]=_tc.g; _arr[_i*3+2]=_tc.b; }
     geo.setAttribute("color", new T.BufferAttribute(_arr,3)); }
   if(cfg.style==="solid") mat=new T.LineBasicMaterial({color:_hlc||(band!=null?band:(_gr?0xffffff:cfg.color)), vertexColors:(_gr&&band==null), transparent:true, opacity:Math.min(1,cfg.trust*_bm*hf), blending:((_bm>1||hf>1)?T.AdditiveBlending:T.NormalBlending)});
-  else{ var base=({dashed:[1.7,1.0], dotted:[0.35,0.95], sparse:[1.4,2.8]})[cfg.style]||[1.2,1.0], dn=cfg.density||1; mat=new T.LineDashedMaterial({color:_hlc||(band!=null?band:(_gr?0xffffff:cfg.color)), vertexColors:(_gr&&band==null), transparent:true, opacity:Math.min(1,cfg.trust*_bm*hf), blending:((_bm>1||hf>1)?T.AdditiveBlending:T.NormalBlending), dashSize:base[0]/dn, gapSize:base[1]/dn}); }
+  else{ var base=({dashed:[1.7,1.0], dotted:[0.35,0.95], sparse:[1.4,2.8], longdash:[2.6,1.2]})[cfg.style]||[1.2,1.0], dn=cfg.density||1; mat=new T.LineDashedMaterial({color:_hlc||(band!=null?band:(_gr?0xffffff:cfg.color)), vertexColors:(_gr&&band==null), transparent:true, opacity:Math.min(1,cfg.trust*_bm*hf), blending:((_bm>1||hf>1)?T.AdditiveBlending:T.NormalBlending), dashSize:base[0]/dn, gapSize:base[1]/dn}); }
   if(hov){ try{ var _crv=new T.CatmullRomCurve3(_pts); var _isSel=!!sel; if(_isSel){ window.__uniSelCurve=_crv; window.__uniSelMeshes=[]; } var _sr=(typeof CFG!=="undefined"&&CFG.selThick!=null)?CFG.selThick:0.2, _so=(typeof CFG!=="undefined"&&CFG.selOpacity!=null)?CFG.selOpacity:0.5, _sp=(typeof CFG!=="undefined"&&CFG.selPattern)?CFG.selPattern:"solid"; if(typeof CFG!=="undefined"&&CFG.selGlow){ var _gm=new T.MeshBasicMaterial({color:_hlc||0xffffff, transparent:true, opacity:(CFG.selGlowInt!=null?CFG.selGlowInt:0.05), blending:T.AdditiveBlending, depthWrite:false, depthTest:false}); var _gt=new T.TubeGeometry(_crv, Math.max(2,_pts.length-1), _sr*2.6, 6, false); var _gme=new T.Mesh(_gt,_gm); _gme.userData.kind=kind; _gme.userData.__selBaseOp=(CFG.selGlowInt!=null?CFG.selGlowInt:0.05); grp.add(_gme); if(_isSel) window.__uniSelMeshes.push(_gme); } var _tm=new T.MeshBasicMaterial({color:_hlc||0xffffff, transparent:true, opacity:_so, blending:T.AdditiveBlending, depthWrite:false, depthTest:false}); if(_sp==="solid"){ var _tube=new T.TubeGeometry(_crv, Math.max(2,_pts.length-1), _sr, 6, false); var _m=new T.Mesh(_tube,_tm); _m.userData.kind=kind; _m.userData.__selBaseOp=_so; grp.add(_m); if(_isSel) window.__uniSelMeshes.push(_m); } else { var _dn=(_sp==="dotted")?26:13; for(var _di=0;_di<_dn;_di+=2){ var _a=_di/_dn, _b2=Math.min(1,(_di+1)/_dn); var _sc=new T.CatmullRomCurve3([_crv.getPoint(_a), _crv.getPoint((_a+_b2)/2), _crv.getPoint(_b2)]); var _dm=new T.Mesh(new T.TubeGeometry(_sc, 3, _sr, 6, false), _tm); _dm.userData.kind=kind; _dm.userData.__selBaseOp=_so; grp.add(_dm); if(_isSel) window.__uniSelMeshes.push(_dm); } } return; }catch(_te){} } if(cfg.thick&&cfg.thick>1.05){ try{ var _tc=new T.CatmullRomCurve3(_pts), _tr=0.12*cfg.thick,   _tm2=new T.MeshBasicMaterial({color:(band!=null?band:cfg.color), transparent:true, opacity:Math.min(1,cfg.trust*_bm*hf), blending:((_bm>1||hf>1)?T.AdditiveBlending:T.NormalBlending), depthWrite:false});   if(cfg.style==='solid'){ var _tb=new T.Mesh(new T.TubeGeometry(_tc, Math.max(2,_pts.length-1), _tr, 6, false), _tm2); _tb.userData.kind=kind; _tb.raycast=function(){}; grp.add(_tb); }   else { var _sn=Math.max(6, Math.round((cfg.density||2)*6)); for(var _ti=0;_ti<_sn;_ti+=2){ var _ta=_ti/_sn, _tbb=Math.min(1,(_ti+1)/_sn); var _dtb=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([_tc.getPoint(_ta), _tc.getPoint((_ta+_tbb)/2), _tc.getPoint(_tbb)]),3,_tr,6,false), _tm2); _dtb.userData.kind=kind; _dtb.raycast=function(){}; grp.add(_dtb); } }   return; }catch(_tk){} } var line=new T.Line(geo,mat); line.userData.kind=kind; if(mat.isLineDashedMaterial) line.computeLineDistances(); grp.add(line); }
 var connGroup=null;
 function updateConnectors(){ if(!connGroup) return;
@@ -2077,7 +2078,7 @@ function toggleTypes(on){ if(typeof _FETYPES==="undefined" || !_FETYPES.length) 
 function __uniSetCurve(on){ window.__uniCurved=!!on; try{ updateConnectors(); }catch(e){} }
 window.__uniCurveAmt=0.6;                                 // curve-amount slider → arc height multiplier (operator default 0.6)
 window.__uniCurved=true;                                  // lines default CURVED (operator config)
-window.__uniBeam={ fk:0.9, bridge:0.8, calls:0.5, imports:1, rollup:0, access:0.7 };  // per-kind wire glow (operator defaults) — 0 hides, >1 glows; read by connectorWire. rollup HIDDEN by default (beam 0)
+window.__uniBeam={ fk:0.9, bridge:0.8, calls:0.5, imports:1, rollup:0, access:0.7, dispatches:0.7 };  // per-kind wire glow (operator defaults) — 0 hides, >1 glows; read by connectorWire. rollup HIDDEN by default (beam 0)
 /* D2W — the CALLS-wire heat spectrum (Proposal A, discrete bands). A calls wire never IS the write —
    it APPROACHES one; the actual write is the red ACCESS wire (accessor→model). So a calls wire is
    coloured by its TARGET function's distance-to-write: band 0 = the call reaching the writing function
@@ -2100,7 +2101,7 @@ window.__feD2WBand=function(n){ if(!window.__uniFED2W||!n||n.fed2w==null) return
 window.__uniWriteRing=false;                               // the write-spine node RING — separate toggle, DEFAULT OFF (operator D2)
 /* ONE style→svg-dasharray map — the Routes row samples AND the legend rows render from it,
    so a sample can never lie (CSS border-style cannot draw "sparse"; SVG dasharray draws all four). */
-var DASHMAP={ solid:"", dashed:"6 3", dotted:"1.5 3.5", sparse:"5 10" };
+var DASHMAP={ solid:"", dashed:"6 3", dotted:"1.5 3.5", sparse:"5 10", longdash:"10 4" };   /* longdash = the dispatches wire (the compact legend + the config sample paint from HERE — review 2026-09-06) */
 var CONN0=null;                                           // boot snapshot of CONN color/style → per-row reset
 /* freeze ALL animations while a layout / core / functions change re-arranges the graph; the engine's
    settle (onEngineStop) resumes them — only if THIS freeze paused them. Ownership rules (review r2):
@@ -2951,7 +2952,7 @@ function _stepNote(){ var el=document.getElementById("stepnote"); if(!el) return
     var _heat=(window.__uniD2W!==false);
     hop=(meta.why==="endpoint")?("<b>Hop 0</b> · "+(_epN>1?("endpoint "+_epI+" of "+_epN+" in this workflow — a new chain starts here"):"the journey's entry point")):
         (meta.why==="gate")?("<b>Hop 0.5</b> · <span class=\"sng\">GATE</span> — runs BEFORE the handler body (a Depends() dependency of "+esc(frmL)+"), reached by a depends wire"):
-        (meta.why==="dispatch")?("<b>Hop "+meta.hop+"</b> · <span class=\"snd\">DISPATCHED</span> — the event bus routes here after "+esc(frmL)+" publishes (its own writes/reads follow, if any)"):
+        (meta.why==="dispatch")?("<b>Hop "+meta.hop+"</b> · <span class=\"snd\">DISPATCHED</span> — handed off here by name: a queue or the event bus routes to this function after "+esc(frmL)+" enqueues / publishes (its own writes/reads follow, if any)"):
         (meta.why==="write")?("<b>Hop "+meta.hop+"</b> · <span class=\"snw\">WRITTEN</span> by "+esc(frmL)+" — the red access wire"):
         (meta.why==="read")?("<b>Hop "+meta.hop+"</b> · <span class=\"snr\">read</span> by "+esc(frmL)):
         ("<b>Hop "+meta.hop+"</b> · reached by a calls wire"+(_heat&&n&&n.d2w===0?" (orange — at the write)":_heat&&n&&n.d2w===1?" (amber — one hop out)":"")); }
@@ -3687,7 +3688,7 @@ window.__uniAddLayoutTab=function(){ var cfg=document.getElementById("cfg"); if(
         +'<path d="M1 4 H35" fill="none" stroke="url(#'+gid+')" stroke-width="2"'+(d?' stroke-dasharray="'+d+'"':'')+'/></svg>'; }
     return '<svg viewBox="0 0 36 8" width="36" height="8"><path d="M1 4 H35" fill="none" stroke="'+_hx(c.color)+'" stroke-width="2"'+(d?' stroke-dasharray="'+d+'"':'')+'/></svg>'; };
   var wireRow=function(kind){ var c=(typeof CONN!=="undefined"&&CONN[kind])||{color:0x8794ab,style:"dashed"};
-    var shapes=["solid","dashed","dotted","sparse"].map(function(s){ var d=DASHMAP[s];
+    var shapes=["solid","dashed","dotted","sparse","longdash"].map(function(s){ var d=DASHMAP[s];
       return '<button data-v="'+s+'"'+(s===c.style?' class="on"':'')+' title="'+s+'"><svg viewBox="0 0 20 6" width="13" height="5"><path d="M1 3 H19" fill="none" stroke="currentColor" stroke-width="2"'+(d?' stroke-dasharray="'+d+'"':'')+'/></svg></button>'; }).join('');
     var bOn=(window.__uniBeam[kind]==null||window.__uniBeam[kind]>0);
     return '<div class="cfgrow wkrow" style="gap:4px">'
@@ -3731,7 +3732,7 @@ window.__uniAddLayoutTab=function(){ var cfg=document.getElementById("cfg"); if(
         {v:"dim",t:"",ic:'<svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="8" fill="currentColor" fill-opacity="0.3" stroke="currentColor" stroke-width="1.6"/></svg>',ti:"Dim — everything outside the lit set drops to 25%, still readable"},
         {v:"hide",t:"",ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>',ti:"Hide — everything outside the lit set is gone; hulls stay as geography (default)"}], HL.rest)+'</div>'
     + '<div class="grp"><div class="grplbl">WIRE KINDS</div>'
-    + wireRow("fk")+wireRow("bridge")+wireRow("calls")+wireRow("imports")
+    + wireRow("fk")+wireRow("bridge")+wireRow("calls")+wireRow("imports")+wireRow("dispatches")
     + '<div class="grplbl" style="margin-top:9px" title="the DATA-ACCESS connectors (Option A): endpoint→model ROLLUP (the direct call-tree shortcut, method-coloured, hidden by default) vs the true function→model ACCESS wire (role-coloured when its gradient is on).">DATA-ACCESS</div>'
     + wireRow("rollup")+wireRow("access")+wireRow2("access")+'</div>'
     + bandCfg();
@@ -3988,7 +3989,7 @@ window.__BADGE_DESC={
   hrole:{ fetcher:"fetcher — calls the API (a fetch site is attributed to it, or a query-library cache, or an api module it calls)", streamer:"streamer — its fetch is an event stream (SSE)", store:"store — reads or writes client state (reader/writer split: follow-up)", orchestrator:"orchestrator — composes other hooks, touches no data", effect:"effect — a side channel: analytics · logging · idempotency", deriver:"deriver — computes from its inputs, no store, no API" },
   count:{ "*":"nested-only schemas folded into this one — composition helpers no endpoint or function names; double-click the parent to reveal them" } };
 /* connection KINDS (REL2KIND buckets) — shown on the link card + the connectors legend */
-window.__CONNDESC={ fk:"foreign-key data coupling", calls:"a function / handler call", imports:"a component / module import", bridge:"a frontend fetch reaching an API", rollup:"endpoint→model — the call-tree ROLLUP (reaches this table through its functions)", access:"function→model — the TRUE data access (this fn reads/writes this table)" };
+window.__CONNDESC={ dispatches:"a function hands work off by name — a queue or the event bus carries it, the sender does not wait", fk:"foreign-key data coupling", calls:"a function / handler call", imports:"a component / module import", bridge:"a frontend fetch reaching an API", rollup:"endpoint→model — the call-tree ROLLUP (reaches this table through its functions)", access:"function→model — the TRUE data access (this fn reads/writes this table)" };
 window.__badgeGlyph=function(c, kind, key){
   var col=((window.__BADGE_COL[kind]||{})[key])||((window.__BADGE_COL[kind]||{})["*"])||"#8794ab";
   c.fillStyle=col; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill();
@@ -4355,7 +4356,7 @@ window.__uniLegRef=function(){
   // ONE example per type/class/method — a REAL loaded node so the search always resolves. Functions ride
   // off-field (stars); their example carries NO id → __uniSearchGo runs the search, which wakes ƒ + focuses.
   function _exNode(pred){ for(var i=0;i<nodes.length;i++){ if(pred(nodes[i])) return {label:nodes[i].label, id:nodes[i].id}; } return null; }
-  var _EXREL={ fk:["fk"], calls:["calls","handler","touches","touch","consumes"], imports:["imports"], bridge:["bridge"], rollup:["reads_from","writes_to"], access:["fnwrites","fnreads"], renders:["renders"], uses:["uses"], reads:["reads"], typed:["typed"], fecall:["fecall"] };
+  var _EXREL={ fk:["fk"], calls:["calls","handler","touches","touch","consumes"], imports:["imports"], bridge:["bridge"], rollup:["reads_from","writes_to"], access:["fnwrites","fnreads"], dispatches:["dispatches"], renders:["renders"], uses:["uses"], reads:["reads"], typed:["typed"], fecall:["fecall"] };
   function _exLink(k){ var rels=_EXREL[k]||[k]; var pool=((typeof _fieldLinks==="function")?_fieldLinks():links).concat((typeof _FNLINKS!=="undefined"&&_FNLINKS)||[]);   /* calls/access wires live in the function-level pool until functions unfold — the example still names one */
     for(var i=0;i<pool.length;i++){ var l=pool[i]; if(rels.indexOf(l.rel)<0) continue; var s=NIDS[lid(l.source)], t=NIDS[lid(l.target)]; if(!s||!t) continue;
       var lab=s.label+" → "+t.label; if(k==="fk"){ var fks=(s.det&&s.det.fks||[]).map(function(f){ return Array.isArray(f)?f:[f]; }); if(fks.length){ var fk=fks[0]; lab=s.label+"."+fk[0]+" → "+fk[1]; } }
@@ -4449,6 +4450,7 @@ window.__uniLegRef=function(){
     "count:N":"how many nested shapes are tucked inside this one",
     "x:fk":"one table points at a row in another",
     "x:calls":"one backend function calls another, across areas",
+    "x:dispatches":"a function hands work to a worker or an event bus by name — it names the job and moves on; the job runs later, somewhere else",
     "x:imports":"one file pulls another in, across areas",
     "x:bridge":"the frontend calling the API",
     "x:rollup":"an endpoint reaching a table through the functions it calls",
@@ -4527,12 +4529,12 @@ window.__uniLegRef=function(){
   // resolve a connector wire's COLOUR + dash. The built LEGEND.Connectors rows carry it.k (NOT it.c) — reading
   // it.c is why every wire previously rendered gray/solid (operator: icons wrong). We use a CANONICAL stock
   // palette, not live CONN: CONN.calls is recoloured at runtime by the d2w heat, so the live value reads olive
-  // instead of the semantic amber. rollup/access aren't in CONN at all (access = red per __CONNDESC).
-  var _CONNSTOCK={ fk:{col:"#5893ad",style:"dashed"}, calls:{col:"#f59e0b",style:"dashed"}, imports:{col:"#a855f7",style:"dotted"},
+  // instead of the semantic amber. rollup/access ARE in CONN but the stock keeps the semantic hues (access = red per __CONNDESC); dispatches matches CONN exactly (pinned).
+  var _CONNSTOCK={ fk:{col:"#5893ad",style:"dashed"}, calls:{col:"#f59e0b",style:"dashed"}, imports:{col:"#a855f7",style:"dotted"}, dispatches:{col:"#f76707",style:"longdash"},
     bridge:{col:"#e8f443",style:"dotted"}, rollup:{col:"#8794ab",style:"dashed"}, access:{col:"#ef4444",style:"solid"} };
   function _connCS(it){ if(it.c!=null) return {col:_hx(it.c), style:it.s||"solid"};
     return _CONNSTOCK[it.k] || {col:"#8590a8",style:"solid"}; }
-  function _dash(style){ if(typeof DASHMAP!=="undefined" && DASHMAP[style]!=null) return DASHMAP[style]; return style==="dotted"?"1.5 3.5":style==="dashed"?"6 3":""; }
+  function _dash(style){ if(typeof DASHMAP!=="undefined" && DASHMAP[style]!=null) return DASHMAP[style]; return style==="dotted"?"1.5 3.5":style==="dashed"?"6 3":style==="longdash"?"10 4":""; }
   // REAL 3D asset thumbnails (operator: the actual ships, like the small legend's Planet tab). thumbBuild is
   // local to buildLegend, so replicate it from the global model builders (teamShip/defModel/atkModel/asset/
   // INTC/ATK_MODELS/SATC). _refThumb mirrors legThumb but marks its cell __ref so we can PRUNE it from the
@@ -4576,6 +4578,7 @@ window.__uniLegRef=function(){
   // REVISED descriptions (operator: match the FE/BE angle — say what it IS / its role, not a terse tag). Keyed by
   // the item's NAME (the text before the <i>). Falls back to the item's own inline description.
   var _REFDESC={ fk:"a foreign-key link — one table points at a row in another",
+    dispatches:"one function enqueues or publishes to another by its registered name — the call does not wait, and the link is inferred from the name (a floor)",
     calls:"a function call that crosses entity boundaries", imports:"one component or module importing another across entities",
     bridge:"a frontend fetch that reaches a backend endpoint", rollup:"endpoint → table, through the call tree (reaches the table via its functions)",
     access:"function → table — the real read or write of a row",
@@ -4716,7 +4719,7 @@ window.__uniJrnDetail=function(){
   // Code/transport (component · hook · module · endpoint · function) is NOT a column; a FE component's
   // data is the STORES it reads + the models/schemas behind the endpoints it fetches (operator 2026-09-03).
   var _DK={model:1, schema:1, store:1};
-  var _HOP={calls:1, fecall:1, bridge:1, fetches:1, handler:1, uses:1};   // walk these to reach the data behind a call/fetch/hook
+  var _HOP={calls:1, fecall:1, bridge:1, fetches:1, handler:1, uses:1, dispatches:1};   /* a hand-off by name is a hop of the journey matrix (D3, legend pass 2026-09-06) */   // walk these to reach the data behind a call/fetch/hook
   var _COMPOSE={route:1, module:1};   // composition roots — they wire pieces together; their data is the following rows', not theirs
   var _FANOUT=8;                       // …and any step using ≥8 hooks is a composition root too, whatever its kind (operator 2026-09-03)
   function _rolesOf(n){ var m={};
@@ -5700,6 +5703,7 @@ var KINDCARD=(function(){
       if(_k && _tb){ _tb.insertBefore(E("div",{class:"kv",style:"margin:2px 0 6px"}, E("b",{}, "key "), s.label+"."+_k.col+" → "+_k.to), _tb.children[1]||null); }   /* which column points at which (operator 2026-09-05) */
       return _tb; }
     if(rel==="consumes"||rel==="returns"||rel==="takes"||rel==="resp"||rel==="serializes"){ var sc=(t.kind==="schema")?t:(s.kind==="schema"?s:null); return sc?table(sc,"the body shape"):note("— no body on this wire"); }
+    if(rel==="dispatches"){ return note("— the job's arguments: the sender names the task and passes a payload the extractor does not read"); }
     return note("— a control wire: the props / arguments it carries are not captured (the data rides the wires around it)"); }
   function wireVisSec(l){ var s=NIDS[lid(l.source)], t=NIDS[lid(l.target)], gk=(typeof REL2KIND!=="undefined"&&REL2KIND[l.rel])||"calls", bm=(window.__uniBeam&&window.__uniBeam[gk]!=null)?window.__uniBeam[gk]:1, msgs=[];
     if(!bm) msgs.push("its wire kind ("+gk+") is toggled OFF in the legend's connectors — drawn while selected; click the "+gk+" row to keep it");
@@ -5724,7 +5728,7 @@ var KINDCARD=(function(){
       (function(){ var _ck=(typeof REL2KIND!=="undefined"&&REL2KIND[l.rel])||"calls";
         var _cc=(typeof CONN!=="undefined"&&CONN[_ck])||{color:0x8794ab,style:"dashed"};
         var _hxc="#"+("000000"+((_cc.color||0)>>>0).toString(16)).slice(-6);
-        var _dm=({solid:"",dashed:"6 3",dotted:"1.5 3.5",sparse:"5 10"})[_cc.style]; if(_dm===undefined) _dm="6 3";
+        var _dm=({solid:"",dashed:"6 3",dotted:"1.5 3.5",sparse:"5 10",longdash:"10 4"})[_cc.style]; if(_dm===undefined) _dm="6 3";
         var _svg='<svg viewBox="0 0 40 8" width="36" height="8"><path d="M2 4 H38" fill="none" stroke="'+_hxc+'" stroke-width="'+(2.5*(_cc.thick||1))+'"'+(_dm?' stroke-dasharray="'+_dm+'"':'')+' stroke-linecap="round"/></svg>';
         var _d=(window.__CONNDESC&&__CONNDESC[_ck])||"";
         return E("div",{class:"sec"}, sechd("link","Connection"),
@@ -5737,7 +5741,7 @@ var KINDCARD=(function(){
       E("div",{class:"sec"}, sechd("layers","Weight"), E("div",{class:"ubar"}, E("div",{class:"ufill",style:"width:"+Math.min(100,(l.w||1)/6*100)+"%"})), E("div",{class:"sublbl"}, "edge-kind weight "+(l.w||1)+" (fixed per kind)")),
       l.payload?E("div",{class:"sec"}, sechd("table","Payload"), E("div",{class:"sublbl"}, icoEl("table"), "carries "+l.payload+" field"+(l.payload>1?"s":"")+" — "+((tk==="schema"||tk==="model")?tl:"the target structure"))):null,
       E("div",{class:"sec"}, (function(){ var _ch=sechd("truck","Cargo"); try{ if(window.__uniAssetThumb) _ch.append(window.__uniAssetThumb(function(){ return window.__uniAssets.cargo(); }, "cargo shuttle \u2014 the graph asset")); }catch(_e){} return _ch; })(), (function(){ var _x=(typeof linkCross==="function"&&linkCross(l)); return _x   ? E("div",{class:"flagrow ok"}, icoEl("test"), E("span",{class:"flbl"}, l.payload? ("present \u00b7 carries "+l.payload+" data field"+(l.payload>1?"s":"")) : "present \u00b7 empty (no payload)"))   : E("div",{class:"flagrow"}, icoEl("skip"), E("span",{class:"flbl"}, "no cargo \u00b7 same-entity wire (no transit)")); })()),E("div",{class:"sec"}, (function(){ var _tc=sechd("test","Test chip"); try{ if(window.__uniAssetThumb) _tc.append(window.__uniAssetThumb(function(){ return window.__uniAssets.testchip(); }, "test chip \u2014 the graph asset")); }catch(_e){} return _tc; })(), (function(){ var _x=(typeof linkCross==="function"&&linkCross(l)); return _x   ? E("div",{class:"flagrow ok"}, icoEl("test"), E("span",{class:"flbl"}, l.proven? "present \u00b7 test-proven route" : "present \u00b7 route not test-proven"))   : E("div",{class:"flagrow"}, icoEl("skip"), E("span",{class:"flbl"}, "no test chip \u00b7 same-entity wire (no transit)")); })()),
-      E("div",{class:"sec"}, sechd("info","Trust"), kv(null,"kind", ({fk:"structural · foreign-key join", touches:"structural · archmap touch", bridge:"inferred · web-bridge floor (method+path)", calls:"inferred · graft call floor", imports:"inferred · import floor"}[l.rel]) || (l.proven?"structural join":"inferred floor"))),
+      E("div",{class:"sec"}, sechd("info","Trust"), kv(null,"kind", ({fk:"structural · foreign-key join", touches:"structural · archmap touch", bridge:"inferred · web-bridge floor (method+path)", calls:"inferred · graft call floor", imports:"inferred · import floor", dispatches:"inferred · by-name floor (the target is resolved from its registered name)"}[l.rel]) || (l.proven?"structural join":"inferred floor"))),
       E("div",{class:"sec"}, sechd("role","Direction"), kv(null,"flow", sl+" → "+tl)),
       carriesSec(l)
     ]; };
@@ -5873,6 +5877,7 @@ var LEGEND={
   Connectors:[ {t:"grp",l:"entity ↔ entity · <i>relationship kind</i>"},
     {t:"ln",k:"fk",l:"fk <i>a foreign-key data coupling</i>"},
     {t:"ln",k:"calls",l:"calls <i>a cross-entity function call</i>"},
+    {t:"ln",k:"dispatches",l:"dispatches <i>a function hands work off by name — a queue or an event bus carries it</i>"},
     {t:"ln",k:"imports",l:"imports <i>a cross-entity import</i>"},
     {t:"ln",k:"bridge",l:"bridge <i>a frontend fetch reaching an API</i>"},
     {t:"ln",k:"rollup",l:"rollup <i>endpoint→model — the call-tree ROLLUP (reaches the table via its functions)</i>"},
@@ -5912,10 +5917,10 @@ var _legSub="Defense";   // active sub-tab within Planet
    SAME __badgeGlyph the 3D chip uses (legend-visual law), beside its one-line meaning. method → the five
    HTTP verbs · role → the four function roles (accessor/caller/gate/pure). ── */
 window.__badgePop=function(anchor, kind, key){ if(window.__badgePopHide) __badgePopHide();
-  var allKeys=(kind==="method")?["GET","POST","PUT","PATCH","DELETE","BOOT"]:(kind==="count")?["N"]:(kind==="feclass")?["connector","container","leaf","private"]:(kind==="mclass")?["api","render-fn","model","config","lib","logic"]:(kind==="hrole")?["fetcher","streamer","store","orchestrator","effect","deriver"]:["accessor","caller","gate","pure"];
+  var allKeys=(kind==="method")?["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"]:(kind==="count")?["N"]:(kind==="feclass")?["connector","container","leaf","private"]:(kind==="mclass")?["api","render-fn","model","config","lib","logic"]:(kind==="hrole")?["fetcher","streamer","store","orchestrator","effect","deriver"]:["accessor","caller","gate","pure"];
   var keys=key?[key]:allKeys;   // key given (the node's OWN badge) → single row; else the whole key
   var desc=(window.__BADGE_DESC&&window.__BADGE_DESC[kind])||{};
-  var head=key?((kind==="method")?(key==="BOOT"?"boot event — runs once at startup":"HTTP method"):(kind==="count")?"folded schemas":(kind==="hrole")?"hook role — what the hook DOES (streamer · fetcher · store · orchestrator · effect · deriver), one by precedence":(kind==="mclass")?"module class — what the module DOES (api · render-fn · model · config · lib · logic)":(kind==="feclass")?"component class":"function role"):((kind==="method")?"HTTP method — the endpoint's verb (what it does to the row)":(kind==="count")?"fold count — nested-only schemas hidden under this one (critical); double-click to reveal":(kind==="feclass")?"component class — how each component is drawn":"function role — what it does with the data store");
+  var head=key?((kind==="method")?(key==="BOOT"?"boot event — runs once at startup":key==="TASK"?"worker task — dispatched by name from a queue":"HTTP method"):(kind==="count")?"folded schemas":(kind==="hrole")?"hook role — what the hook DOES (streamer · fetcher · store · orchestrator · effect · deriver), one by precedence":(kind==="mclass")?"module class — what the module DOES (api · render-fn · model · config · lib · logic)":(kind==="feclass")?"component class":"function role"):((kind==="method")?"HTTP method — the endpoint's verb (what it does to the row)":(kind==="count")?"fold count — nested-only schemas hidden under this one (critical); double-click to reveal":(kind==="feclass")?"component class — how each component is drawn":"function role — what it does with the data store");
   var pop=document.createElement("div"); pop.id="badgepop"; pop.className="badgepop";
   var html='<div class="bph">'+head+'</div>';
   keys.forEach(function(k){ html+='<div class="bprow"><canvas class="bpcv" width="30" height="30" data-k="'+k+'"></canvas><div class="bpt"><b>'+(kind==="count"?"N":k)+'</b><span>'+(desc[k]||desc["*"]||"")+'</span></div></div>'; });

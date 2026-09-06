@@ -382,6 +382,23 @@ check('kc[n.kind]!=null?kc[n.kind]:ord2.length' in station,
       "pre-C: the column x guards kc[n.kind] — an unknown kind gets a real column, never undefined*COLW=NaN")
 check('(KIND_LABEL[kind]||kind)' in station,
       "pre-C: the column header falls back to the raw kind name for a newer emitter's kind")
+# ── legend pass (2026-09-06): BOOT + TASK in every METHOD roster; a TASK/unknown verb is never coerced to GET; stream is a card row;
+#    provider ≠ web colour; the c4-only station never draws `dispatches` (function-level, levels only) ──
+import re as _re
+_gg = (shell / "assets" / "graph-grammar.js").read_text(encoding="utf-8")
+check('TASK: "var(--m-task)"' in _gg and 'function taskMark(g, r, col)' in _gg and _gg.count('if (method === "TASK") { taskMark(g, r, col); return; }') == 3,
+      "legend pass: the shared grammar knows BOOT/TASK and every icon set draws the TASK queue mark")
+check('TASK:"var(--m-task)"' in station and '--m-task:#a78bfa' in station and '||"GET"' not in station and 'methodOf(label)||null' in station and 'methodOf(p.label)||null' in station,
+      "legend pass: the station's METHOD roster has BOOT/TASK and an unknown verb falls to the muted mark, never to GET")
+check('if(n.stream) h+=rowKV("delivery"' in station, "legend pass: a streaming endpoint's card carries a Delivery row")
+_kc = {m.group(1): m.group(2) for m in _re.finditer(r'(\w+):"(#[0-9a-f]{6})"', station[station.find("var KIND_COLOR"):station.find("var KIND_COLOR") + 400])}
+check(_kc.get("provider") and _kc.get("web") and _kc["provider"] != _kc["web"], f"legend pass: provider and web wear different colours ({_kc.get('provider')} vs {_kc.get('web')})")
+check("e-dispatches" not in station and 'kind==="dispatches"' not in station and "dispatches:{" not in station,
+      "legend pass: the c4-only station draws no `dispatches` wire (function-level edges live in levels.js; prose may name the mechanism)")
+check('TASK: "#a78bfa"' in panel and '"#868e96"' in panel, "legend pass: sim-panel's METHOD_COLOR knows BOOT/TASK; an unknown verb still falls to #868e96")
+_mc_p = dict(_re.findall(r'(\w+): "(#[0-9a-f]{6})"', panel[panel.find("var METHOD_COLOR"):panel.find("var METHOD_COLOR") + 200]))
+_mc_g = dict(_re.findall(r'(\w+): "(#[0-9a-f]{6})"', _gg[_gg.find("var METHOD_COLOR"):_gg.find("var METHOD_COLOR") + 200]))
+check(_mc_p and _mc_p == _mc_g, f"legend pass: graph-grammar's chip roster equals sim-panel's METHOD_COLOR ({_mc_g} vs {_mc_p})")
 check('e.kind==="bridge" && e.from_slug===slug' in station,
       "the L2 drill draws a bridge pass over DATA.cross_edges (from_slug === drill)")
 check('bridgeStub[e.to]' in station and 'reached by a fetch bridge' in station,

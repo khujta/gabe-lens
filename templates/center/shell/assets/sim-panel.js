@@ -66,7 +66,7 @@
       datatype: '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'
     };
     var KIND_CHIP = { fn: "#0f766e", endpoint: KIND_COLOR.endpoint, model: KIND_COLOR.model, schema: KIND_COLOR.schema };
-    var METHOD_COLOR = { GET: "#16794c", POST: "#4338ca", PUT: "#b45309", PATCH: "#b45309", DELETE: "#d1443c" };
+    var METHOD_COLOR = { GET: "#16794c", POST: "#4338ca", PUT: "#b45309", PATCH: "#b45309", DELETE: "#d1443c", BOOT: "#8a8f98", TASK: "#a78bfa" };   /* BOOT + TASK roots (legend pass 2026-09-06); an unknown verb still falls to #868e96 */
     var TYPE_CLS = { int: "num1", float: "num2", Decimal: "num2", Numeric: "num2", date: "tim1", time: "tim1",
       datetime: "tim2", str: "str1", Text: "str2", bytes: "str2", bool: "bool", dict: "json", list: "json",
       Any: "json", JSON: "json", Literal: "json", UUID: "id", uuid: "id" };

@@ -278,7 +278,7 @@ def build_levels(amap: dict[str, Any], graph: dict[str, Any],
         drawn_fn.setdefault(c["s"], c["ss"])
         drawn_fn.setdefault(c["t"], c["ts"])
         _fedges.append({"s": c["s"], "ss": c["ss"], "t": c["t"], "ds": c["ts"],
-                        "rel": c.get("rel", "calls"), "conf": c.get("conf", "inferred")})  # class 6: a dispatch edge keeps rel:'dispatches'
+                        "rel": c.get("rel", "calls"), "conf": c.get("conf", "inferred")})  # class 6 + 13: event-bus AND task-enqueue edges keep rel:'dispatches'
     # 3a · class 8 · DEPENDS edges (the K1 gate chain): endpoint handler → its gate dependency —
     #      a SIGNATURE fact the framework injects before the body (graft has 0 call edges into a
     #      Depends target). Handler-rooted like calls; the dep joins drawn_fn so §3b descends its

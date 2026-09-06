@@ -45,7 +45,13 @@
     function rnd(v) { return Math.round(v * 100) / 100; }   // kill 1e-14 float dust
 
     var METHOD = { GET: "var(--m-get)", POST: "var(--m-post)", PUT: "var(--m-put)",
-                   PATCH: "var(--m-put)", DELETE: "var(--m-delete)" };
+                   PATCH: "var(--m-put)", DELETE: "var(--m-delete)",
+                   BOOT: "var(--m-boot)", TASK: "var(--m-task)" };   /* BOOT (lifespan root) + TASK (a worker entrypoint dispatched by name) — the ONE method roster every station shares (legend pass 2026-09-06) */
+    /* a TASK endpoint's mark: a QUEUE — three stacked jobs, the last one leaving to a worker (the universe's badge idea, in SVG) */
+    function taskMark(g, r, col) {
+      g.appendChild(E("circle", { r: r, fill: col, stroke: "var(--panel)", "stroke-width": "1.6" }));
+      g.appendChild(E("path", { d: "M-3 -3 L2.4 -3 M-3 0 L2.4 0 M-3 3 L2.4 3 M1.2 1.6 L3 3 L1.2 4.4",
+        fill: "none", stroke: "#fff", "stroke-width": "1.1", "stroke-linecap": "round", transform: "scale(" + (r / 6) + ")" })); }
     var ICO_SCHEMA = 'M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1 M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1';
     var ICO_FN = 'M9 17c2 0 3-1 3-3v-4c0-2 1-3 3-3 M9 11h6';
     /* the three icon sets — byte-identical to the level lab (round 46 parity) */
@@ -64,7 +70,7 @@
             "stroke-width": handler ? "3.1" : "2.2",
             "stroke-linecap": "round", "stroke-linejoin": "round",
             transform: "translate(" + (-r * 1.2) + "," + (-r * 1.2) + ") scale(" + (2.4 * r / 24) + ")" })); },
-        ep: function (g, r, method) { var col = METHOD[method] || "var(--muted)";
+        ep: function (g, r, method) { var col = METHOD[method] || "var(--muted)"; if (method === "TASK") { taskMark(g, r, col); return; }
           g.appendChild(E("circle", { r: r, fill: col, stroke: "var(--panel)", "stroke-width": "1.6" }));
           g.appendChild(E("path", { d: "M1.4 " + (-r * 0.62) + " L" + (-r * 0.5) + " 0.6 L0.2 0.6 L-1 " + (r * 0.66) + " L" + (r * 0.56) + " -0.4 L0 -0.4 Z",
             fill: "#fff", transform: "scale(" + (r / 6) + ")" })); }
@@ -85,7 +91,7 @@
             "stroke-width": handler ? "2.6" : "1.8", transform: tf }));
           g.appendChild(E("path", { d: ICO_FN, fill: "none", stroke: col, "stroke-width": "2",
             "stroke-linecap": "round", "stroke-linejoin": "round", transform: tf })); },
-        ep: function (g, r, method) { var col = METHOD[method] || "var(--muted)";
+        ep: function (g, r, method) { var col = METHOD[method] || "var(--muted)"; if (method === "TASK") { taskMark(g, r, col); return; }
           g.appendChild(E("circle", { r: r + 1, fill: "none", stroke: col, "stroke-width": "2" }));
           g.appendChild(E("path", { d: "M13 2 3 14h9l-1 8 10-12h-9l1-8z", fill: col,
             transform: "translate(" + (-r * 0.75) + "," + (-r * 0.75) + ") scale(" + (1.5 * r / 24) + ")" })); }
@@ -104,7 +110,7 @@
           g.appendChild(E("path", { d: ICO_FN, fill: "none", stroke: "#fff", "stroke-width": "2.4",
             "stroke-linecap": "round", "stroke-linejoin": "round",
             transform: "translate(" + (-r * 0.85) + "," + (-r * 0.85) + ") scale(" + (1.7 * r / 24) + ")" })); },
-        ep: function (g, r, method) { var col = METHOD[method] || "var(--muted)";
+        ep: function (g, r, method) { var col = METHOD[method] || "var(--muted)"; if (method === "TASK") { taskMark(g, r, col); return; }
           g.appendChild(E("rect", { x: -r - 1, y: -r - 1, width: 2 * r + 2, height: 2 * r + 2, rx: 6, fill: col }));
           g.appendChild(E("path", { d: "M1.4 " + (-r * 0.62) + " L" + (-r * 0.5) + " 0.6 L0.2 0.6 L-1 " + (r * 0.66) + " L" + (r * 0.56) + " -0.4 L0 -0.4 Z",
             fill: "#fff", transform: "scale(" + (r / 6) + ")" })); }
@@ -278,7 +284,7 @@
       endpoint: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
       datatype: '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>' };
     var KIND_CHIP = { fn: "#0f766e", endpoint: "#4c6ef5" };
-    var METHOD_COLOR = { GET: "#16794c", POST: "#4338ca", PUT: "#b45309", PATCH: "#b45309", DELETE: "#d1443c" };
+    var METHOD_COLOR = { GET: "#16794c", POST: "#4338ca", PUT: "#b45309", PATCH: "#b45309", DELETE: "#d1443c", BOOT: "#8a8f98", TASK: "#a78bfa" };   /* the chip roster mirrors sim-panel.js METHOD_COLOR — pinned equal (review 2026-09-06) */
     var TYPE_CLS = { int: "num1", float: "num2", Decimal: "num2", Numeric: "num2", date: "tim1", time: "tim1",
       datetime: "tim2", str: "str1", Text: "str2", bytes: "str2", bool: "bool", dict: "json", list: "json",
       Any: "json", JSON: "json", Literal: "json", UUID: "id", uuid: "id" };

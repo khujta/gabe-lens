@@ -611,7 +611,7 @@ def s16_workflow_coverage(root: Path, plan: dict | None, cfg: dict | None):
     if int(res.get("endpoints") or 0) < 1:
         return Unavailable("no endpoints in c4-graph.json (no API arm)")
     unc = int(res.get("uncovered") or 0)
-    total = int(res.get("covered") or 0) + unc   # the denominator = the REAL endpoints; infra (_-prefixed) + BOOT sit outside it
+    total = int(res.get("covered") or 0) + unc   # the denominator = the REAL endpoints; infra (_-prefixed) + BOOT + TASK sit outside it
     pending = _pending_drafts(center / "workflows.draft.js")
     if unc < THRESHOLDS["workflow_uncovered"] and pending < 1:
         return None

@@ -171,7 +171,7 @@ check('CONN[k].grad=!!CONN0[k].grad' in page,
       "wire reset must RESTORE the stock gradient flag (fk/calls default ON)")
 check("style:'sparse',density:2.7,trust:0.9,grad:true" in page and "style:'solid',density:2,trust:0.6,grad:false,thick:1,gmode:'type'" in page,
       "the operator's stock CONN config drifted (fk grad on; calls flat #817536, grad off, gmode type)")
-check('{ fk:0.9, bridge:0.8, calls:0.5, imports:1, rollup:0, access:0.7 }' in page and '__uniCurveAmt=0.6' in page and 'lineStyle:"curved"' in page,
+check('{ fk:0.9, bridge:0.8, calls:0.5, imports:1, rollup:0, access:0.7, dispatches:0.7 }' in page and '__uniCurveAmt=0.6' in page and 'lineStyle:"curved"' in page,
       "the operator's stock glow/curve defaults drifted (rollup hidden = beam 0, access glow 0.7)")
 check('function _raySegDist' in page and 'w=ray.origin.clone().sub(A)' in page and 'showLinkPanel(wbest.l)' in page,
       "wire clicking is gone (ray-segment pick → connection panel)")
@@ -488,7 +488,7 @@ check('(it.k==="schema")?"count"' in page and '(kind==="count")?["N"]' in page a
 # BOOT method badge (implemented): a designed power glyph + a description + the key list entry (not the generic dot)
 check("key==='BOOT'" in page and 'c.arc(64,72,28' in page,
       "the BOOT method badge draws its power glyph (regressed to the generic dot)")
-check('DELETE","BOOT"]' in page and 'BOOT:"boot — runs ONCE' in page and 'key==="BOOT"?"boot event' in page,
+check('DELETE","BOOT","TASK"]' in page and "key==='TASK'" in page and 'c.lineTo(78,92)' in page and 'BOOT:"boot — runs ONCE' in page and 'key==="BOOT"?"boot event' in page,
       "BOOT is missing from the method key list / description / popup header")
 check('D.schema_edges' in page and 'rel:e.rel||"uses", schema:true' in page and 'LINKMETA.returns=' in page,
       "the fn→schema wires (levels schema_edges: returns/takes/uses) are not linked into the field")
@@ -892,6 +892,21 @@ check('if(!_bm && !sel) return;' in page and 'window.__uniSelectLink=function(l)
       "WIRE SELECTION (2026-09-05): a selected wire draws even when its kind beam is 0 (the vanishing rollup); one select path; the card says why a wire is hidden; the FK key line; example WIRE chips on the reference's connector rows")
 check('window.__uniBudget=1600;' in page and 'window.__uniScaleGuard=function' in page and 'window.__uniApplyDeepLinks=function' in page and 'q.get("journey")' in page and 'window.__uniPanelEnt=function' in page and 'if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} }' in page,
       "PASS 4 (2026-09-06): the node budget + scale guard (booted folded above it), the ?journey= / ?ent= deep links, the entity-panel handle")
+# ── legend pass (2026-09-06) · Step 0: the endpoint ⓘ popover lists TASK — the two method arrays must be the SAME list (paired assert) ──
+import re as _re0
+_pop = _re0.search(r'\["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"\]:\(kind==="count"\)', page); _sec = _re0.search(r'\["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"\]\.forEach', page)
+check(_pop is not None and _sec is not None and 'key==="TASK"?"worker task — dispatched by name from a queue"' in page,
+      "Step 0: the __badgePop method list equals the compact-legend method list (TASK in both) and the popover head names the worker task")
+# ── Step 3: the dispatches wire — CONN entry, kind list, beam, legend row, definitions, reference stock == CONN, the matrix hop ──
+check("dispatches:'dispatches'" in page and "dispatches:{color:0xf76707,style:'longdash'" in page and "'access','dispatches']" in page and 'dispatches:0.7 }' in page
+      and 'wireRow("dispatches")' in page and '{t:"ln",k:"dispatches"' in page and '"x:dispatches":' in page and 'dispatches:{col:"#f76707",style:"longdash"}' in page
+      and 'longdash:[2.6,1.2]' in page and 'style==="longdash"?"10 4"' in page and 'uses:1, dispatches:1}' in page and 'dispatches:["dispatches"]' in page
+      and 'dispatches:"inferred · by-name floor' in page and 'if(rel==="dispatches"){ return note(' in page
+      and 'sparse:"5 10", longdash:"10 4" };' in page and '"sparse","longdash"].map(' in page   # the compact legend + the config sample paint from DASHMAP (review 2026-09-06)
+      and 'handed off here by name: a queue or the event bus routes to this function after ' in page and 'the event bus routes here after ' not in page,
+      "Step 3: the dispatches wire is registered on every surface (CONN · kinds · beam · legend row · definitions · reference stock · matrix hop · trust · carries)")
+_cs = _re0.search(r'dispatches:\{col:"(#[0-9a-f]{6})",style:"(\w+)"\}', page); _cn = _re0.search(r"dispatches:\{color:0x([0-9a-f]{6}),style:'(\w+)'", page)
+check(_cs and _cn and _cs.group(1) == "#" + _cn.group(1) and _cs.group(2) == _cn.group(2), "Step 3: the reference stock swatch equals the drawn CONN (colour + style cannot drift)")
 check('C.store=feDataBuilder; C.type=feDataBuilder; C.hook=feHookBuilder; C.component=feHookBuilder;' in page and 'function carriesSec(l)' in page and page.count('carriesSec(l)')>=1 and 'function carriesSec(l)' in page and '{t:"ln",k:"renders"' in page and '"x:typed":' in page and 'if(/tog$/.test(it.t||"")) return;' in page and page.count('structureSec(n),\n') >= 1,
       "CARD ORDER + CARRIES + CONNECTORS (2026-09-05): data kinds put Structure before Connections; hooks/components list the shapes they handle; every wire card says what it carries; the frontend wires join the connector roster; the reference lists wires only")
 check('cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null' in page and 'n.kind==="store"){ op="client state"; opk="store"; fields=(n.det&&n.det.cols)||null;' in page and 'the frontend\'s table: its fields are its value type' in page,
@@ -1344,6 +1359,12 @@ const { chromium } = require(process.argv[3]);
       var j0=(_jrnCollect().filter(function(x){ return x.wf && !x.draft; })[0]||{}); window.__jrn=j0.name||null; window.__jrnDone=false; __uniApplyDeepLinks(); r.jrn=j0.name||null; r.steps=(WALK&&WALK.steps||[]).length; try{ __uniJrnStart(null); }catch(e){}
       window.__ent=(Object.keys(ENT)[0]||null); window.__entDone=false; __uniApplyDeepLinks(); r.ent=(window.__uniPView&&window.__uniPView.lvl)||null; return r; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
   console.log('  scaleDL '+JSON.stringify(scaleDL));
+  // legend pass (2026-09-06) · Step 3: a dispatches wire on the EXAMPLE page (the event bus, 2 wires) draws, its card says DISPATCHES, the reference row carries a real chip
+  const dispSel = await p.evaluate(() => { try{ var dl=links.find(function(l){ return l.rel==='dispatches' && NIDS[lid(l.source)] && NIDS[lid(l.target)] && _npos[lid(l.source)] && _npos[lid(l.target)]; }); if(!dl) return {err:'no positioned dispatches wire'};
+      window.__uniSelCurve=null; __uniSelectLink(dl); var drawn=!!window.__uniSelCurve; var card=document.getElementById('pbody').textContent; var chip=/dispatches/i.test(card);   // the chip is upper-cased by CSS; the DOM text is the kind name
+      var ref=null; try{ __uniLegRef(); var row=[].slice.call(document.querySelectorAll('#uni-legref .lrrow')).find(function(r){ return /^dispatches/.test((r.querySelector('.lrtx')||{}).textContent||''); }); ref=row?(row.querySelector('.lrexl')?'real':(row.querySelector('.lrnone')?'dash':'none')):'norow'; __uniLegRef(); }catch(e){}
+      window.__uniSelLink=null; SEL=null; try{ updateConnectors(); }catch(e){} return {drawn:drawn, chip:chip, ref:ref}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
+  console.log('  dispSel '+JSON.stringify(dispSel));
   // TIER KEY regression (operator bug): plain 1–4 fired the tier handler AND the fleet-column handler
   // (two listeners, preventDefault can't stop the second) → the same tier rendered differently each
   // press. Tiers now require Alt+Digit1–4; plain digits must NO LONGER move the tier, and Alt+Digit is
@@ -1602,8 +1623,9 @@ const { chromium } = require(process.argv[3]);
     && jd.matrixOk && jd.frozenOk && jd.walkSyncOk && jd.flagsOk && jd.opcFrozen && jd.indirect>0;
   const sc=storeCheck, storeOk = sc && !sc.err && sc.storeCols>=1 && sc.storeFlagOn && sc.litStore>=1 && sc.iconInline && sc.titleHot && sc.cellClean && sc.row0Lit>=0 && sc.row0Lit<=5 && sc.anchorKind==='route' && sc.anchorKind3==='route' && sc.lgbiOk===true && /useCreatePantryItem/.test(sc.feStart||'') && sc.hookRoles && sc.hookRoles.hooks>0 && sc.hookRoles.withRole===sc.hookRoles.hooks && sc.hookRoles.kinds>=3 && sc.storeShape && sc.storeShape.stores>0 && sc.storeShape.shaped>=1 && sc.cardOrder && !sc.cardOrder.err && /Usage/.test(sc.cardOrder.store[0]||'') && /Structure/.test(sc.cardOrder.store[1]||'') && /Structure/.test(sc.cardOrder.model[1]||'') && sc.cardOrder.carries===true && sc.cardOrder.ref && sc.cardOrder.ref.blank===0 && sc.cardOrder.ref.fe===true && sc.drafts>=1 && sc.draftWalk>0 && sc.draftGrp && sc.draftLeveled && sc.draftNamed && sc.viewType==='View (FE)' && sc.viewCol==='#d946ef' && (sc.viewIcon==='heat'||sc.viewIcon==='#d946ef');
   const wireSelOk = !!(wireSel && !wireSel.err && wireSel.drawn===true && wireSel.vis===true && wireSel.chips>=8 && wireSel.key===true && wireSel.beam===0);
+  const dispOk = !!(dispSel && !dispSel.err && dispSel.drawn===true && dispSel.chip===true && dispSel.ref==='real');
   const scaleOk = !!(scaleDL && !scaleDL.err && scaleDL.hit===true && scaleDL.capOn===true && scaleDL.tier===0 && scaleDL.row===true && scaleDL.jrn && scaleDL.steps>0 && scaleDL.ent==='ent');
-  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk;
+  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && dispOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk;
   if(ok) console.log(`  render: PASS — ${r.nodes} live nodes, 0 errors, card renders (st-pass=${r.stPass}, faces=${r.face}); frontend ${f.present?`${f.feNodes} pieces · ${f.absorbed} screens absorbed · ${f.typesHeld} types held · FE-write heat off-by-default, bands blue→magenta`:'absent (honest-empty)'}`);
   else { console.error('  render FAIL:', JSON.stringify(r), 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
 })();
