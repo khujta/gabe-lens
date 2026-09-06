@@ -699,7 +699,7 @@ check('setTimeout(function(){ if(window.__uniPanelAll) __uniPanelAll(); }, 0);' 
       "boot must open the Everything panel (deferred one tick past the card IIFE)")
 check('Graph.onBackgroundClick(window.__uniBgClick)' in page,
       "background clicks are not wired to the hull picker")
-check('{ekey:e}' in page and '{ekey:e, skey:sub}' in page,
+check('{ekey:e, dash:_dash}' in page and '{ekey:e, skey:sub}' in page,
       "cluster hulls lost their routing keys (ekey/skey) — the picker cannot name a panel")
 check('"— no hidden functions here"' in page, "the Stars section lost its honest-empty line")
 # batch 23 (Everything tuning): navigable first · kind rows w/ meaning · paged stars · Sources
@@ -938,7 +938,7 @@ check('xp:e.export||null' in page and 'if(l.xp && NIDS[l.xp]) l.source=l.xp;' in
       "D3 (2026-09-05): a bridge's export piece wins over the file's absorbed piece — the journey's FE leg starts at the hook that fetched")
 check('type:"Middleware (app-wide)"' in page and '"role:gate":"the check that can say no' in page and 'not a journey\'s gate' in page,
       "D4 (2026-09-05): gate is ONE concept — the role badge (endpoint guard or chain function); the Middleware row is the app-wide wrapper, never a journey's gate")
-check('backend:["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt"]' in page and page.count('"external","entity","middleware","flag","provider","prompt"]')>=3 and 'middleware:"a wrapper the app runs on EVERY request' in page and 'provider:"an outside service' in page,
+check('backend:["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt","element"]' in page and page.count('"external","entity","middleware","flag","provider","prompt","element"]')>=3 and 'middleware:"a wrapper the app runs on EVERY request' in page and 'provider:"an outside service' in page,
       "LEGEND ROSTER (2026-09-05): middleware · flag · provider · prompt appear in the group roster, the legend reference and the compact legend, each with a definition — the elements panel counted them while the legend did not")
 check('l.rel!=="mounts"&&l.rel!=="fecall"' in page and 'return best||view||comp;' in page and '"render-fn":"#d946ef"' in page and 'logic:"#22d3ee"' in page and '(it.k==="module")?"mclass":(it.k==="hook")?"hrole":(it.k==="provider")?"pclass":null' in page,
       "JOURNEY STARTS AT A VIEW (2026-09-05): the anchor walk follows fecall and falls to a view/any component; render-fn + logic badges off the module amber; the Module legend row carries the class-key ⓘ")
@@ -1124,25 +1124,20 @@ check('lerp(new T.Color("#ffffff"),0.38)' in page,
 check('E2.push([fh, FE_PAIR[fh], 8]);' in page and 'ord.splice(bi+1,0,fh);' in page,
       "pair seating is gone (force spring + ring adjacency)")
 check('return "fe · "+e.slice(3);' in page, "a fe· home's display name lost its opened dot")
-check('window.UNIWIRE={ r1:false, r2:false, r3:false, r4:false };' in page
-      and 'window.__uniRelHide=function(l)' in page
-      and 'if(window.__uniRelHide&&__uniRelHide(l)&&!(HL.on&&HL.links&&HL.links.has(l))&&l!==window.__uniSelLink) return; var _whf=' in page,
-      "the WIRE VIEW rel-hide gate (with the light-on-demand exemption) is gone from the connector build")
-check('window.__uniDrawBundles=function(grp)' in page and 'if(window.__uniDrawBundles) __uniDrawBundles(connGroup);' in page
-      and 'userData.kind="bundle"' in page,
-      "R3 bundling is gone (one line per cluster-pair, brightness = count)")
-check('UNIWIRE.r4&&l.rel==="renders"&&_SOLEP' in page and 'return 14;' in page,
-      "R4 lost its tight sole-child spring in tuneLinkForce")
-check('window.__uniAddWireView=function()' in page and 'id="wireview"' in page.replace("'",'"')
+# the R2–R4 lab was RETIRED by the entity-models pass (Phase 2, 2026-09-06): the machinery goes, not just the buttons — an unreachable
+# toggle that still gated the connector build was the failure mode. CAP stays alone as the capsule master; the ENTITY MODEL pill sits above it.
+check('window.UNIWIRE' not in page and '__uniRelHide' not in page and '__uniDrawBundles' not in page and '_UTILSET' not in page and '_SOLEP' not in page and '_wireSets' not in page,
+      "R2–R4 machinery survived (UNIWIRE / __uniRelHide / __uniDrawBundles / _UTILSET / _SOLEP) — a retired toggle still gates the connector build")
+check('data-v="r2"' not in page and '["r2","R2"' not in page and '["r3","R3"' not in page and '["r4","R4"' not in page and 'UNIWIRE[d[0]]' not in page,
+      "an R2/R3/R4 button is still built")
+check('window.__uniAddWireView=function()' in page and 'id="wireview"' in page.replace("'",'"') and 'id="entmodel"' in page.replace("'",'"')
       and '__uniAddWireView();' in page,
-      "the WIRE VIEW config group is not built at boot / preset re-tabs")
+      "the CAPSULES group / the ENTITY MODEL pill are not built at boot / preset re-tabs")
 
 # ── 10z. batch 52 review fixes (7 confirmed → 6 distinct) ──
-check(page.count('__uniRelHide(l)&&!(HL.on&&HL.links&&HL.links.has(l))') >= 3,
-      "the light-on-demand contract is gone — R-hidden wires must DRAW when lit and stay unpickable/unflown otherwise (draw + picker + transports)")
-check('b.classList.toggle("on", d[0]==="cap"?!!UNICAP.on:!!UNIWIRE[d[0]]);' in page, "WIRE VIEW/CAP buttons lose their lit state on a config rebuild")
+check('b.classList.toggle("on", !!UNICAP.on);' in page, "the CAP button loses its lit state on a config rebuild")
 check('try{ buildTransports(); }catch(e){}' in page.split("wv-")[1][:1600],
-      "a WIRE VIEW flip no longer re-derives the shuttles (ghosts would fly hidden wires)")
+      "a CAP flip no longer re-derives the shuttles (ghosts would fly folded wires)")
 check('window.__uniCamFit=function(ms)' in page and '__uniCamFit(600); else Graph.cameraPosition(DEF' in page
       and '__uniCamFit(0); }, 400);' in page,
       "the camera no longer fits the live field (19 clusters outgrew the fixed 780) on boot + reset")
@@ -1154,6 +1149,50 @@ check('window.UNICAP={ on:false, threshold:80, open:{} };' in page and 'window._
 check('if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} }' in page,
       "the station BOOTS simplified via the T1 tier (the tier replaces the capsule fold as boot-time simplification)")
 check('rel:"bundle"' in page and 'count:g2.n' in page, "capsule wires lost their aggregated bundles")
+
+# ── 10aa. ENTITY MODELS — Phase 2 of docs/design/entity-models/plan.md (2026-09-06): the claim is the join key, the other three are views ──
+check(page.count('entClaim:')==3 and 'ent:ent, entClaim:ent,' in page and 'ent:p.home, entClaim:p.home,' in page and 'ent:f.slug, entClaim:f.slug,' in page,
+      "B1: the immutable claim is not stamped on exactly the three node literals (backend · frontend · function)")
+check('window.__uniClaimEnts=_ents.slice();' in page and page.find('window.__uniClaimEnts=_ents.slice();') < page.find('/* LINKS: intra-entity'),
+      "B1: the claim registry is not captured after the FE fold (the claim round trip would drift)")
+check('KINDS.element={' in page and 'KINDCOL.element=' in page and 'order.push("element")' in page and '"prompt","element"].forEach' in page
+      and '"prompt","element"].filter' in page and 'element:"a backend file' in page and '"prompt","element"];' in page,
+      "B1: the element kind lacks its registry / legend row / compact-legend row / tier list / tip")
+check('var pc=D.pieces[n.entClaim||n.ent];' in page and 'D.pieces[n.ent];' not in page,
+      "B2: the levels group map must join on the CLAIM — a moved piece would lose its use-case / community / fk group and land in 'other'")
+_em=page[page.find('if(!document.getElementById("entmodel"))'):page.find('if(document.getElementById("wireview")) return;')]
+check(bool(_em) and re.findall(r'\["(\w+)","\w+",', _em)==["claim","seeded","derived","proposed"] and '__uniSetModel(btn.getAttribute("data-v"))' in _em
+      and "' disabled'" in _em and 'vw.reason' in _em,
+      "B3: the ENTITY MODEL pill is not the four-position claim · seeded · derived · proposed with disabled-with-reason positions")
+check(page.find('em.id="entmodel"') < page.find('g.id="wireview"'), "B3: #entmodel must be built ABOVE #wireview")
+check('window.localStorage.setItem("gabe:universe:model", v)' in page and 'window.localStorage.getItem("gabe:universe:model")' in page,
+      "B3: the model preference is not persisted / read back (gabe:universe:model)")
+_sm=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('window.__uniAddWireView=function()')]
+check(all(k in _sm for k in ('recomputeEX(CFG.entLayout)','__uniAssignSplit()','recomputeSubAnchors()','__uniApplyCapsules()','Graph.d3ReheatSimulation()','JRN=null','UNICAP.open={}','_FNNODES','_CAPST.nodes','n.ent=H[n.id]||c','n.modelMark=','__uniFleetRender()','applyVis("all")','__uniFreezeForSettle()')),
+      "B5: __uniSetModel misses a step of the live re-cluster chain (pools · homes · registry · anchors · capsules · reheat · spans · fleet · panel · vis)")
+check('Graph.graphData(' not in _sm and 'n.id=' not in _sm and 'n.col=' not in _sm and 'nodes=[' not in _sm and 'links=' not in _sm and 'NIDS[' not in _sm,
+      "B5: __uniSetModel must never touch the node/link arrays, an id, NIDS or a colour (the identity law — a walk's steps are ids)")
+check('return false; }' in _sm and 'views[v].present' in _sm and '_ents.length=0;' in _sm and 'claimEnts.slice()' in _sm,
+      "B5: an absent/unknown view must return false and stay put; the claim view must restore the registry exactly")
+check('window.__model=q.get("model")' in page and 'mv=window.__model' in page, "B6: ?model= is not parsed / applied")
+_dl=page[page.find('window.__uniApplyDeepLinks=function()'):page.find('window.UNICAP={')]
+check(0 < _dl.find('__uniSetModel(_want,{noStore:true})') < _dl.find('__jrnDone') < _dl.find('__entDone') and 'localStorage.setItem' not in _dl,
+      "B6: the model must apply BEFORE ?journey= / ?ent= and never write localStorage from the URL path")
+check('function makeCluster(members, color, shape, op, level, label, dash)' in page and page.count('wireframe:!!dash')==2 and '_dash=!!(_mr&&_mr.kind==="aspect")' in page and '{ekey:e, dash:_dash}' in page,
+      "B7: an aspect hull has no dashed/stippled rim (sphere + polygon)")
+check(page.count('homeEvRow(n), modelRow(n),')==4 and 'function modelRow(n)' in page and 'modelRow(n),\n      accessSec(n),' in page,
+      "B8: the model row is not beside every homing-evidence row (endpoint · fe · fe-data · fe-hook) and on the function card")
+check('function modelSec(ent)' in page and 'var _ms=modelSec(ent); if(_ms) pb.append(_ms);' in page and 'pchip verdict v-' in page,
+      "B8: panelEnt carries no model section / verdict badge")
+check('C.element=function(n)' in page and 'sechd("info","Unclaimed file")' in page, "B8: no element card")
+check('srcRow("role","entity model"' in page and 'cluster(s) folded at this model' in page and 'srcRow("info","elements"' in page and 'window.__uniFoldedN=Object.keys(fold).length' in page,
+      "B9: the Sources rows (entity model per view · elements · the folded count) are missing")
+_ls=page[page.find('function _modelSection()'):page.find('function _planetSection()')]
+check(bool(_ls) and '_connSection()+_planetSection()+_modelSection()' in page and len(re.findall(r'\["(claim|seeded|derived|proposed|aspect|layer|element)","', _ls))==7 and 'lrdef' in _ls and 'stroke-dasharray' in _ls,
+      "B9: the legend ENTITY MODELS section lacks its seven rows (each with a definition, the aspect swatch dashed)")
+check('orphan' not in page[page.find('/* ── ENTITY MODELS (Phase 2'):page.find('/* ── ONE badge-glyph source')].lower()
+      and 'orphan' not in page[page.find('function modelRow(n)'):page.find('function feBuilder(n)')].lower() and 'orphan' not in _ls.lower(),
+      "R10: an entity-model string says 'orphan'")
 check('try{ rebuildNodes(); }catch(e){}' in page.split('__uniApplyCapsules=function')[1][:5000],
       "the capsule surgery lost its decoration reset (stale FLEETTICK closures threw)")
 check('if(n&&n.kind==="capsule"){ if(window.__uniCapExpand) __uniCapExpand(n.ent); return; }' in page,
@@ -1613,6 +1652,36 @@ const { chromium } = require(process.argv[3]);
     if(vn){ try{ showPanel(vn); viewType=((document.querySelector('#phead .ptype span')||{}).textContent)||null; viewCol=_dispK(vn).col; viewIcon=(ENC.color==='heat')?'heat':iconCol(vn); }catch(e){ viewType='ERR:'+e; } }
     return { journey:j.name, storeCols, storeFlagOn, litStore, iconInline, titleHot, cellClean, row0Lit, anchorKind, anchorKind3, lgbiOk, feStart, hookRoles, storeShape, cardOrder, drafts:drafts.length, draftWalk, draftGrp, draftLeveled:drafts.every(x=>x.level>=1&&x.level<=3), draftNamed:drafts.every(x=>/^(Look at|Add|Edit|Remove|Manage) /.test(x.name||'')), viewType, viewCol, viewIcon };
   }).catch(e=>({err:String(e)}));
+  // ── ENTITY MODELS (Phase 2): the live switch on the example feed — identity (arrays + ids untouched), the feed's moved count, the
+  //    registry gains each named cluster, an abstained piece keeps its claim, 'other' does not rise (B2), a walk survives, the aspect hull
+  //    is dashed, the entity card shows a verdict on proposed, the claim round trip is element-wise equal (THE mutation proof), and a feed
+  //    without the block returns false and stays on claim. Runs LAST so the walk it starts disturbs no earlier probe.
+  const modelSw = await p.evaluate(() => { try{
+      var M=window.GABE_C4&&GABE_C4.models; if(!M||!M.views) return {err:'no models block on the example feed — regen the example (regen-example.sh)'};
+      var before=nodes.map(function(n){ return n.ent; }), ids=nodes.map(function(n){ return n.id; }), n0=nodes.length, l0=links.length;
+      var other=function(){ return nodes.filter(function(n){ return !n.__cap && n.sub==='other'; }).length; }, o0=other();
+      var r={n0:n0, views:Object.keys(M.views).filter(function(k){ return M.views[k].present; })};
+      r.seeded=__uniSetModel('seeded'); r.sameN=(nodes.length===n0 && links.length===l0); r.idsOk=ids.every(function(id,i){ return nodes[i]&&nodes[i].id===id&&NIDS[id]===nodes[i]; });
+      var st=window.__uniModelStats; r.moved=st.moved; r.feedMoved=M.views.seeded.moved; r.movedOk=(st.moved===M.views.seeded.moved);
+      var newC=_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; }); r.newClusters=newC.length; r.regOk=newC.every(function(e){ return !!ENT[e] && !!UNIVIS.ent[e]; });
+      var ab=nodes.find(function(n){ return n.modelMark==='abstain'; }); r.abstainOk=(!ab || ab.ent===ab.entClaim); r.o0=o0; r.o1=other(); r.otherOk=(other()<=o0);
+      r.pill=[].map.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ return b.getAttribute('data-v')+(b.classList.contains('on')?'*':'')+(b.disabled?'-':''); }).join(' ');
+      try{ __uniPanelAll(); var pt0=document.getElementById('pbody').textContent; r.srcRow=/entity model/.test(pt0) && (new RegExp('seeded · '+st.moved+' moved · '+st.abstained+' abstained · '+st.held+' held')).test(pt0); }catch(e){ r.srcRow='err:'+e; }
+      var mv=nodes.find(function(n){ return n.modelMark==='moved' && n.__threeObj; }); if(mv){ SEL={kind:'node',data:mv}; showPanel(mv); r.cardRow=/seeded: claim .+ → .+ nothing re-homed on disk/.test(document.getElementById('pbody').textContent); }
+      var j=_jrnCollect()[0]; if(j){ __uniJrnStart(j.cid); } var steps=(WALK.steps||[]).slice(), wi=WALK.i;
+      r.derived=__uniSetModel('derived'); r.walkOk=((WALK.steps||[]).join('|')===steps.join('|') && WALK.i===wi && _jrnCollect().length>0);
+      var asp=CLUSTERS.find(function(c){ return c.level==='ent' && /^a:/.test(c.ekey||''); }); r.aspect=asp?{ekey:asp.ekey, dash:!!asp.dash}:null;
+      var d=_ents.find(function(e){ return /^d:/.test(e); }); if(d){ __uniPanelEnt(d); r.entCard=/Entity model · derived/.test(document.getElementById('pbody').textContent); }
+      r.proposed=__uniSetModel('proposed'); var slug=(M.rosters.proposed||[]).filter(function(x){ return x.verdict && _ents.indexOf(x.slug)>=0; })[0]; if(slug){ __uniPanelEnt(slug.slug); r.badge=(document.getElementById('pbody').textContent.match(/\b(FEATURE|SPLIT|MERGE|ASPECT|LAYER)\b/)||[])[1]||null; }
+      r.claim=__uniSetModel('claim'); r.roundTrip=(nodes.every(function(n,i){ return n.ent===before[i]; }) && _ents.length===__uniClaimEnts.length && _ents.every(function(e,i){ return e===__uniClaimEnts[i]; }) && nodes.every(function(n){ return !n.modelMark; }));
+      r.noDash=!CLUSTERS.some(function(c){ return c.dash; });
+      var keep=GABE_C4.models; delete GABE_C4.models; r.absent=(__uniSetModel('derived')===false) && window.__uniModel==='claim'; GABE_C4.models=keep;
+      try{ __uniPanelAll(); r.claimRow=/claim — the registry/.test(document.getElementById('pbody').textContent); }catch(e){}
+      return r; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
+  console.log('  modelSw '+JSON.stringify(modelSw));
+  const modelOk = !!(modelSw && !modelSw.err && modelSw.seeded===true && modelSw.sameN && modelSw.idsOk && modelSw.movedOk && modelSw.regOk && modelSw.abstainOk && modelSw.otherOk
+    && /claim seeded\*/.test(modelSw.pill||'') && modelSw.srcRow===true && modelSw.cardRow===true && modelSw.derived===true && modelSw.walkOk && modelSw.aspect && modelSw.aspect.dash===true
+    && modelSw.entCard===true && modelSw.proposed===true && ['FEATURE','SPLIT','MERGE','ASPECT','LAYER'].indexOf(modelSw.badge)>=0 && modelSw.claim===true && modelSw.roundTrip===true && modelSw.noDash && modelSw.absent===true && modelSw.claimRow===true);
   await b.close();
   // the frontend fold, when the feed carries it: pieces drawn · every web node absorbed · bridge wires survive ·
   // types held back (toggle present) — a feed WITHOUT fe must leave all of that at zero (honest-empty)
@@ -1670,9 +1739,9 @@ const { chromium } = require(process.argv[3]);
   const legend56Ok = !!(legend56 && !legend56.err && legend56.slot1===1 && legend56.apart===true && legend56.plainSlot1===0 && legend56.providerClass===true && legend56.ref && legend56.ref.llm==='real' && legend56.ref.payments==='dash' && legend56.ref.stream==='real' && legend56.refN===9 && legend56.refBlank && legend56.refBlank.length===0 && legend56.contrastBad && legend56.contrastBad.length===0);
   const dispOk = !!(dispSel && !dispSel.err && dispSel.drawn===true && dispSel.chip===true && dispSel.ref==='real');
   const scaleOk = !!(scaleDL && !scaleDL.err && scaleDL.hit===true && scaleDL.capOn===true && scaleDL.tier===0 && scaleDL.row===true && scaleDL.jrn && scaleDL.steps>0 && scaleDL.ent==='ent');
-  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && dispOk && legend56Ok && homingOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk;
+  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && dispOk && legend56Ok && homingOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk && modelOk;
   if(ok) console.log(`  render: PASS — ${r.nodes} live nodes, 0 errors, card renders (st-pass=${r.stPass}, faces=${r.face}); frontend ${f.present?`${f.feNodes} pieces · ${f.absorbed} screens absorbed · ${f.typesHeld} types held · FE-write heat off-by-default, bands blue→magenta`:'absent (honest-empty)'}`);
-  else { console.error('  render FAIL:', JSON.stringify(r), 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
+  else { console.error('  render FAIL:', JSON.stringify(r), 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'modelOk='+modelOk+' '+JSON.stringify(modelSw), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
 })();
 JS
   RENDER=$?

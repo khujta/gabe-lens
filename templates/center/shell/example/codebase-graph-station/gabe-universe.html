@@ -64,6 +64,9 @@
   /* PILL = a segmented toggle (2–3 options). active = accent. single-option pills toggle on/off. */
   .pill{ display:inline-flex; background:#0e1524; border:1px solid var(--line); border-radius:8px; padding:2px; gap:2px; }
   .pill button{ font:inherit; font-size:10.5px; color:var(--muted); background:none; border:none; border-radius:6px; padding:3px 7px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+  #cfg .pill button:disabled{ opacity:.35; cursor:not-allowed; }   /* an entity-model view the feed lacks — the title carries the reason */
+  .pchip.verdict{ letter-spacing:.06em; border-color:currentColor; } .pchip.v-feature{ color:var(--ok); } .pchip.v-split{ color:#f59e0b; } .pchip.v-merge{ color:#3b82f6; } .pchip.v-aspect{ color:#e8590c; } .pchip.v-layer{ color:var(--muted); }
+  .lrbadge{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px; border:1px dashed var(--muted); font-size:10px; font-weight:700; color:var(--muted); }
   .pill button svg{ width:12px; height:12px; }
   .pill button.on{ background:var(--accent); color:#fff; } .pill button:hover:not(.on){ color:var(--ink); }
   .pill.off button.on{ background:var(--line); color:var(--muted); }   /* a toggled-OFF single pill */
@@ -1168,6 +1171,14 @@ KINDS.prompt={ col:"#ae3ec9", form:"panel", label:"", type:"AI prompt", layer:"d
   conns:[["rendered by","function","the prompt builder"]], tests:0, ident:[["kind","a template string an LLM lane renders"]],
   doc:"An LLM prompt template — a module string a builder function renders before the model call (words + placeholders)." };
 KINDCOL.middleware="#7048e8"; KINDCOL.provider="#e8590c"; KINDCOL.flag="#e03131"; KINDCOL.prompt="#ae3ec9";
+/* the ELEMENT kind (entity models, 2026-09-06): a backend file no entity's code.* claims — the element census mints it into the unclaimed
+   area so the map's blind spot has a shape (muted grey, T2 beside the functions). One legend row; a card that names the file + its functions. */
+KINDS.element={ col:"#8a8f98", form:"panel", label:"", type:"Unclaimed file", layer:"api", usage:[0,"no entity claims this file"],
+  conns:[["defines","function","its top-level functions"]], tests:0, ident:[["kind","a backend .py no entity's code.* claims"]],
+  doc:"A backend file no entity claims — drawn muted in the unclaimed area so the blind spot has a shape. Its functions are named on the card; a claim in the entity config moves it home." };
+KINDCOL.element="#8a8f98";
+if(typeof GLYPH!=="undefined" && !GLYPH.element) GLYPH.element='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15" stroke-dasharray="2 2"/>';
+if(order.indexOf("element")<0) order.push("element");
 if(typeof GLYPH!=="undefined"){
   if(!GLYPH.middleware) GLYPH.middleware='<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
   if(!GLYPH.provider)   GLYPH.provider='<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>';
@@ -1217,7 +1228,7 @@ Object.keys(_C4.l2||{}).forEach(function(ent){
       tests:_testFloor(det), cols:(det.cols||[]).length,
       fanin:0,                                          // filled from in-degree below
       god:false, method:(kind==="endpoint")?_methOf(p.label):null };
-    var n={ id:p.id, kind:kind, ent:ent, label:p.label||p.slug||p.id,
+    var n={ id:p.id, kind:kind, ent:ent, entClaim:ent, label:p.label||p.slug||p.id,   /* ent = the MUTABLE current home (an entity-model view may move it) · entClaim = the immutable claim, the join key */
       col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"data",
       m:m, det:det, behind:beh, resp:p.resp, ids:p.ids, table:p.table, sites:p.sites, fn:p.fn,
       middleware:p.middleware, stream:!!p.stream, pclass:p.pclass||null, homeEv:p.home_ev||null };   // C4: the endpoint's level-2 gate/dep floor → the card's Guards section · stream = SSE/chunked delivery (review 2026-09-06)
@@ -1247,13 +1258,14 @@ if(_FE){
     var det={ file:p.file, flines:p.span?(p.span[0]+"-"+p.span[1]):null, exported:true, fe_kind:p.kind, exports:p.exports||null, doc:"",
       cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null };   /* D5: a store's fields / a type's members ride det.cols like a table's columns */
     var m={ behind:0, depth:0, tests:0, cols:0, fanin:0, god:false, method:null };
-    var n={ id:p.id, kind:kind, ent:p.home, label:p.name, col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"web",
+    var n={ id:p.id, kind:kind, ent:p.home, entClaim:p.home, label:p.name, col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"web",
       m:m, det:det, behind:{}, fe:true, screen:p.screen||null, sites:p.sites||0, candidate:!!p.candidate,
       area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null, hrole:p.hrole||null, homedBy:p.homed_by||null, homeEv:p.home_ev||null,   // AREA + showcase tag + the fold-control class (phase 1)
       write:!!p.write, wsites:p.wsites||0, fed2w:(p.fed2w==null?null:p.fed2w) };   // FE d2w: on the WRITE spine · write-method fetch count · hops-to-write (the gradient's number, 0 at the write)
     nodes.push(n); NIDS[n.id]=n; });
 }
 
+window.__uniClaimEnts=_ents.slice();   /* the CLAIM registry as booted — an entity-model switch derives its cluster list from this and restores it exactly on the claim round trip (Phase 2, 2026-09-06) */
 /* LINKS: intra-entity l2 edges + cross_edges. Keep only edges whose BOTH ends are drawn nodes. */
 var links=[];
 Object.keys(_C4.l2||{}).forEach(function(ent){
@@ -1655,7 +1667,7 @@ function updateConnectors(){ if(!connGroup) return;
   links.forEach(function(l){ var a=_npos[lid(l.source)], b=_npos[lid(l.target)]; if(!a||!b) return;   // EVERY link → its kind's connector wire
     var _cs=NIDS[lid(l.source)], _ct=NIDS[lid(l.target)];
     if((_cs&&(!_nodeVisibleFn(_cs)||!visN(_cs).wires))||(_ct&&(!_nodeVisibleFn(_ct)||!visN(_ct).wires))) return;   // fleet: hidden node OR wires-off entity/cluster
-    if(window.__uniRelHide&&__uniRelHide(l)&&!(HL.on&&HL.links&&HL.links.has(l))&&l!==window.__uniSelLink) return; var _whf=(window._hlLinkF?_hlLinkF(l):1); if(window.__uniSelLink===l||window.__uniHovLink===l) _whf=Math.max(_whf,1)*2.6;
+    var _whf=(window._hlLinkF?_hlLinkF(l):1); if(window.__uniSelLink===l||window.__uniHovLink===l) _whf=Math.max(_whf,1)*2.6;
     if(l.chrome) _whf*=0.4;   // F2: chrome plumbing (cx/useT/layout) recedes — not a data wire
     var _gk=REL2KIND[l.rel]||'calls', _gm=(CONN[_gk]&&CONN[_gk].gmode)||'ent';
     var _tcol=function(n){ if(!n) return null; if(n.kind==="endpoint"&&n.m&&n.m.method&&typeof METHOD!=="undefined"&&METHOD[n.m.method]) return METHOD[n.m.method]; if(n.kind==="function"&&n.role&&window.__BADGE_COL&&__BADGE_COL.role&&__BADGE_COL.role[n.role]) return __BADGE_COL.role[n.role]; return null; };
@@ -1663,7 +1675,7 @@ function updateConnectors(){ if(!connGroup) return;
     var _eb=(((_gm==="type"||_gm==="ent-type")&&_tcol(_ct))||((_ct&&typeof ENT!=="undefined"&&ENT[_ct.ent])||null));
     var _band=(l.rel==="calls"&&window.__d2wBand)?__d2wBand(_ct):(l.write&&window.__feD2WBand)?__feD2WBand(_ct):null;   // FE write wires ride the SEPARATE fed2w gradient (blue→magenta)
     connectorWire(connGroup, new T.Vector3(a.x,a.y,a.z), new T.Vector3(b.x,b.y,b.z), _gk, 8, _whf, _ea, _eb, (window.__uniHovLink===l||window.__uniSelLink===l), (window.__uniSelLink===l), _band); });
-  if(window.__uniDrawBundles) __uniDrawBundles(connGroup); if(window.__uniDrawStubs) __uniDrawStubs(connGroup); if(window.__uniDrawWriteRings) __uniDrawWriteRings(); if(window.__uniDrawJourneyNums) __uniDrawJourneyNums();
+  if(window.__uniDrawStubs) __uniDrawStubs(connGroup); if(window.__uniDrawWriteRings) __uniDrawWriteRings(); if(window.__uniDrawJourneyNums) __uniDrawJourneyNums();
   connGroup.traverse(function(c){ c.raycast=function(){}; }); }
 /* ── INTER-ENTITY TRANSPORTS — data shuttles ferrying the cross-entity routes, LIVE (ping-pong along the link,
    nose leading). cargoB = a good-fit cargo hauler (the settled 'hauler' GLB has a broken bbox — deferred). ── */
@@ -1675,7 +1687,7 @@ function buildTransports(){ if(!moverGroup||!SHIPSREADY) return;
   while(moverGroup.children.length){ moverGroup.remove(moverGroup.children.pop()); }
   MOVERS=[]; if(!CFG.transports) return;
   var sNose=craftNose(INTC.shuttle), tNose=craftNose(INTC.testship);
-  links.forEach(function(l){ if(!linkCross(l)) return; if(window.__uniRelHide&&__uniRelHide(l)&&!(HL.on&&HL.links&&HL.links.has(l))) return;
+  links.forEach(function(l){ if(!linkCross(l)) return;
     var _sn=NIDS[lid(l.source)], _tn=NIDS[lid(l.target)], _sv=_sn?visN(_sn):_VISDEF, _tv=_tn?visN(_tn):_VISDEF;
     if((_sn&&!_nodeVisibleFn(_sn))||(_tn&&!_nodeVisibleFn(_tn))||!_sv.routes||!_tv.routes) return;
     if(HL.on && HL.links && !HL.links.has(l)) return;   // a highlight owns the roads — shuttles fly the lit path only   // fleet: hidden or routes-off entity/cluster (node-level — sub-aware)
@@ -1874,7 +1886,7 @@ function recomputeSubAnchors(){
 var _LMAP=null;
 function _levelsGroupMap(){ var D=window.GABE_LEVELS; if(!D||!D.pieces) return null;
   var out={usecase:{}, community:{}, fk:{}, guards:{}};
-  nodes.forEach(function(n){ var pc=D.pieces[n.ent]; if(!pc) return; var nm=n.label;
+  nodes.forEach(function(n){ var pc=D.pieces[n.entClaim||n.ent]; if(!pc) return; var nm=n.label;   /* the CLAIM is the join key — a piece an entity-model view moved keeps its use-case / community / fk group (Phase 2) */
     var uc=pc.usecases||{}; Object.keys(uc).some(function(gp){ var v=uc[gp]||{};
       if((v.cls||[]).indexOf(nm)>=0 || (v.eps||[]).indexOf(nm)>=0){ out.usecase[n.id]=gp; return true; } return false; });
     var cm=pc.communities||{}; Object.keys(cm).some(function(gp){ if((cm[gp]||[]).indexOf(nm)>=0){ out.community[n.id]=gp; return true; } return false; });
@@ -2008,7 +2020,7 @@ function _feAssignSub(mode){
 var _FNNODES=null, _FNLINKS=null, _fnsOn=false;
 function _buildFnData(){ var D=window.GABE_LEVELS; if(!D||!D.fn_nodes||!KINDS["function"]){ _FNNODES=[]; _FNLINKS=[]; return; }
   _FNNODES=D.fn_nodes.map(function(f){ var beh=f.behind||{};
-    return { id:f.id, kind:"function", ent:f.slug, label:f.name, col:KINDS["function"].col, K:KINDS["function"],
+    return { id:f.id, kind:"function", ent:f.slug, entClaim:f.slug, label:f.name, col:KINDS["function"].col, K:KINDS["function"],
       layer:KINDS["function"].layer, sub:KINDS["function"].layer||"data", __fn:true,
       role:f.role, access:f.access, sinks:f.sinks, d2w:f.d2w,   // C1/C2/C4: role badge + ops/sinks; D2W: hops-to-a-write (call-wire heat, 0 is real → keep undefined distinct)
       m:{ behind:_num(beh.fns), depth:_num(beh.depth), tests:0, cols:0, fanin:_num(f.hub&&f.hub.usage), god:!!f.god, method:null },
@@ -2164,7 +2176,6 @@ window.__uniBgClick=function(ev){ try{ if(!ev || ev.clientX==null) return;
       links.forEach(function(l){ var a=_npos[lid(l.source)], b=_npos[lid(l.target)]; if(!a||!b) return;
         var _s=NIDS[lid(l.source)], _t=NIDS[lid(l.target)];
         if((_s&&(!_nodeVisibleFn(_s)||!visN(_s).wires))||(_t&&(!_nodeVisibleFn(_t)||!visN(_t).wires))) return;
-        if(window.__uniRelHide&&__uniRelHide(l)&&!(HL.on&&HL.links&&HL.links.has(l))&&l!==window.__uniSelLink) return;   // an R-hidden wire is unpickable UNLESS it is lit (review 52[1])
         var dd=_raySegDist(rc.ray, new T.Vector3(a.x,a.y,a.z), new T.Vector3(b.x,b.y,b.z));
         if(dd<WTH && (!wbest||dd<wbest.d)) wbest={d:dd, l:l}; }); }
     if(wbest){ window.__uniSelLink=wbest.l;                                  // the picked wire GLOWS (hf boost in updateConnectors)
@@ -2223,7 +2234,6 @@ window.__uniDrawStubs=function(){ window.__uniStubs=[]; try{
     if(st==="off") return false; if(window.__uniFoldHelpers!==false && n.__solo && !(window.__uniPin||{})[n.id]) return false; return true; };   // ghost stars agree with visN's GLOBAL helper-fold; a walk/reveal PIN clears it
   var seen={};
   links.forEach(function(l){ var sid=lid(l.source), tid=lid(l.target); var s=NIDS[sid], t=NIDS[tid]; if(!s||!t) return;
-    if(window.__uniRelHide && __uniRelHide(l)) return;               // respect the R-lab hides
     var H=null, hidId=null;
     if(_nodeVisibleFn(s) && !_fleetShown(t) && _kindShown(t)){ H=t; hidId=tid; }        // s rendered, t a revealable fleet-hidden ghost
     else if(_nodeVisibleFn(t) && !_fleetShown(s) && _kindShown(s)){ H=s; hidId=sid; }   // t rendered, s the ghost
@@ -2439,7 +2449,6 @@ function __uniSetupOrbit(){ var g=document.getElementById("g"); if(!g || g.__orb
 function tuneLinkForce(){ if(typeof Graph==="undefined"||!Graph) return;
   var lf=Graph.d3Force("link"); if(!lf||!lf.distance) return;
   lf.distance(function(l){ var s=NIDS[lid(l.source)], t=NIDS[lid(l.target)];
-    if(window.UNIWIRE&&UNIWIRE.r4&&l.rel==="renders"&&_SOLEP&&_SOLEP[lid(l.target)]) return 14;   // R4: sole children hug their parent
     return (s&&t&&s.ent!==t.ent)?280:40; });
   lf.strength(function(l){ var s=NIDS[lid(l.source)], t=NIDS[lid(l.target)];   // soft springs — the anchors own the geometry
     return (s&&t&&s.ent!==t.ent)?0.04:0.12; }); }
@@ -3870,8 +3879,11 @@ window.__uniBudget=1600;   /* review 2026-09-06 (repo-study — onyx draws ≈3.
 window.__uniScaleGuard=function(){ var n=(typeof nodes!=="undefined"&&nodes)?nodes.length:0, b=window.__uniBudget||1600; if(n<=b){ window.__uniBudgetHit=null; return false; }
   window.__uniBudgetHit={nodes:n, budget:b}; UNICAP.on=true; try{ if(window.__uniApplyCapsules) __uniApplyCapsules(); }catch(e){} if(window.__uniSetTier){ try{ __uniSetTier(0); }catch(e){} }
   try{ console.info("gabe-universe: "+n+" nodes > budget "+b+" — booted folded (capsules on, tier 0); raise window.__uniBudget to draw more"); }catch(e){} return true; };
-window.__uniApplyDeepLinks=function(){   /* ?journey=<name|cid> opens ONE walk · ?ent=<slug> opens that entity's panel — the ramp-up's "one trace per session" (review 2026-09-06) */
-  var jv=window.__jrn, ev=window.__ent;
+window.__uniApplyDeepLinks=function(){   /* ?model=<view> picks the entity model FIRST (so ?ent= resolves against its clusters) · ?journey=<name|cid> opens ONE walk · ?ent=<slug> opens that entity's panel — the ramp-up's "one trace per session" (review 2026-09-06) */
+  var jv=window.__jrn, ev=window.__ent, mv=window.__model, _stored=null;
+  if(!mv){ try{ _stored=window.localStorage.getItem("gabe:universe:model"); }catch(e){} }
+  if(!window.__modelDone){ window.__modelDone=true; var _want=mv||_stored;   /* a URL model NEVER writes localStorage (the ?journey= law); the stored one is already stored */
+    if(_want&&_want!=="claim"&&window.__uniSetModel){ try{ if(!__uniSetModel(_want,{noStore:true})) console.info("gabe-universe: "+(mv?("?model="+mv):("the stored entity model "+_want))+" is not on this feed — showing claim"); }catch(e){} } }
   if(jv && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
     if(j) __uniJrnStart(j.cid); else console.info("gabe-universe: ?journey="+jv+" names no journey (workflows tab lists them)"); }catch(e){} }
   if(ev && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
@@ -3889,9 +3901,11 @@ window.__uniApplyCapsules=function(){ try{
   /* 1.5 · FRESH SUBS before any fold — a core switch must regroup restored pieces (review 53[11]) */
   try{ __uniAssignSplit(); }catch(e){}
   /* 2 · APPLY per the current threshold/open set */
+  window.__uniFoldedN=0;
   if(UNICAP.on){
     var cnt={}; nodes.forEach(function(n){ if(n.kind!=="function") cnt[n.ent]=(cnt[n.ent]||0)+1; });   // functions NEVER trip the fold (review: loading them via the legend must not collapse the entity that holds them)
     var fold={}; _ents.forEach(function(e){ if((cnt[e]||0)>UNICAP.threshold && !UNICAP.open[e]) fold[e]=1; });
+    window.__uniFoldedN=Object.keys(fold).length;   /* the Sources row says how many clusters folded at this model — a merge that trips the threshold is SAID, never suppressed */
     if(Object.keys(fold).length){
       var st={ nodes:[], links:[], byPiece:{} };
       var caps={};
@@ -3934,43 +3948,59 @@ window.__uniApplyCapsules=function(){ try{
 window.__uniCapExpand=function(ent){ if(!ent) return; UNICAP.open[ent]=true; __uniApplyCapsules();
   if(window.__uniPanelEnt) try{ __uniPanelEnt(ent); }catch(e){} };
 window.__uniCapCollapse=function(ent){ if(ent) delete UNICAP.open[ent]; __uniApplyCapsules(); };
-/* ── WIRE VIEW (batch 52) — the R options as LIVE config toggles: each changes only the INK
-   (and R4 one spring family); every hidden wire keeps its layout spring, so structure survives
-   as proximity. R1 = structure at rest (fe flow wires off) · R2 = utility demotion (fecall into
-   fan-in≥15 sinks off) · R3 = bundling (fe wires collapse to one line per cluster-pair, brightness
-   = count) · R4 = tree containment (sole-parent renders wires off, those children spring TIGHT). ── */
-window.UNIWIRE={ r1:false, r2:false, r3:false, r4:false };
-var _UTILSET=null, _SOLEP=null;
-function _wireSets(){ if(_UTILSET) return; _UTILSET={}; _SOLEP={};
-  var fin={}, rin={};
-  links.forEach(function(l){ if(l.rel==="fecall") fin[lid(l.target)]=(fin[lid(l.target)]||0)+1;
-    else if(l.rel==="renders") rin[lid(l.target)]=(rin[lid(l.target)]||0)+1; });
-  Object.keys(fin).forEach(function(id){ if(fin[id]>=15) _UTILSET[id]=1; });
-  Object.keys(rin).forEach(function(id){ if(rin[id]===1) _SOLEP[id]=1; });
-}
-var _FE_FLOW={ renders:1, fecall:1, uses:1, imports:1 };   // the fe FLOW rels (reads = stores stays inked; typed is T-held)
-window.__uniRelHide=function(l){ if(!l||!l.fe) return false;
-  _wireSets();
-  if(UNIWIRE.r3) return true;                                        // bundles replace every per-piece fe wire
-  if(UNIWIRE.r2 && l.rel==="fecall" && _UTILSET[lid(l.target)]) return true;   // R1 (blunt hide-all-fe-wires) retired 2026-08-31 — tier-overlapping (operator)
-  if(UNIWIRE.r4 && l.rel==="renders" && _SOLEP[lid(l.target)]) return true;
-  return false; };
-window.__uniDrawBundles=function(grp){ if(!UNIWIRE.r3) return;
-  var by={}, cen={}, cnt={};
-  var gk=function(n){ return n.ent+"|"+(n.sub||""); };
-  nodes.forEach(function(n){ var p=_npos[n.id]; if(!p) return; var k=gk(n);
-    if(!cen[k]) cen[k]={x:0,y:0,z:0}; cen[k].x+=p.x; cen[k].y+=p.y; cen[k].z+=p.z; cnt[k]=(cnt[k]||0)+1; });
-  Object.keys(cen).forEach(function(k){ cen[k].x/=cnt[k]; cen[k].y/=cnt[k]; cen[k].z/=cnt[k]; });
-  links.forEach(function(l){ if(!l.fe) return; var s=NIDS[lid(l.source)], tt=NIDS[lid(l.target)]; if(!s||!tt) return;
-    if(!(_nodeVisibleFn(s)&&_nodeVisibleFn(tt)&&visN(s).wires&&visN(tt).wires)) return;
-    var ka=gk(s), kb=gk(tt); if(ka===kb) return;
-    var key=ka<kb?ka+"→"+kb:kb+"→"+ka; by[key]=(by[key]||0)+1; });
-  Object.keys(by).sort().forEach(function(key){ var ab=key.split("→"), a=cen[ab[0]], b=cen[ab[1]]; if(!a||!b) return;
-    var geo=new T.BufferGeometry().setFromPoints([new T.Vector3(a.x,a.y,a.z), new T.Vector3(b.x,b.y,b.z)]);
-    var op=Math.min(0.85, 0.18+by[key]/28);                          // brightness = bundle size (count on hover is R3 v2)
-    var mat=new T.LineBasicMaterial({ color:0x8b83f5, transparent:true, opacity:op });
-    var ln=new T.Line(geo, mat); ln.userData.kind="bundle"; ln.userData.__bundle=by[key]; grp.add(ln); });
-};
+/* ── ENTITY MODELS (Phase 2, 2026-09-06 — docs/design/entity-models/plan.md) — the four-position pill claim · seeded · derived · proposed.
+   The claim is the REGISTRY and the JOIN KEY (every tool, the levels group map, the homing evidence join on it); the other three are
+   VIEWS: per-piece home DELTAS the feed carries (c4.models.homes[view] for the c4 ids, GABE_LEVELS.models.homes[view] for the function
+   ids), resolved live as `home = delta[id] || entClaim`. A switch is the SAME re-cluster the entity-layout pill performs: the node and
+   link arrays and every id are untouched (a walk's steps are ids — it survives), only `n.ent` moves. Nothing is re-homed on disk.
+   Replaces the R2–R4 wire lab (utility demotion · bundling · tree containment): an unreachable toggle that still gated the connector
+   build was the failure mode; CAP alone stays, as the capsule master. ── */
+window.__uniModel="claim";
+window.__uniModelViews=function(){ var m=(window.GABE_C4&&GABE_C4.models)||null, out={claim:{present:true, note:"the claim registry — the map today"}};
+  ["seeded","derived","proposed"].forEach(function(v){ out[v]=(m&&m.views&&m.views[v])||{present:false, reason:m?("the feed carries no "+v+" view"):"no entity-models block on this feed — regen the center to weigh the other three"}; }); return out; };
+window.__uniModelRoster=function(){ var m=(window.GABE_C4&&GABE_C4.models)||null; if(!m||!m.rosters) return {}; if(window.__uniRosterCache&&__uniRosterCache.m===m) return __uniRosterCache.r; var r={};
+  (m.rosters.derived||[]).forEach(function(x){ if(x.id) r[x.id]=x; if(x.twin) r[x.twin]=Object.assign({}, x, {id:x.twin, twinOf:x.id}); });
+  (m.rosters.candidates||[]).forEach(function(x){ if(x.id) r[x.id]=Object.assign({}, r[x.id]||{}, x, {candidate:true}); });
+  window.__uniRosterCache={m:m, r:r}; return r; };
+window.__uniModelRosterRow=function(id){ return __uniModelRoster()[id]||null; };
+window.__uniModelHub=function(id){ var m=(window.GABE_C4&&GABE_C4.models)||null; if(!m||!m.shared) return null; if(!window.__uniHubCache||__uniHubCache.m!==m){ var r={}; m.shared.forEach(function(x){ r[x.id]=x; }); window.__uniHubCache={m:m, r:r}; } return __uniHubCache.r[id]||null; };
+window.__uniModelStats={moved:0, abstained:0, held:0, clusters:0};
+window.__uniSetModel=function(v, opts){ opts=opts||{}; v=String(v||"claim"); var views=__uniModelViews();
+  if(!views[v]||!views[v].present){ try{ console.info("gabe-universe: entity model "+v+" is not on this feed ("+((views[v]||{}).reason||"unknown view")+") — the feed carries "+Object.keys(views).filter(function(k){ return views[k].present; }).join(" · ")+"; showing "+(window.__uniModel||"claim")); }catch(e){} return false; }
+  var m=(window.GABE_C4&&GABE_C4.models)||{}, LV=(window.GABE_LEVELS&&GABE_LEVELS.models)||{};
+  var H={}, AB={}, HD={};
+  if(v!=="claim"){ var hc=(m.homes||{})[v]||{}, hl=(LV.homes||{})[v]||{}; Object.keys(hc).forEach(function(k){ H[k]=hc[k]; }); Object.keys(hl).forEach(function(k){ H[k]=hl[k]; });
+    ((m.abstain||{})[v]||[]).concat((LV.abstain||{})[v]||[]).forEach(function(k){ AB[k]=1; }); ((m.held||{})[v]||[]).concat((LV.held||{})[v]||[]).forEach(function(k){ HD[k]=1; }); }
+  /* (b) every node in every pool — drawn · capsule-stashed · the function layer — takes the view's delta or its claim; nothing else on the node moves (no id, no colour, no det, no array) */
+  var pools=[nodes]; if(typeof _CAPST!=="undefined"&&_CAPST&&_CAPST.nodes) pools.push(_CAPST.nodes); if(typeof _FNNODES!=="undefined"&&_FNNODES) pools.push(_FNNODES);
+  var st={moved:0, abstained:0, held:0, clusters:0}, seen={};
+  pools.forEach(function(pool){ pool.forEach(function(n){ if(!n||n.__cap||seen[n.id]) return; seen[n.id]=1; var c=n.entClaim||n.ent; if(!n.entClaim) n.entClaim=c;
+    n.ent=H[n.id]||c; n.modelMark=H[n.id]?"moved":(AB[n.id]?"abstain":(HD[n.id]?"held":null));
+    if(n.modelMark==="moved") st.moved++; else if(n.modelMark==="abstain") st.abstained++; else if(n.modelMark==="held") st.held++; }); });
+  /* (c) the cluster registry: the claim entities that still hold a piece ∪ the view's live cluster ids — the claim view restores the registry EXACTLY */
+  var claimEnts=window.__uniClaimEnts||_ents.slice(), live={}; nodes.forEach(function(n){ if(!n.__cap&&n.ent) live[n.ent]=1; }); if(typeof _CAPST!=="undefined"&&_CAPST) _CAPST.nodes.forEach(function(n){ if(n.ent) live[n.ent]=1; });
+  var next=(v==="claim")?claimEnts.slice():claimEnts.filter(function(e){ return live[e]; }); Object.keys(live).sort().forEach(function(e){ if(next.indexOf(e)<0) next.push(e); });
+  /* (d) colour · visibility · pairing for a cluster the claim lacks — the roster's colour for a feature / aspect / candidate, the twin TINT for fe·; a minted id is pruned the moment it empties */
+  var roster=__uniModelRoster(), minted=window.__uniModelMinted||(window.__uniModelMinted={});
+  next.filter(function(e){ return !/^fe·/.test(e); }).concat(next.filter(function(e){ return /^fe·/.test(e); })).forEach(function(e){ if(ENT[e]) return; var r=roster[e]||null;
+    if(/^fe·/.test(e)){ var pr=e.slice(3); FE_PAIR[e]=pr; FE_HOME[e]="fe"; ENT[e]=ENT[pr]?("#"+new T.Color(ENT[pr]).lerp(new T.Color("#ffffff"),0.38).getHexString()):"#8b5cf6"; }
+    else ENT[e]=(r&&r.color)||FE_HOME_COL.candidate;
+    minted[e]=1; if(!UNIVIS.ent[e]) UNIVIS.ent[e]=Object.assign({},_VISDEF); if(EX[e]==null){ EX[e]=0; EY[e]=0; EZ[e]=0; } });
+  Object.keys(minted).forEach(function(e){ if(next.indexOf(e)>=0) return; delete ENT[e]; delete UNIVIS.ent[e]; delete FE_PAIR[e]; delete FE_HOME[e]; delete EX[e]; delete EY[e]; delete EZ[e]; delete minted[e]; });
+  _ents.length=0; next.forEach(function(e){ _ents.push(e); });
+  /* (e)–(i) the re-cluster the entity-layout pill performs; then everything derived from `nodes` re-derives (spans · fleet · panel · visibility) */
+  UNICAP.open={};
+  try{ __uniFreezeForSettle(); }catch(e){}
+  try{ recomputeEX(CFG.entLayout); }catch(e){} try{ __uniAssignSplit(); }catch(e){} try{ recomputeSubAnchors(); }catch(e){}
+  try{ __uniApplyCapsules(); }catch(e){}
+  try{ Graph.d3ReheatSimulation(); }catch(e){}
+  JRN=null; window.__uniModel=v; st.clusters=next.filter(function(e){ return claimEnts.indexOf(e)<0; }).length; window.__uniModelStats=st;
+  try{ if(window.__uniFleetRender) __uniFleetRender(); }catch(e){}
+  try{ var pv=window.__uniPView; if(pv&&pv.lvl==="ent"){ if(_ents.indexOf(pv.ent)>=0) __uniPanelEnt(pv.ent); else if(window.__uniPanelAll) __uniPanelAll(); } else if(pv&&pv.lvl==="all"&&window.__uniPanelAll) __uniPanelAll(); }catch(e){}
+  try{ applyVis("all"); }catch(e){}
+  try{ [].forEach.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ b.classList.toggle("on", b.getAttribute("data-v")===v); }); if(window.__uniSyncGrpSel) __uniSyncGrpSel(); }catch(e){}
+  if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:model", v); }catch(e){} }   /* a URL ?model= passes noStore — a shared link never rewrites the reader's preference */
+  return true; };
 
 /* ── ONE badge-glyph source (legend law — the legend cell reuses the very draw fn the 3D badge uses).
    kind:"method" → HTTP-verb chip (endpoints, colour = METHOD) · kind:"role" → function-role chip
@@ -4079,24 +4109,31 @@ window.__uniHLDefaults={ focRing:true, focSize:"sphere", focPat:"dashed", focAni
             othGlow:true, glowRad:2.2, glowInt:0.3, glowFall:0.15, othRing:true, othRingInt:0.3 };   // operator defaults (fixed)
 window.__uniHLSeed=function(){ for(var _dk in window.__uniHLDefaults){ if(CFG[_dk]==null) CFG[_dk]=window.__uniHLDefaults[_dk]; } };
 window.__uniAddFocusCfg=function(){ window.__uniHLSeed(); };   // SEEDER ONLY — the focus/highlight config panel was retired (toggles live in the entity pane)
-window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbody")||document.getElementById("cfg");
-  if(!body||document.getElementById("wireview")) return;
+window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbody")||document.getElementById("cfg"); if(!body) return;
+  /* ── ENTITY MODEL (Phase 2, 2026-09-06): the four-position pill claim · seeded · derived · proposed, above the capsule master. A view the
+     feed lacks renders DISABLED with the reason as its title; no models block → three disabled, claim lit. Persisted per reader
+     (localStorage gabe:universe:model); a URL ?model= never writes it. Replaces the R2–R4 lab (retired with its machinery). ── */
+  if(!document.getElementById("entmodel")){ var em=document.createElement("div"); em.className="grp"; em.id="entmodel";
+    var _ea=function(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); };
+    var views=(window.__uniModelViews?__uniModelViews():{claim:{present:true}}), cur=window.__uniModel||"claim";
+    var MDEF=[["claim","claim","the map today — where each file's entity config puts it; the registry every tool joins on"],
+              ["seeded","seeded","the claim, with the pieces the evidence says clearly belong elsewhere moved — shared plumbing held back"],
+              ["derived","derived","features found from the code alone — an endpoint, its shapes and the hook that calls it, grouped by the table they write, named by their URL"],
+              ["proposed","proposed","one verdict per declared entity — keep · split · merge · aspect · layer — plus features no entity declares, drawn as if you accepted them"]];
+    var ph='<div class="grplbl" title="which ENTITY MODEL clusters the field — the claim is the registry; the other three are views over it (nothing is re-homed on disk)">ENTITY MODEL</div><div class="pill" data-grp="entmodel">';
+    MDEF.forEach(function(d){ var vw=views[d[0]]||{present:false}, on=vw.present!==false; ph+='<button data-v="'+d[0]+'"'+(d[0]===cur?' class="on"':'')+(on?'':' disabled')+' title="'+_ea(on?d[2]:(d[1]+" — not on this feed: "+(vw.reason||"absent")))+'">'+d[1]+'</button>'; });
+    em.innerHTML=ph+'</div>'; body.appendChild(em);
+    [].forEach.call(em.querySelectorAll('.pill[data-grp="entmodel"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetModel) __uniSetModel(btn.getAttribute("data-v")); }; }); }
+  if(document.getElementById("wireview")) return;
   var g=document.createElement("div"); g.className="grp"; g.id="wireview";
-  g.innerHTML='<div class="grplbl" title="the R lab — each toggle changes only the INK on the live graph; hidden wires keep their layout springs, so structure survives as position. Combine freely.">WIRE VIEW</div>';
+  g.innerHTML='<div class="grplbl" title="the capsule master — folds a big entity into one planet per AREA; every other simplification is the tier control">CAPSULES</div>';
   var row=document.createElement("div"); row.className="cfgrow";
-  var DEF=[["cap","CAP","capsules — a big entity boots COLLAPSED into one planet per AREA with bundled wires; click a capsule / its fleet row / any search hit inside it to open. Toggle OFF to always draw every piece."],
-           ["r2","R2","utility demotion — hides only fecall wires INTO fan-in≥15 sinks (cx · client · mockupAssets): the everything-calls-the-util fans that carry no map information."],
-           ["r3","R3","bundling — every fe wire collapses to ONE line per cluster-pair; brightness = how many wires ride the bundle."],
-           ["r4","R4","tree containment — sole-parent renders wires hidden and those children spring TIGHT beside their parent; only SHARED components keep render wires (reuse is the signal)."]];
+  var DEF=[["cap","CAP","capsules — a big entity boots COLLAPSED into one planet per AREA with bundled wires; click a capsule / its fleet row / any search hit inside it to open. Toggle OFF to always draw every piece."]];
   DEF.forEach(function(d){ var b=document.createElement("button"); b.className="itog wv"; b.id="wv-"+d[0];
     b.title=d[2]; b.textContent=d[1];
-    b.classList.toggle("on", d[0]==="cap"?!!UNICAP.on:!!UNIWIRE[d[0]]);   // a config rebuild must not lose the lit state (review 52[3])
-    b.onclick=function(){
-      if(d[0]==="cap"){ UNICAP.on=!UNICAP.on; if(!UNICAP.on) UNICAP.open={}; b.classList.toggle("on", UNICAP.on);
-        if(window.__uniApplyCapsules) __uniApplyCapsules(); return; }
-      UNIWIRE[d[0]]=!UNIWIRE[d[0]]; b.classList.toggle("on", UNIWIRE[d[0]]);
-      if(d[0]==="r4"){ try{ tuneLinkForce(); if(typeof Graph!=="undefined"&&Graph) Graph.d3ReheatSimulation(); }catch(e){} }
-      try{ updateConnectors(); }catch(e){} try{ buildTransports(); }catch(e){} };   // shuttles re-derive — none fly hidden wires (review 52[4])
+    b.classList.toggle("on", !!UNICAP.on);   // a config rebuild must not lose the lit state (review 52[3])
+    b.onclick=function(){ UNICAP.on=!UNICAP.on; if(!UNICAP.on) UNICAP.open={}; b.classList.toggle("on", UNICAP.on);
+      if(window.__uniApplyCapsules) __uniApplyCapsules(); try{ buildTransports(); }catch(e){} };   // shuttles re-derive — none fly a folded wire (review 52[4])
     row.appendChild(b); });
   g.appendChild(row); body.appendChild(g);
   /* ── SELECTED-LINE look SETTLED (operator config baked as the connection default; the Temporary-Config panel retired like the focus-ring one) ── */
@@ -4143,10 +4180,10 @@ function _kindDefault(k){ return k==="type"?"off":"all"; }   // BINARY legend: e
 window.__uniFeClassState={};   // feClass → true/false (a component CLASS hidden by a tier/fleet toggle); empty = all shown
 window.__uniTier=null;         // the active tier index (null = custom / boot state)
 var _FCALL=["view","private","connector","container","leaf","detached"];
-var _KTIER=["endpoint","model","schema","external","function","web","screen","component","hook","store","route","module","type","middleware","flag","provider","prompt"];
+var _KTIER=["endpoint","model","schema","external","function","web","screen","component","hook","store","route","module","type","middleware","flag","provider","prompt","element"];
 var _TIER_PRESETS=[
-  { name:"Skeleton", koff:["function","schema","hook","module","unknown","type","middleware","flag","provider","prompt","external","store"], fcoff:["private","connector","container","leaf"] },
-  { name:"Surface",  koff:["function","hook","module","unknown","type","prompt"],                                                            fcoff:["private","leaf"] },
+  { name:"Skeleton", koff:["function","schema","hook","module","unknown","type","middleware","flag","provider","prompt","external","store","element"], fcoff:["private","connector","container","leaf"] },
+  { name:"Surface",  koff:["function","hook","module","unknown","type","prompt","element"],                                                  fcoff:["private","leaf"] },
   { name:"Trace",    koff:["module","unknown","type"],                                                                                       fcoff:["leaf"] },
   { name:"Everything", koff:[],                                                                                                   fcoff:[] } ];   // T3 = truly everything, incl. the 508 fe-types (operator); type is off at T0–T2, ON at T3
 window.__uniSetTier=function(t){ t=Math.max(0,Math.min(3,t|0)); window.__uniTier=t;
@@ -4260,7 +4297,7 @@ window.__uniSetKindState=function(k, st, _defer){
 window.__uniKindToggle=function(k){ if(!k) return;   // BINARY legend (operator): on ↔ off, no 3-state
   var cur=__uniKindState[k]||_kindDefault(k);
   __uniSetKindState(k, cur==="off"?"all":"off"); if(window.__uniTier!=null){ window.__uniTier=null; if(window.__uniTierSyncUI) __uniTierSyncUI(); } };
-var _GRPKINDS={ backend:["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt"],   /* operator 2026-09-05: the four were DRAWN (order/billTex) but never in the legend rosters */
+var _GRPKINDS={ backend:["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt","element"],   /* operator 2026-09-05: the four were DRAWN (order/billTex) but never in the legend rosters */
                 frontend:["route","component","hook","type","store","module","unknown","screen","web"] };
 window.__uniGroupToggle=function(group){ if(!_GRPKINDS[group]) return;
   var cur=__uniGrpState[group]||"all", next=(cur==="off")?"all":"off";   // BINARY: the whole side on ↔ off
@@ -4403,7 +4440,8 @@ window.__uniLegRef=function(){
   function _badgeCanvas(kind,key){ return '<canvas class="lrbc" width="34" height="34" data-bk="'+kind+'" data-bkey="'+_esc(key)+'"></canvas>'; }
   // REPRESENTATIVE descriptions (operator): each says what the element IS / its ROLE in the app graph — not a
   // toy usage count. Falls back to KINDS.usage only for a kind not listed here.
-  var _LRDESC={ route:"a URL page — one of the app's addressable screens",
+  var _LRDESC={ element:"a backend file no entity claims — the map's blind spot, given a shape",
+    route:"a URL page — one of the app's addressable screens",
     component:"a UI building block — renders part of a screen",
     hook:"reusable stateful logic shared across components",
     type:"a TypeScript shape — the contract for data the UI passes around",
@@ -4421,6 +4459,7 @@ window.__uniLegRef=function(){
   // the user's side of the screen, one per type · badge · connector · fleet item. The system-voiced line under the name
   // stays; this column says what the thing IS. Keys: kind · "feclass:x" · "method:X" · "role:x" · "count:N" · "x:<roster name>".
   var _LRDEF={
+    element:"a file the entity config never claims — it sits in the unclaimed area so you can see what the map is blind to; claim it to move it home",
     route:"a screen you navigate to — where a journey naturally starts",
     component:"a piece of UI that draws something on a screen",
     hook:"reusable logic a component calls — it remembers state for it",
@@ -4542,7 +4581,7 @@ window.__uniLegRef=function(){
       h+='<div class="lrrow'+_dimCls(_vt)+'"><button class="lrflag'+(_von?" on":"")+'" data-flagfc="view" title="'+(_von?"drawn — click to hide":"hidden — click to show")+'"></button><span class="lrico">'+vico+'</span><div class="lrtx"><b style="color:#d946ef">View</b><i>a screen — the top-level view component</i></div><div class="lrdef">'+_esc(_LRDEF.view)+'</div>'+_exChip(_exFc("view"))+_tierCell(_vt,"kind")+'</div>'; }
     return h+'</div>'; }
   function _beSection(){ var h='<div class="lrsec"><div class="lrsh">BACKEND</div>';
-    ["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt"].forEach(function(k){ if(!K[k]) return;
+    ["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt","element"].forEach(function(k){ if(!K[k]) return;
       var _kids=(k==="endpoint"||k==="function"); h+=_typeRow(k, _kids);               // endpoint + function are PARENTS — no header example
       if(k==="endpoint"){ var _et=_minTierKind("endpoint"); ["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"].forEach(function(m){ h+=_badgeRow("method", m, m, (BD.method&&BD.method[m])||"", _exMethod(m), _et); }); h+=_badgeRow("delivery", "stream", "stream", (BD.delivery&&BD.delivery.stream)||"", _exStream(), _et); }
       else if(k==="provider"){ var _pt=_minTierKind("provider"); ["llm","embed","vector","agent","infra","http","observability","payments"].forEach(function(pc){ h+=_badgeRow("pclass", pc, pc, (BD.pclass&&BD.pclass[pc])||"", _exPc(pc), _pt); }); }
@@ -4625,6 +4664,20 @@ window.__uniLegRef=function(){
       if(/tog$/.test(it.t||"")) return;   /* a VIEW SWITCH (d2w colour · fe heat · write ring) is not a wire — the compact legend keeps the toggle, the reference lists wires only (operator 2026-09-05: three blank rows) */
       h+='<div class="lrrow lrb"><span class="lrico">'+_refIco(it)+'</span><div class="lrtx">'+_refTx(it.l)+(it.t==="ln"&&it.k?(' '+_exLinkChip(it.k)):'')+'</div><div class="lrdef">'+_esc(_defOf(it.l))+'</div>'+_tierCell(null,"any")+'</div>'; });   /* an example WIRE per connector row (operator 2026-09-05) */
     return h+'</div>'; }
+  /* the ENTITY MODELS section (Phase 2, 2026-09-06): a solid hull for a model that clusters, a DASHED rim for an aspect, a badge for a reported layer, the muted planet for an unclaimed file — each row draws what the field draws (legend-visual law) */
+  function _modelSection(){ var sw=function(dash,col){ return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="'+col+'" stroke-width="2"'+(dash?' stroke-dasharray="3 2.5"':'')+'><circle cx="12" cy="12" r="9"'+(dash?'':' fill="'+col+'" fill-opacity=".18"')+'/></svg>'; };
+    var views=(window.__uniModelViews?__uniModelViews():{});
+    var rows=[["claim","claim",sw(false,"#0d9488"),"the map today — where each file's entity config puts it; the registry every tool joins on"],
+      ["seeded","seeded",sw(false,"#3b82f6"),"the claim, with the pieces the evidence says clearly belong elsewhere moved — shared plumbing held back"],
+      ["derived","derived",sw(false,"#f97316"),"features found from the code alone — an endpoint, its shapes and the hook that calls it, grouped by the table they write, named by their URL"],
+      ["proposed","proposed",sw(false,"#a855f7"),"one verdict per declared entity — keep · split · merge · aspect · layer — plus features no entity declares, drawn as if you accepted them"],
+      ["aspect","aspect",sw(true,"#e8590c"),"a cross-cutting concern — a gate on many domains' doors; a DASHED hull, because it belongs to no one place"],
+      ["layer","layer",'<span class="lrbadge">L</span>',"an entity with no door of its own — files or tables held for others; reported on the card, not drawn as a hull"],
+      ["element","element",(typeof svgInline==="function")?svgInline("element","#8a8f98",18):"","a backend file no entity claims — the blind spot, given a shape (muted, in the unclaimed area)"]];
+    var h='<div class="lrsec"><div class="lrsh">ENTITY MODELS · which clustering the field shows</div>';
+    rows.forEach(function(r){ var vw=views[r[0]], absent=!!(vw&&vw.present===false);
+      h+='<div class="lrrow lrb'+(absent?' lrdim':'')+'"><span class="lrico">'+r[2]+'</span><div class="lrtx"><b>'+_esc(r[1])+'</b><i>'+_esc(absent?("not on this feed — "+(vw.reason||"")):((window.__uniModel||"claim")===r[0]?"showing now":""))+'</i></div><div class="lrdef">'+_esc(r[3])+'</div>'+_tierCell(null,"any")+'</div>'; });
+    return h+'</div>'; }
   function _planetSection(){ var P=(typeof LEGEND!=="undefined"&&LEGEND.Planet)||null; if(!P) return "";
     var h='<div class="lrsec"><div class="lrsh">FLEET · planets &amp; ships</div>';
     (P.sub||[]).forEach(function(sk){ h+='<div class="lrgrp">'+sk+'</div>'; (P[sk]||[]).forEach(function(it){ if(it.t==="grp"){ h+='<div class="lrgrp lrsub">'+it.l+'</div>'; return; }
@@ -4634,7 +4687,7 @@ window.__uniLegRef=function(){
   var head='<div class="lrhd"><b><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg> Legend reference</b>'
     +'<span class="lrsubtitle">every type &amp; badge — name · <em style="font-style:normal;color:var(--ink)">what it is, in your words</em> · a live example · its tier. click an example to find it in the graph</span>'
     +'<button class="lrclose" title="close (Esc)">✕</button></div>';
-  var body='<div class="lrbody"><div class="lrcols">'+_feSection()+_beSection()+'</div><div class="lrcols">'+_connSection()+_planetSection()+'</div>'
+  var body='<div class="lrbody"><div class="lrcols">'+_feSection()+_beSection()+'</div><div class="lrcols">'+_connSection()+_planetSection()+_modelSection()+'</div>'
     +'<div class="lrfoot">click a flag ● to show / hide a type · the <b>tier</b> dots (last column) show where a row appears — a dim row is hidden at the current tier · click an example to jump to it</div></div>';
   ov.innerHTML=head+body; document.body.appendChild(ov);
   // paint each badge glyph onto its canvas (the SAME __badgeGlyph the 3D badges use — legend-visual law)
@@ -4952,17 +5005,17 @@ var CLUSTERS=[], clusterObjs=[], _npos={}, _wtick=0;
 function addObj(o){ o.traverse(function(c){ c.raycast=function(){}; }); Graph.scene().add(o); clusterObjs.push(o); return o; }   // decorative → invisible to the click picker (else force-graph reads an undefined node.x)
 function clearClusters(){ clusterObjs.forEach(function(o){ Graph.scene().remove(o); if(o.geometry&&o.geometry.dispose)o.geometry.dispose(); }); clusterObjs=[]; CLUSTERS=[]; }
 function memberLinks(memset){ return links.filter(function(l){ return memset[lid(l.source)] && memset[lid(l.target)]; }); }
-function makeCluster(members, color, shape, op, level, label){
+function makeCluster(members, color, shape, op, level, label, dash){
   var memset={}; members.forEach(function(id){ memset[id]=1; });
-  var c={ members:members, memset:memset, shape:shape, level:level, pad:(level==="ent"?26:10) };   // pad = BASE; radius multiplies live in updateClusters
+  var c={ members:members, memset:memset, shape:shape, level:level, pad:(level==="ent"?26:10), dash:!!dash };   // pad = BASE; radius multiplies live in updateClusters · dash = an ASPECT cluster (entity models): stippled rim, no solid fill
   if(shape==="aura"){ var nS=level==="ent"?50:26, lS=level==="ent"?38:20; c.sprites=[];
     members.forEach(function(id){ c.sprites.push({s:addObj(glowSprite(color,nS,op)), node:id}); });
     memberLinks(memset).forEach(function(l){ [0.35,0.65].forEach(function(t){ c.sprites.push({s:addObj(glowSprite(color,lS,op*0.85)), link:l, t:t}); }); });
   } else if(shape==="sphere"){
-    c.sph=addObj(new T.Mesh(new T.SphereGeometry(1,24,18), new T.MeshBasicMaterial({color:color, transparent:true, opacity:op, side:T.BackSide, depthWrite:false})));
+    c.sph=addObj(new T.Mesh(new T.SphereGeometry(1,24,18), new T.MeshBasicMaterial({color:color, transparent:true, opacity:op, side:T.BackSide, depthWrite:false, wireframe:!!dash})));
     c.rim=addObj(new T.Mesh(new T.SphereGeometry(1,16,12), new T.MeshBasicMaterial({color:color, transparent:true, opacity:op*2.2, wireframe:true, depthWrite:false})));
   } else if(shape==="polygon"){   // rounded hull — SHADED fill, NO wireframe (lines competed with the links)
-    c.hull=addObj(new T.Mesh(new T.BufferGeometry(), new T.MeshLambertMaterial({color:color, emissive:color, emissiveIntensity:0.10, transparent:true, opacity:op, side:T.DoubleSide, depthWrite:false})));
+    c.hull=addObj(new T.Mesh(new T.BufferGeometry(), new T.MeshLambertMaterial({color:color, emissive:color, emissiveIntensity:0.10, transparent:true, opacity:(dash?Math.min(1,op*2.2):op), side:T.DoubleSide, depthWrite:false, wireframe:!!dash})));
   } else if(shape==="wrap"){   // ONE fused iso-surface (metaball) over nodes + connectors — a sticky liquid
     var isEnt=level==="ent", res=isEnt?WRAPCFG.entRes:WRAPCFG.subRes;
     c.nodeR=(isEnt?WRAPCFG.entNodeR:WRAPCFG.subNodeR); c.tubeR=(isEnt?WRAPCFG.entTubeR:WRAPCFG.subTubeR);   // BASE; radius multiplies live
@@ -4978,7 +5031,8 @@ function makeCluster(members, color, shape, op, level, label){
 }
 function buildClusters(){ clearClusters();
   if(CFG.entOn) Object.keys(ENT).forEach(function(e){ if(!visEnt(e).show) return; var mem=nodes.filter(function(n){return n.ent===e;}).map(function(n){return n.id;});
-    CLUSTERS.push(Object.assign(makeCluster(mem, ENT[e], CFG.shape, OPMAP[CFG.shape][CFG.entOp], "ent", e), {ekey:e})); });
+    var _mr=(window.__uniModelRosterRow&&window.__uniModel!=="claim")?__uniModelRosterRow(e):null, _dash=!!(_mr&&_mr.kind==="aspect");   /* an aspect cluster (derived / proposed) wears the dashed rim */
+    CLUSTERS.push(Object.assign(makeCluster(mem, ENT[e], CFG.shape, OPMAP[CFG.shape][CFG.entOp], "ent", e, _dash), {ekey:e, dash:_dash})); });
   if(CFG.subOn){ var subs={}; nodes.forEach(function(n){ if(!visEnt(n.ent).show||!visEnt(n.ent).subs) return;
     var _shv=UNIVIS.sub[n.ent+"|"+n.sub]; if(_shv&&!_shv.show) return;   // cluster hidden by the fleet panel
     var k=n.ent+"|"+n.sub; (subs[k]=subs[k]||[]).push(n.id); });
@@ -5438,7 +5492,7 @@ var KINDCARD=(function(){
       usage(usageN(n), usageBreak(n)),
       guardsSec(n),
       streamSec(n),
-      homeEvRow(n),
+      homeEvRow(n), modelRow(n),
       payloadSec(det),
       liveConns(n),
       behindTree(n),
@@ -5450,6 +5504,7 @@ var KINDCARD=(function(){
       fileRowSec(n) ]; },
     "function":function(n){ var det=n.det||{}; return [
       usage(usageN(n), usageBreak(n)),
+      modelRow(n),
       accessSec(n),
       liveConns(n),
       behindTree(n),
@@ -5515,10 +5570,30 @@ var KINDCARD=(function(){
     var word=(e.verdict==="move")?("MOVE CANDIDATE → "+dest+(more>0?(" · also used by "+more+" other entit"+(more===1?"y":"ies")):"")):(e.verdict==="shared")?("SHARED — a cross-cutting aspect across "+(e.others||0)+" consuming entities"):("STAY — the file wins"+(dest?(" over "+dest):""));
     var u=top(e.users), d=top(e.data);
     return kv("role","evidence","home "+_hslug(n.ent)+" by "+by+" · "+(u?("users say "+u):"users abstain")+" · "+(d?("data says "+d):(e.data_note?"data abstains — "+e.data_note:"data abstains"))+" → "+word+" — evidence only, nothing re-homed"); }
+  /* the ENTITY-MODEL row (Phase 2, 2026-09-06): under a non-claim model, where the view put this piece and why — the claim stays the join key */
+  function modelRow(n){ var v=window.__uniModel||"claim"; if(v==="claim"||!n||!n.entClaim||!n.modelMark) return null;
+    var nm=function(e){ var r=(window.__uniModelRosterRow?__uniModelRosterRow(e):null); return (r&&r.name&&!/^fe·/.test(e))?(r.name+" · "+_hslug(e)):(window.__uniEntLabel?__uniEntLabel(e):_hslug(e)); };
+    if(n.modelMark==="moved") return kv("link","model", v+": claim "+_hslug(n.entClaim)+" → "+nm(n.ent)+" — a view over the claim, nothing re-homed on disk");
+    if(n.modelMark==="abstain") return kv("link","model", v+": no witness reaches this piece — it keeps its claim "+_hslug(n.entClaim));
+    var hub=(window.__uniModelHub?__uniModelHub(n.id):null);
+    return kv("link","model", v+": shared plumbing"+(hub?(" ("+hub["class"]+" · used from "+hub.homes+" homes)"):"")+" — held out of every re-home, stays with "+_hslug(n.entClaim)); }
+  /* the entity panel's MODEL section: on proposed a verdict badge + why for a declared slug; for a cluster the claim lacks (d: / a:) its kind · naming · purity · why */
+  function modelSec(ent){ var v=window.__uniModel||"claim", m=(window.GABE_C4&&GABE_C4.models)||null; if(!m||v==="claim") return null;
+    var r=(window.__uniModelRosterRow?__uniModelRosterRow(ent):null), pv=null;
+    if(v==="proposed") pv=((m.rosters&&m.rosters.proposed)||[]).filter(function(x){ return x.slug===ent; })[0]||null;
+    if(!r&&!pv) return null;
+    var w=E("div",{class:"sec"}, sechd("role","Entity model · "+v, null, false, {icon:"info",cls:"info",text:"what this cluster is under the "+v+" model — a view over the claim; the claim slug stays the join key, nothing is re-homed on disk"}));
+    if(pv&&pv.verdict) w.append(E("div",{class:"kv"}, E("span",{class:"pchip verdict v-"+String(pv.verdict).toLowerCase()}, pv.verdict), E("span",{class:"v"}, pv.why||"")));
+    if(r){ var kind=r.candidate?"candidate feature":(r.kind||"feature");
+      w.append(kv("info", r.twinOf?"twin":"cluster", kind+(r.twinOf?(" — the frontend twin of "+_hslug(r.twinOf)):"")+(r.named_by?(" · named by "+(r.named_by==="domain"?"its URL domain":"its anchor table")):"")+(r.anchor_table?(" · anchor "+r.anchor_table+(r.anchor_by?(" ("+r.anchor_by+")"):"")):"")+(r.purity!=null?(" · purity "+r.purity):"")+(r.endpoints!=null?(" · "+r.endpoints+" endpoint(s)"):"")));
+      if(r.claim_mix) w.append(kv("entity","claims", Object.keys(r.claim_mix).sort().map(function(k){ return _hslug(k)+" "+r.claim_mix[k]; }).join(" · ")));
+      if(r.why) w.append(E("div",{class:"doc"}, r.why));
+      if(r.candidate&&r.suggested_slug) w.append(kv("alert","proposal", "no entity declares this feature — a candidate entity, suggested slug "+r.suggested_slug)); }
+    return w; }
   function feBuilder(n){ var det=n.det||{}; return [
     usage(usageN(n), usageBreak(n)),
     homeRow(n),
-    homeEvRow(n),
+    homeEvRow(n), modelRow(n),
     liveConns(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
@@ -5528,7 +5603,7 @@ var KINDCARD=(function(){
     usage(usageN(n), usageBreak(n)),
     structureSec(n) || E("div",{class:"sec"}, sechd("table","Structure"), E("div",{style:"font-size:12px;color:var(--muted)"}, n.kind==="store"?"— no fields: the value type has no properties (a function-typed context), or no type argument was written":"— no members captured (a union, mapped or imported type)")),
     homeRow(n),
-    homeEvRow(n),
+    homeEvRow(n), modelRow(n),
     liveConns(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
@@ -5540,12 +5615,21 @@ var KINDCARD=(function(){
   function feHookBuilder(n){ var det=n.det||{}; return [
     usage(usageN(n), usageBreak(n)),
     homeRow(n),
-    homeEvRow(n),
+    homeEvRow(n), modelRow(n),
     liveConns(n),
     shapesSec(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
   C.store=feDataBuilder; C.type=feDataBuilder; C.hook=feHookBuilder; C.component=feHookBuilder;
+  /* the ELEMENT card (entity models): the file · its top-level functions · why no entity claims it */
+  C.element=function(n){ var d=n.det||{}, fns=d.fns||[]; return [
+    E("div",{class:"sec"}, sechd("info","Unclaimed file"),
+      kv("link","file", d.file||"—"),
+      kv("function","functions", fns.length?(fns.slice(0,12).join(" · ")+(fns.length>12?(" · +"+(fns.length-12)):"")):"— none at top level"),
+      E("div",{class:"doc"}, "no entity's code.* claims this file — "+(d.reason||"outside every claim root")+". A claim in the entity config moves it home; until then it sits in the unclaimed area so the blind spot has a shape.")),
+    modelRow(n),
+    liveConns(n),
+    aboveSec(n) ]; };
   ["component","hook","store","route","type","module"].forEach(function(k){ if(!C[k]) C[k]=feBuilder; });
   C.capsule=function(n){ var rows=[E("div",{class:"sec"}, sechd("layers","Capsule",(n.members||[]).length),
       E("div",{class:"doc"},"a folded AREA of "+(window.__uniEntLabel?__uniEntLabel(n.ent):n.ent)+" — "+(n.members||[]).length+" piece(s)"+((n.fixture||0)?(" · "+n.fixture+" showcase-data"):"")),
@@ -5579,6 +5663,7 @@ var KINDCARD=(function(){
     r.onclick=go; return r; }
   function kindCounts(list){ var by={}; list.forEach(function(n){ by[n.kind]=(by[n.kind]||0)+1; }); return by; }
   var KINDTIP={ endpoint:"an API route handler — one node per METHOD + path; the entity's outward door",
+    element:"a backend file no entity's code.* claims — drawn muted in the unclaimed area; its functions are named on the card",
     capsule:"a FOLDED area of a big entity — its pieces are hidden inside, not gone; click to open",
     model:"a persisted data model — a database table the entity owns",
     schema:"a request/response shape — the API contract a payload travels in",
@@ -5657,6 +5742,15 @@ var KINDCARD=(function(){
         {icon:"info",cls:"info",text:"The committed feeds this graph is drawn from — each row is one input and what it contributed."}));
       if(window.__uniBudgetHit) w.append(srcRow("entity","scale", window.__uniBudgetHit.nodes+" nodes > budget "+window.__uniBudgetHit.budget+" — booted folded (capsules on · tier 0)",
         "above its node budget the station opens FOLDED so a large repo stays navigable — open a planet, or raise window.__uniBudget, to draw more"));
+      /* the ENTITY MODEL row (Phase 2, 2026-09-06): which model clusters the field and what the switch did — live counts, said out loud */
+      var _mv=window.__uniModel||"claim", _mm=(window.GABE_C4&&GABE_C4.models)||null, _mvw=(_mm&&_mm.views&&_mm.views[_mv])||null, _mst=window.__uniModelStats||{};
+      var _others=_mm&&_mm.views?["seeded","derived","proposed"].filter(function(k){ return (_mm.views[k]||{}).present; }):[];
+      w.append(srcRow("role","entity model", _mv==="claim"
+        ? ("claim — the registry (the map today)"+(_mm&&_mm.views?(_others.length?(" · this feed also carries "+_others.join(" · ")):(" · the only model this feed carries — "+(((_mm.views.derived||{}).reason)||((_mm.views.seeded||{}).reason)||"no other view present"))):" · the only model this feed carries (no entity-models block — regen the center)"))
+        : (_mv+" · "+(_mst.moved||0)+" moved · "+(_mst.abstained||0)+" abstained · "+(_mst.held||0)+" held · "+(_mst.clusters||0)+" new cluster(s)"+(_mvw&&_mvw.aspects!=null?(" · "+_mvw.aspects+" aspect(s)"):"")+(_mvw&&_mvw.layers!=null?(" · "+_mvw.layers+" layer(s)"):"")+(_mvw&&_mvw.purity!=null?(" · purity "+_mvw.purity):"")+(window.__uniFoldedN?(" · "+window.__uniFoldedN+" cluster(s) folded at this model"):"")),
+        "which ENTITY MODEL clusters the field. claim = the registry every tool joins on; seeded / derived / proposed are VIEWS over it — per-piece home deltas the station applies live. Nothing is re-homed on disk."));
+      if(st.elements&&st.elements.present) w.append(srcRow("info","elements", st.elements.files+" unclaimed file(s) drawn"+(st.elements.truncated?" (capped at the element budget)":"")+" · "+st.elements.fns+" function(s) named"+(st.elements.unparseable?(" · "+st.elements.unparseable+" unparseable"):""),
+        "backend .py files no entity's code.* claims — the element census names them and the map draws them muted in the unclaimed area, so the blind spot has a shape"));
       if(st.cross_touches!=null) w.append(srcRow("model","cross-entity touches", String(st.cross_touches),
         "models one entity references while ANOTHER documents them — resolved into the dotted touches wires between entities"));
       if(st.unparseable&&st.unparseable.count) w.append(srcRow("alert","files skipped", st.unparseable.count+" .py file(s) the scanner could not parse", "Every mapped .py the AST scanners skipped — a NAMED gap, never silence. Whatever those files define is missing from this graph: "+(st.unparseable.files||[]).join(", ")));
@@ -5686,6 +5780,7 @@ var KINDCARD=(function(){
     _phead((window.__uniEntLabel?__uniEntLabel(ent):ent),"ENTITY","entity",(typeof ENT!=="undefined"&&ENT[ent])||null);
     var pb=document.getElementById("pbody"); pb.innerHTML="";
     pb.append(makeupSec(mem));
+    var _ms=modelSec(ent); if(_ms) pb.append(_ms);
     pb.append(starsSec(ent));
     var cx=crossSec(ent); if(cx) pb.append(cx);
     var subs={}; mem.forEach(function(n){ var k=n.sub||"—"; (subs[k]=subs[k]||[]).push(n); });
@@ -5928,7 +6023,7 @@ var LEGEND={
     ["route","component","hook","type","store","module","web"].filter(function(k){ return order.indexOf(k)>=0; }).map(function(k){ return {t:"kind",k:k}; }),
     ((window.GABE_C4&&GABE_C4.fe)? [{t:"feclass",fc:"view"}] : []),
     [{t:"hd",l:"backend"}],
-    ["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt"].filter(function(k){ return order.indexOf(k)>=0; }).map(function(k){ return {t:"kind",k:k}; }),
+    ["endpoint","function","schema","model","external","entity","middleware","flag","provider","prompt","element"].filter(function(k){ return order.indexOf(k)>=0; }).map(function(k){ return {t:"kind",k:k}; }),
     [ {t:"note",l:"boundary colour = ENTITY · icon colour = kind · click a row to hide it (on/off) · the ⓘ on a badged row (endpoint · function · schema · component · module · hook · provider) opens its key · fold helpers hides single-caller helpers"} ]),
   Connectors:[ {t:"grp",l:"entity ↔ entity · <i>relationship kind</i>"},
     {t:"ln",k:"fk",l:"fk <i>a foreign-key data coupling</i>"},
@@ -6122,7 +6217,7 @@ buildLegend(); palLoop();   // legend renders now (placeholders); thumbnails pai
   ["iso","sub","entNodeR","entTubeR","subNodeR","subTubeR","entRes","subRes","every"].forEach(function(k){ var v=q.get("w"+k); if(v!=null) WRAPCFG[k]=+v; });
   var ep=q.get("enc"); if(ep&&PRESETS[ep]){ applyPreset(ep); buildExpl(); }
   var hb=q.get("heatBy"); if(hb){ ENC.heatBy=hb; } var cm=q.get("cmode"); if(cm){ ENC.color=cm; buildExpl(); } var sp=q.get("speed"); if(sp!=null){ ENC.speed=+sp; buildExpl(); }
-  window.__drive=q.get("drive"); window.__panel=q.get("panel"); window.__link=q.get("link"); window.__cam=q.get("cam"); window.__jrn=q.get("journey"); window.__ent=q.get("ent"); if(changed && document.getElementById("cfg")){ buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); if(window.__uniFleetSync) __uniFleetSync(); } })();
+  window.__drive=q.get("drive"); window.__panel=q.get("panel"); window.__link=q.get("link"); window.__cam=q.get("cam"); window.__jrn=q.get("journey"); window.__ent=q.get("ent"); window.__model=q.get("model"); if(changed && document.getElementById("cfg")){ buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); if(window.__uniFleetSync) __uniFleetSync(); } })();
 buildExpl();   // build the encode panel now that DIMR/drow exist
 preloadBillboards(function(){ try{ recomputeEX(CFG.entLayout); (window.__uniAssignSplit?__uniAssignSplit():assignSub(CFG.coreByBE||"kind")); recomputeSubAnchors(); }catch(e){} build(); try{ if(window.__uniComputeSolo) __uniComputeSolo(); }catch(e){} try{ __uniSetupOrbit(); }catch(e){} setTimeout(function(){ try{ if(window.__uniSetKindState) __uniSetKindState("function","critical"); }catch(e){} if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} } if(window.__uniApplyDeepLinks){ try{ __uniApplyDeepLinks(); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400); window.__spikeKindsReady=true; loadShips(); });   // load the ship/sat GLBs → onShipsReady() repaints fleets
 </script></body></html>

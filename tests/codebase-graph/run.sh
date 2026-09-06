@@ -444,6 +444,10 @@ check(_beps and all(isinstance(n["behind"].get("fns"), int)
                     and isinstance(n["behind"].get("depth"), int) for n in _beps),
       "example: endpoints carry a {fns, depth} behind floor (ints, no guessed shape)")
 
+# ── B12 (entity models, 2026-09-06): the codebase-graph station stays CLAIM-ONLY — it reads l1/l2 by slug and never the `models` block
+#    (re-clustering it would drag sim-panel.js, two consumers, into the pass; trigger to revisit: a change simulated against a derived feature).
+check('DATA.models' not in station and 'GABE_C4.models' not in station and '.models[' not in station and 'GABE_C4.models' not in panel and '.models[' not in panel,
+      "B12: codebase-graph.html / sim-panel.js read the entity-models block — the station is claim-only by design")
 print(f"codebase-graph battery: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)
 PY
