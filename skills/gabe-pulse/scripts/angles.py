@@ -302,14 +302,51 @@ def s8_evidence(root: Path, plan: dict | None, cfg: dict | None):
             "/gabe-cc-update curate")
 
 
-def s9_entity_shape(root: Path, plan: dict | None, cfg: dict | None):
-    """Entity-shape drift — a URL surface no DOMAIN entity owns (orphan), or a
-    cross-cutting concern modeled as a peer domain (aspect).
+def _emitted_aspects(root: Path) -> tuple[list[str], str | None]:
+    """ARM B of S9 (entity models Phase 3, 2026-09-06): the aspects the EMITTER measured, read from the committed c4-graph's
+    `models` block — the derived view's gate-fan-in rows (a gate on ≥3 URL domains' endpoints, the detector that measured
+    23/24 · 34/41 on the twins) and the proposed view's ASPECT verdicts (each with its why). Returns (phrases, state) —
+    state None when present, else the word to print INSIDE the line: not_emitted (no block — regen to know) or the emitter's reason."""
+    c4 = fetch_bridge._center(root) / "c4-graph.json"
+    if not c4.exists():
+        return [], "not_emitted — no c4-graph.json yet (regen to know)"
+    try:
+        g = json.loads(c4.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        return [], f"c4-graph.json unreadable ({e.__class__.__name__})"
+    m = g.get("models")
+    if not isinstance(m, dict):
+        st = (g.get("stats") or {}).get("models")
+        if isinstance(st, dict) and st.get("present") is False:
+            return [], f"absent — {st.get('reason') or 'the emitter recorded no reason'}"
+        return [], "not_emitted — no models block on this map (regen with the current generators to know)"
+    views = m.get("views") or {}
+    if not (views.get("derived") or {}).get("present"):
+        return [], f"absent — {(views.get('derived') or {}).get('reason') or 'no derived view'}"
+    out = []
+    for r in (m.get("rosters") or {}).get("derived") or []:
+        if r.get("kind") == "aspect" and r.get("detector") == "gate-fan-in":
+            out.append(f"{r.get('name') or r.get('id')} (gate fan-in: {str((r.get('members') or [''])[0]).split('#')[-1]} spans {r.get('domains')} domains)")
+    for r in (m.get("rosters") or {}).get("proposed") or []:
+        if r.get("verdict") == "ASPECT":
+            out.append(f"{r.get('slug')} is an aspect ({r.get('why') or 'proposed ASPECT'})")
+    return out, None
 
-    The STANDING reminder: /gabe-review catches a NEW route on the diff that
-    caused the drift; this angle keeps an already-standing orphan/aspect visible
-    every beat. Recomputed fresh from the committed archmap here — NOTHING is
-    stored, so nothing goes stale and nothing needs remembering."""
+
+def s9_entity_shape(root: Path, plan: dict | None, cfg: dict | None):
+    """Entity-shape drift — TWO ARMS (entity models Phase 3, 2026-09-06).
+
+    ARM A (fresh, unchanged computation): a DETACHED domain — a URL surface no domain entity
+    owns, recomputed from the committed archmap by `entity_shape.py` every beat; nothing stored.
+    ARM B (emitted): the ASPECTS the emitter MEASURED — gate fan-in rows + proposed ASPECT verdicts
+    read from the committed c4-graph's `models` block, exactly as fresh as that regen and SAID
+    when the block is missing (`aspects: not_emitted — regen to know`) — a half-signal never reads
+    clean. The URL co-claim aspect phrase of the old single arm is RETIRED from the line (measured:
+    gate fan-in is the detector; screen co-fetch and URL co-claim are not) — `entity_shape.py`'s
+    aspect half still feeds review's diff classification (its hazard comment says why).
+
+    The STANDING reminder: /gabe-review catches a NEW route on the diff that caused the drift;
+    this angle keeps an already-standing detached domain / aspect visible every beat."""
     if cfg is None:
         return Unavailable("no center config — the entity model is the trigger's source")
     try:
@@ -317,18 +354,20 @@ def s9_entity_shape(root: Path, plan: dict | None, cfg: dict | None):
     except FileNotFoundError:
         return Unavailable("no archmap yet — the center regen builds it")
     shape = entity_shape.entity_shape(endpoints, umap)
-    orphans, aspects = shape["orphans"], shape["aspects"]
-    if not orphans and not aspects:
+    detached = shape["orphans"]                                   # the JSON key stays (three callers read it); the WORD is detached (R10)
+    aspects, aspect_state = _emitted_aspects(root)
+    if not detached and not aspects:
         return None
     parts = []
-    if orphans:
-        names = ", ".join("/" + o["domain"] for o in orphans[:3])
-        more = f" +{len(orphans) - 3}" if len(orphans) > 3 else ""
-        parts.append(f"{len(orphans)} orphan domain(s) ({names}{more})")
+    if detached:
+        names = ", ".join("/" + o["domain"] for o in detached[:3])
+        more = f" +{len(detached) - 3}" if len(detached) > 3 else ""
+        parts.append(f"{len(detached)} detached domain(s) ({names}{more})")
     if aspects:
-        names = ", ".join(a["entity"] for a in aspects[:3])
-        parts.append(f"{len(aspects)} aspect entity(ies) ({names})")
-    return (f"entity-shape drift — {' · '.join(parts)}", "/gabe-cc-init")
+        parts.append(f"{len(aspects)} aspect(s): " + " · ".join(aspects[:3]) + (f" +{len(aspects) - 3}" if len(aspects) > 3 else ""))
+    elif aspect_state:
+        parts.append(f"aspects: {aspect_state}")
+    return (f"entity-shape drift — {' · '.join(parts)}", "/gabe-cc-init rank")
 
 
 def s10_web_bridge(root: Path, plan: dict | None, cfg: dict | None):
@@ -612,7 +651,7 @@ def s17_homing_evidence(root: Path, plan: dict | None, cfg: dict | None):
     return (f"homing evidence — {move} move candidate(s) (≥60% of ≥2 users in one other entity, data agrees) · {shared} shared aspect(s)"
             f"{(' · e.g. ' + named) if named else ''}; a piece's home is its file claim and its users say otherwise "
             f"(re-home is opt-in — nothing moved)",
-            "/gabe-cc-init section  (the entity walk; mcp__gabe-map__map_census kind=homing lists the candidates)")
+            "/gabe-cc-init section  (the entity walk; mcp__gabe-map__entity_models model=seeded shows the moves applied, with destinations — the shared count is S9's fe-homes input)")
 
 
 def s16_workflow_coverage(root: Path, plan: dict | None, cfg: dict | None):

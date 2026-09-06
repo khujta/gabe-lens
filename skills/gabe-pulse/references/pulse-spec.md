@@ -315,7 +315,7 @@ So a satellite earns its line only when repo state says it would find something.
 | S5 | files changed outside the current phase's declared `scope` (see 5.4) — unavailable, honestly, when the phase declares no scope | `/gabe-scope-change` | PLAN.json `phases[].scope` + shared work-scope resolver |
 | S6 | ≥3 changed files belong to one entity's code map (clean tree ⇒ the diff source walks back past pure-`.kdbp` bookkeeping commits to the newest WORK commit — beat ends land right after the tick commit, which blinded the old `HEAD~1..HEAD` fallback; measured 15/15 silent, 2026-08-07) | `/gabe-cc-entity <slug>` | center config + `git diff` |
 | S7 | the diff spans ≥2 layers across ≥3 files | `/gabe-imagine` | center config + `git diff` |
-| S9 | the entity model diverges from the URL structure — a domain no *domain* entity owns (orphan), or a cross-cutting concern modeled as a peer domain (aspect: co-claims ≥3 domains, solely-owns ≤1). The STANDING reminder; `/gabe-review` catches the NEW route on the diff. See 5.6 | `/gabe-cc-init` | committed `archmap.json`, recomputed fresh (nothing stored — `entity_shape.py`) |
+| S9 | the entity model diverges from its code — TWO ARMS (entity models Phase 3, 2026-09-06): **A** a DETACHED domain no *domain* entity owns, recomputed fresh from the archmap; **B** the ASPECTS the emitter MEASURED (gate fan-in rows + proposed ASPECT verdicts) read from the committed c4 `models` block, `aspects: not_emitted — regen to know` inside the line when the block is missing. The STANDING reminder; `/gabe-review` catches the NEW route on the diff. See 5.6 | `/gabe-cc-init rank` | arm A: committed `archmap.json`, recomputed fresh (`entity_shape.py`); arm B: the committed `c4-graph.json` `models` block — as fresh as that regen, and says so |
 | S13 | a route or backend `.py` sits in a scanned code dir that no entity's config claims (the model-census ruling widened to routes + backend files). The STANDING reminder → `/gabe-cc-init`; closest-to-the-request-path file leads via the reach hop. `route_census`/`file_census` are emitted non-empty-only, so their absence is full coverage — silent, never a false nag | `/gabe-cc-init` | committed `archmap.json` `route_census` + `file_census` (built by `_a3_code.route_census`/`file_census`, reach by `_a3_graft.reach_arm` — nothing stored, nothing globbed here) |
 | S14 | a codebase-map generator arm's ACTIVE missed edges (grep found what the map did NOT, tallied per edge, `count` = persistence) crossed the breadth threshold — the map keeps diverging from grep during real dev. The **one accumulator-backed angle** (a delta cannot be re-derived without re-running grep), but the active/cold split is computed FRESH (commits since `last_n` vs the horizon) so a fixed/dormant arm self-silences — nothing that can go stale is stored. Emitted at red/execute/review, tallied by `/gabe-commit`'s sweep (map-delta loop 11a) | inspect `.kdbp/map-deltas-rollup.jsonl` → improve the arm | the `.kdbp/map-deltas-rollup.jsonl` tally ledger (edge-keyed on `(gen, subject, file)`, dedup + `count`; the deliberate stored-tally exception, tier computed) |
 | S15 | frontend classification residue — a Pascal .tsx function/class export with no JSX of its own and no file rendering it carries the honest kind `fe-unknown` (never a `module` claim; a rendered-by hit promotes it to component), read from the committed c4-graph `stats.fe.by_kind` (O1, 2026-09-03) | universe legend → Unknown (FE): render it somewhere, or add the O3 proof; residue 0 after O2 on the example | — |
@@ -374,21 +374,28 @@ something** — the roster stays honest by leaving these out loud.
 The entity model is a set of DOMAIN aggregates (recipe · cooking · …). Two ways it drifts from
 the app's real URL structure, both of which misdirect a workflow trace:
 
-- **Orphan domain** — a URL surface (`/settings`) that no domain entity owns; it falls to a
-  cross-cutting aspect, so tracing "the settings workflow" lands in the wrong entity.
-- **Aspect entity** — a cross-cutting concern (`allergen`) modeled as a peer domain: it
-  co-claims ≥3 URL domains yet solely-owns ≤1 (`ASPECT_COCLAIM_MIN` / `ASPECT_SOLE_MAX` in
-  `entity_shape.py`, operator-ruled 2026-08-14).
+- **Detached domain (arm A)** — a URL surface (`/settings`) that no domain entity owns; it falls to a
+  cross-cutting aspect, so tracing "the settings workflow" lands in the wrong entity. (The JSON key
+  stays `orphans` — a contract three callers read; the reader-facing word is *detached*, ruling R10.)
+- **Aspect (arm B, entity models Phase 3 — 2026-09-06)** — a cross-cutting concern the EMITTER measured:
+  a gate on ≥3 URL domains' endpoints (`_a3_models` gate fan-in — the detector that measured 23/24 and
+  34/41 on the twins) or a declared entity the proposed view judged ASPECT. The old single-arm phrase
+  "co-claims ≥3 URL domains, solely-owns ≤1" is RETIRED from the line (URL co-claim and screen co-fetch
+  are not the detector); `entity_shape.py`'s aspect rule STAYS because review's diff classification
+  (`owned` vs `aspect_set`) depends on it — its module HAZARD note says so.
 
 **Division of labour with `/gabe-review`.** Review DETECTS a new route in an orphan domain on the
 diff that introduced it (fresh, real-time — the Step 3.4 subject ENTITY-SHAPE DRIFT). S9 is the STANDING
 reminder for a drift that already exists and survives the reviewing session — the same
 review-detects / pulse-nags split S8 uses for census capture debt.
 
-**No stored artifact.** S9 recomputes the URL↔entity cross-tab from the committed `archmap.json`
-on every beat via `entity_shape.entity_shape()`. There is deliberately no `entity-drift.json` to
-write at regen and read stale here — the freshness of the signal is the freshness of the archmap,
-and nothing must be remembered-to-refresh (operability ruling 2026-08-14). Unavailable, honestly,
+**Arm A stores nothing; arm B is exactly as fresh as the committed c4 and says so.** Arm A recomputes
+the URL↔entity cross-tab from the committed `archmap.json` on every beat via `entity_shape.entity_shape()` —
+no `entity-drift.json` to write at regen and read stale (operability ruling 2026-08-14). Arm B reads the
+aspects the emitter already measured from the committed `c4-graph.json` `models` block: when the block is
+missing the line carries `aspects: not_emitted — regen to know` beside whatever arm A found, so a
+half-signal never reads clean; when the emitter ran and found no derived view it carries the reason.
+The evidence-text hash changes with the two-arm wording, so S9 re-offers twice on suppressed repos (§5.3) — expected. Unavailable, honestly,
 when there is no center config or no archmap yet. Candidate names for an orphan come from an
 optional `url_domain_map` in `center.config.json` (`{segment: name}`, e.g. `settings → account`);
 absent an entry, the candidate is the verbatim segment.

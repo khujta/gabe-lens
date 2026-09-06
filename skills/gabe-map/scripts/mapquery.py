@@ -156,6 +156,24 @@ class Center:
     @property
     def levels(self) -> dict: return _load_json(self.dir / "levels.json")   # P0: lazy — trace · blast_radius · touches(task) read it; map_status never does
 
+    def entity_models(self) -> tuple:
+        """The c4 half of the ENTITY MODELS block (Phase 3, 2026-09-06) → (block, state, reason) with state ∈ MODELS_STATES: present ·
+        not_emitted (an older map, no block) · absent (the emitter ran and says why in stats.models.reason). The c4 is already loaded
+        (the block is delta-sized); the levels half stays behind `entity_models_levels()` so map_status never touches it."""
+        c = self.c4
+        m = c.get("models")
+        st = (c.get("stats") or {}).get("models")
+        if isinstance(m, dict) and m.get("present"):
+            return m, "present", None
+        if isinstance(st, dict) and st.get("present") is False:
+            return None, "absent", st.get("reason") or "the emitter recorded no reason"
+        return None, "not_emitted", "no models block on c4-graph.json — an older map; regen with the current generators (entity models, 2026-09-06)"
+
+    def entity_models_levels(self) -> dict:
+        """The levels half — the per-view homes of FUNCTION keys (`file#fn`); read lazily, only by entity_models on a function piece / a view roster."""
+        lv = (self.levels or {}).get("models")
+        return lv if isinstance(lv, dict) and lv.get("present") else {}
+
     def entities(self) -> dict:
         return (self.archmap.get("entities") or {})
 
@@ -256,6 +274,8 @@ class Center:
         return out
 
 
+MODELS_STATES = ("present = the entity-models block is on c4-graph.json · not_emitted = no block (an older map — regen with the current generators) · "
+                 "absent = the emitter ran and says why (stats.models.reason); claim is always the registry")
 HEALTH_STATES = ("present = the pass ran and found something · clean = the pass ran (the repo-study sentinel route_mounts is on the map) "
                  "and found nothing · not_emitted = an older map that never ran the pass — regen to know")
 

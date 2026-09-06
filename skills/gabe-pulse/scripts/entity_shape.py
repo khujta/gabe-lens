@@ -4,14 +4,22 @@
 A PURE function (plus a thin CLI) that names two model defects the tracing tool
 cares about:
 
-  * ORPHAN domain — a URL surface (`/settings`) that no *domain* entity owns; it
+  * DETACHED domain — a URL surface (`/settings`) that no *domain* entity owns; it
     falls to a cross-cutting aspect, so a workflow traces to the wrong place.
+    (The JSON key is `orphans` — a contract three callers read; the reader-facing
+    word is DETACHED, ruling R10.)
   * ASPECT entity — a cross-cutting concern (`allergen`) modeled as a peer
     domain: it co-claims many URL domains yet solely-owns almost none.
 
 Report-only. There is NO stored artifact — every caller (pulse, review, cc-init)
 computes fresh from its own already-fresh source, so nothing can go stale and
 nothing needs remembering. See docs/design/ for the operability rationale.
+
+HAZARD (entity models Phase 3, 2026-09-06): the ASPECT half of this module STAYS even though pulse S9 now
+reports the EMITTER's measured aspects (gate fan-in) instead of the URL co-claim rule. Reason: `owned`
+below is defined AGAINST `aspect_set`, and `owned` feeds `classify_new_routes` → /gabe-review's ENTITY-SHAPE
+DRIFT subject and `mcp__gabe-map__entity_shape diff` on every project. Removing or changing the aspect rule
+here silently changes review verdicts everywhere. It is reporting-only in pulse; it is a CLASSIFIER in review.
 """
 from __future__ import annotations
 
@@ -75,10 +83,11 @@ def entity_shape(endpoints: Iterable[dict[str, Any]],
     ]
     aspect_set = {a["entity"] for a in aspects}
 
-    # a domain is ORPHAN when no NON-aspect (domain) entity claims it — it lives
-    # only inside cross-cutting aspects, so it has no home a person would look in.
+    # a domain is DETACHED (JSON key `orphans`, kept) when no NON-aspect (domain) entity claims
+    # it — it lives only inside cross-cutting aspects, so it has no home a person would look in.
     # OWNED = the complement: a domain a real domain entity holds. `owned` is what
-    # the diff-mode checks a NEW route against.
+    # the diff-mode checks a NEW route against — which is why the aspect rule above must stay
+    # even though pulse S9 reports the emitter's measured aspects (see the module HAZARD note).
     orphans, owned = [], []
     for dom in sorted(claimants):
         if claimants[dom] - aspect_set:
@@ -210,7 +219,7 @@ def main() -> int:
     else:
         print(f"domains: {shape['coverage']['domains']} · unclaimed: {shape['coverage']['unclaimed_endpoints']}")
         for o in shape["orphans"]:
-            print(f"  ORPHAN /{o['domain']:20} claimed by {o['claimed_by']} -> candidate: {o['candidate']}")
+            print(f"  DETACHED /{o['domain']:18} claimed by {o['claimed_by']} -> candidate: {o['candidate']}")
         for a in shape["aspects"]:
             print(f"  ASPECT {a['entity']:16} co-claims {len(a['co_claims'])} {a['co_claims']} · sole-owns {a['sole_owns']}")
     return 0

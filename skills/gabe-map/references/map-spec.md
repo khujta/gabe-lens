@@ -7,7 +7,7 @@
 
 `gabe-map` is a stdio MCP server (Python stdlib only) registered once at **user scope**. In every project it serves
 that project's OWN committed codebase map — `docs/site/center/{center.config,archmap,c4-graph,adoption}.json` (+ `levels.json`, read LAZILY and only by
-`trace` · `blast_radius` · `touches` on a task — `map_status` never loads it) — as seventeen tools. It is the suite's **reliability surface** for questions an agent asks mid-reasoning; it is **not a rail**
+`trace` · `blast_radius` · `touches` on a task · `entity_models` on a function piece — `map_status` never loads it) — as eighteen tools. It is the suite's **reliability surface** for questions an agent asks mid-reasoning; it is **not a rail**
 (lifecycle moments stay on hooks and gates), **not a mutation channel** (no `.kdbp`, center or source writes), **not a
 data dump** (every list capped, every cap named), and **not graft** (graft builds the structural index the map is
 generated from; the tools sit on top and add entities · ownership · cases · coverage · drift · deltas — ruling
@@ -32,7 +32,7 @@ generated from; the tools sit on top and add entities · ownership · cases · c
   (the harness hides the text block when it is present). `text` = header `gabe-map · <tool> · map@<head> · <freshness>`
   (or `· no map`) + the JSON result (`indent=1`). Every human-facing string lives INSIDE that JSON.
 - **Deferral.** The harness defers every MCP tool's schema (verified: names only in context, loaded on demand). The
-  discovery surface is therefore the seventeen NAMES plus the `instructions` block — both must route the question to the
+  discovery surface is therefore the eighteen NAMES plus the `instructions` block — both must route the question to the
   tool. Descriptions are read only after a tool is loaded.
 - **Laziness.** Nothing heavy before `initialize` is answered; the map loads on the first call and is cached per
   `(path, mtime, size)`; indexes rebuild when archmap/c4 change on disk.
@@ -61,8 +61,8 @@ generated from; the tools sit on top and add entities · ownership · cases · c
 
 Injected in full every session even when every schema is deferred. Routes one line per tool (grouped two per line for
 wave 2), states the floor law once, names `map_status` as the first call when unsure. Text: `tools.INSTRUCTIONS`
-(≈ 2,150 chars with the seventeen tools — the four repo-study lines route gates · trace · TASK/stream/provider · map PARTIAL, and the floor law
-names the `inferred` trace hop). Any change to a tool name changes this block in the same commit.
+(≈ 2,360 chars with the eighteen tools — the four repo-study lines route gates · trace · TASK/stream/provider · map PARTIAL, the entity-models
+line routes "which entity does this piece belong to under each model" and states the join-key law, and the floor law names the `inferred` trace hop). Any change to a tool name changes this block in the same commit.
 
 ## 5 · Tools — inputs · process · output · caps
 
@@ -214,6 +214,35 @@ Per file: `owners[]` from `entities[].files` (a list), `config_glob_owners` via 
   `twins` · `web` + `schema.empty_arm`) and `center_overview` read. Owed to the emitter: an explicit `archmap.emitted: [keys]` list, at
   which point the sentinel collapses to one line.
 
+### 5.10 Wave 4 — the entity models (`tools_wave4.py`, docs/design/entity-models/plan.md Part C, 2026-09-06) — read-only
+
+**`entity_models(model?, entity?, piece?, root?)`** — ONE tool for the four ENTITY MODELS the center emits: `claim` (the config's
+`code.*` file claims — the map today, and the REGISTRY) · `seeded` (Part C's move verdicts applied, hubs held, targets
+tier-consistent) · `derived` (request atoms merged on the write-majority table, named by the URL domain at adaptive depth — names
+like `d:<table>`, `a:<gate>`, `fe·d:<table>` that are NOT slugs) · `proposed` (one verdict per declared entity — FEATURE · SPLIT ·
+MERGE · ASPECT · LAYER — plus candidates, as if accepted).
+- **The join-key law.** `claim` is the registry and the join key: every other tool (`entity_context` · `owner_of` · `find` · `touches`
+  · the levels group map · the homing evidence) joins on the claim slug; the other three are VIEWS — per-piece home deltas — and
+  nothing joins on their names. That is why this is ONE tool and not a `model=` flag on five: a flag is invisible while schemas are
+  deferred, a NAME in the instructions is the discovery surface, and 4+2 honest-empty states beat 5×4.
+- **Modes.** No args → the CENSUS (four views · counts · `today: claim` · the rule · caps · truncations). `model=<view>` → that view's
+  roster: claim = the entity list; seeded = moves grouped by destination + held + the band; derived = clusters with `kind` ·
+  `named_by` · `anchor_table` · `anchor_by` · `purity` + the abstained pieces; proposed = verdicts (+ `suggested_edit`) + candidates
+  (+ `suggested_slug`); every list capped at `mq.CAP`, the cap named, `coverage {moved, abstained, held}` counts BOTH halves.
+  `entity=<slug|d:…|a:…|fe·…>` (+ `model`, default claim) → the members homed there, each with its `mark` (moved · abstain · held)
+  and its claim; `what` = the cluster's row (a declared slug's proposed verdict). `piece=<file#fn | 'METHOD /path' | 'TASK <name>' |
+  fe:… | endpoint:/schema:/model: id>` → the CROSS-MODEL row `{claim, seeded, derived, proposed}` + `mark` + `why` per view + the
+  hub row when the piece is shared plumbing.
+- **Read contract.** The c4 half (`c4.models`: views · rosters · the c4-id homes) is already loaded — the block is delta-sized. The
+  levels half (`levels.json.models`: the FUNCTION keys' homes) is read LAZILY by `Center.entity_models_levels()` — only for a
+  function piece, a non-claim `entity=` listing or a non-claim roster; `map_status` never touches it.
+- **Honest-empty (tri-state, `mq.MODELS_STATES`).** `present` · `not_emitted` (no block — an older map; "regen with the current
+  generators") · `absent` (the emitter ran and `stats.models.reason` says why — e.g. no levels graph). Unknown `model` → `MapStop`
+  naming the four. Unknown entity/piece → `{found:false}` + the grep floor. An abstained atom's row says "keeps its claim".
+- **Neighbours.** `entity_context <slug>` carries `proposed {verdict, why}` on the SLUG (no join hazard); `touches` appends
+  `· cross-model: mcp__gabe-map__entity_models piece=<key>` to a piece's `home_evidence.note` only when a view re-homes it (no
+  block → byte-identical answers). `map_census` gains NO `models` kind — one surface, not two.
+
 ## 6 · Registration · status · doctor
 
 - Register (ask-first, once per machine): `claude mcp add -s user gabe-map -- python3 "$HOME/.claude/skills/gabe-map/scripts/server.py"`.
@@ -230,7 +259,7 @@ Per file: `owners[]` from `entities[].files` (a list), `config_glob_owners` via 
 Hermetic: a synthetic center (archmap · c4 · config · adoption · levels) in a temp git repo with commits past the map head, a
 fake `graft` on `PATH` returning canned JSON, real `git grep`, read deadlines in `client.py` and `timeout` around every
 invocation. Pins: handshake (echo · fallback · pre-init `server/discover` → `-32601` with the string id · `ping` ·
-`instructions` non-empty · `roots/list` requested + consumed) · `tools/list` (17 names — the v1 seven ∪ the wave-2 eight ∪ the wave-3 two — object schemas, annotations, descriptions ≤ 200 chars) ·
+`instructions` non-empty · `roots/list` requested + consumed) · `tools/list` (18 names — the v1 seven ∪ the wave-2 eight ∪ the wave-3 two ∪ the wave-4 one — object schemas, annotations, descriptions ≤ 200 chars) ·
 unknown method/tool · garbage line survives · `CLAUDE_PROJECT_DIR` law (cwd elsewhere) · no-center + suite-center texts ·
 freshness (stale after a mapped edit; fresh after a mapped-file-free commit; unknown head) · every `touches` kind
 (two owners · fk_in · r/w fns · ambiguous · endpoint normalization · case) · `entity_context` raw byte-parity with

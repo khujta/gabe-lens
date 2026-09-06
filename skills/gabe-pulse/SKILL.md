@@ -136,7 +136,7 @@ $ARGUMENTS
 `scripts/angles.py` computes seventeen evidence-backed triggers (S17 homing evidence, 2026-09-06, is the latest: pieces whose users/data witnesses disagree with their file — nothing re-homes) — adversarial pass owed (S1),
 structural scan overdue (S2), journey proof missing (S3), published docs stale (S4), scope drift
 (S5), entity context worth loading (S6), an explanation worth drawing (S7), workflow-census
-capture debt (S8), entity-shape drift (S9), a diff-added fetch that named no declared endpoint
+capture debt (S8), entity-shape drift (S9 — two arms: a detached URL domain computed fresh, and the aspects the emitter measured, read from the committed c4 `models` block and said `not_emitted` when missing), a diff-added fetch that named no declared endpoint
 (S10), model-census drift (S11 — a table class no entity's config claims), schema-homing
 residue (S12 — a schema unwired in a live file: dead, or in code the config never claimed; multi-consumer
 shapes and dormant contract lanes are counted, never nagged) and route/file-census drift

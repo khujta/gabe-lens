@@ -147,6 +147,33 @@ run "$r" | grep -q "entity-shape drift" && bad "S9 fired on a clean entity model
 r=$(repo s9c); commits "$r" 1 "feat: work"
 run "$r" | grep -q "entity-shape drift" && bad "S9 fired without a center" || ok "S9 silent with no center config"
 
+# ── S9 ARM B (entity models Phase 3, 2026-09-06): the EMITTED aspects from the committed c4 `models` block ──
+mkmodels() { mkdir -p "$1/docs/site/center"
+  printf '%s' '{"entities":{"cooking":{"code":{"api":["a.py"]}}}}' > "$1/docs/site/center/center.config.json"
+  printf '%s' "$2" > "$1/docs/site/center/archmap.json"
+  printf '%s' "$3" > "$1/docs/site/center/c4-graph.json"
+  cd "$1" && git add -A && git commit -qm "center+archmap+c4" && cd - >/dev/null; }
+CLEAN_MAP='{"entities":{"cooking":{"endpoints":[{"path":"/cooking","method":"GET"}]},"pantry":{"endpoints":[{"path":"/pantry","method":"GET"}]},"recipe":{"endpoints":[{"path":"/recipes","method":"GET"}]}}}'
+DRIFT_MAP='{"entities":{"cooking":{"endpoints":[{"path":"/cooking","method":"GET"}]},"pantry":{"endpoints":[{"path":"/pantry","method":"GET"}]},"recipe":{"endpoints":[{"path":"/recipes","method":"GET"}]},"shared":{"endpoints":[{"path":"/cooking/x","method":"GET"},{"path":"/pantry/x","method":"GET"},{"path":"/recipes/x","method":"GET"},{"path":"/admin","method":"GET"}]}}}'
+# FIRE: a clean URL model, but the emitter measured a gate fan-in aspect + a proposed ASPECT verdict → arm B fires with the detector + evidence
+r=$(repo s9d); mkmodels "$r" "$CLEAN_MAP" '{"models":{"present":true,"views":{"derived":{"present":true}},"rosters":{"derived":[{"id":"a:get_auth_context","name":"get auth context","kind":"aspect","detector":"gate-fan-in","domains":23,"members":["a/deps.py#get_auth_context"],"drawn":true}],"proposed":[{"slug":"auth","verdict":"ASPECT","why":"homes the gate get_auth_context, on endpoints of many domains"}]}}}'
+run "$r" | grep -q "entity-shape drift — 2 aspect(s): get auth context (gate fan-in: get_auth_context spans 23 domains) · auth is an aspect (homes the gate get_auth_context" && ok "S9-B FIRE: the emitted aspects print their DETECTOR + evidence (gate fan-in · the proposed verdict's why)" || bad "S9-B did not fire on emitted aspects: $(run "$r")"
+run "$r" | grep -q "/gabe-cc-init rank" && ok "S9 moves to /gabe-cc-init rank" || bad "S9 lost its move"
+# SILENT: a clean URL model and an emitted block with no aspect → nothing
+r=$(repo s9e); mkmodels "$r" "$CLEAN_MAP" '{"models":{"present":true,"views":{"derived":{"present":true}},"rosters":{"derived":[],"proposed":[{"slug":"cooking","verdict":"FEATURE","why":"majority"}]}}}'
+run "$r" | grep -q "entity-shape drift" && bad "S9-B fired on a clean model with no emitted aspect" || ok "S9-B SILENT: no aspect emitted, no detached domain → silent"
+# NOT_EMITTED: arm A fires (a detached domain) and the block is missing → BOTH the detached phrase and the not_emitted word ride the line (a half-signal never reads clean)
+r=$(repo s9f); mkarchmap "$r" "$DRIFT_MAP"
+run "$r" | grep -q "1 detached domain(s) (/admin)" && run "$r" | grep -q "aspects: not_emitted" && ok "S9-B NOT_EMITTED: the detached phrase AND 'aspects: not_emitted' ride one line" || bad "S9 hid the missing block behind arm A: $(run "$r")"
+# RETIREMENT REGRESSION: the URL co-claim rule ('shared' co-claims 3 domains) produces NO aspect phrase once the emitted block says 0 aspects — gate fan-in is the detector, not URL co-claim
+r=$(repo s9g); mkmodels "$r" "$DRIFT_MAP" '{"models":{"present":true,"views":{"derived":{"present":true}},"rosters":{"derived":[],"proposed":[]}}}'
+run "$r" | grep -q "1 detached domain(s) (/admin)" && ! run "$r" | grep -q "aspect" && ok "S9 RETIREMENT: the URL co-claim aspect phrase is gone from the line (arm A still names the detached domain)" || bad "S9 still phrases URL co-claim as an aspect: $(run "$r")"
+# ABSENT: the emitter ran and said why → the reason rides the line
+r=$(repo s9h); mkmodels "$r" "$DRIFT_MAP" '{"stats":{"models":{"present":false,"reason":"no levels graph (graft arm absent)"}}}'
+run "$r" | grep -q "aspects: absent — no levels graph" && ok "S9-B ABSENT: the emitter's reason rides the line" || bad "S9-B lost the emitter's reason: $(run "$r")"
+# R10: no S9 line says orphan (the drifted map's line carries the detached phrase)
+run "$r" | grep -qi "orphan" && bad "S9 says orphan (R10)" || ok "R10: the S9 line never says orphan"
+
 # ── S10 · web→API bridge drift — reads the committed c4-graph.json stats.web ──
 mkc4() { mkdir -p "$1/docs/site/center"
   printf '%s' "$2" > "$1/docs/site/center/c4-graph.json"
@@ -342,6 +369,7 @@ r=$(repo s17a); mkc4 "$r" '{"stats":{"homing":{"present":true,"pieces":40,"agree
 run "$r" | grep -q "homing evidence — 4 move candidate(s)" && ok "S17 fires: 4 move candidates (≥60% of ≥2 users in one other entity)" || bad "S17 did not fire on 4 move candidates: $(run "$r")"
 run "$r" | grep -q "verify_password → users" && ok "S17 names the first move candidate and its destination" || bad "S17 did not name the candidate"
 run "$r" | grep -q "re-home is opt-in — nothing moved" && ok "S17 says nothing moved (evidence only)" || bad "S17 lost the evidence-only clause"
+run "$r" | grep -q "mcp__gabe-map__entity_models model=seeded" && ok "S17 points at the seeded view (the moves applied, with destinations)" || bad "S17 lost the entity_models pointer"
 r=$(repo s17b); mkc4 "$r" '{"stats":{"homing":{"present":true,"pieces":40,"agree":38,"stay":0,"move":2,"shared":0,"move_named":[]}}}'
 run "$r" | grep -q "homing evidence" && bad "S17 fired below the threshold (2 move < 3, 0 shared)" || ok "S17 silent below the ≥3 move / ≥1 shared bar"
 r=$(repo s17c); mkc4 "$r" '{"stats":{"homing":{"present":true,"pieces":40,"agree":39,"stay":0,"move":0,"shared":1,"move_named":[]}}}'

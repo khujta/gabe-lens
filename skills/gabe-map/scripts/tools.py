@@ -251,6 +251,11 @@ def t_entity_context(args: dict, roots) -> dict:
             out["registry"] = CONFIG_ONLY
         cov = (center.archmap.get("coverage") or {}).get(slug)
         out["coverage"] = cov if cov else {"reason": "no coverage row for %s" % slug}
+        block, state, _ = center.entity_models()                                          # Phase 3: the proposed verdict rides the SLUG (no join hazard)
+        if state == "present":
+            row = next((r for r in ((block.get("rosters") or {}).get("proposed") or []) if r.get("slug") == slug), None)
+            if row and row.get("verdict"):
+                out["proposed"] = {"verdict": row["verdict"], "why": row.get("why"), "see": "mcp__gabe-map__entity_models model=proposed"}
     return out
 
 
@@ -302,9 +307,21 @@ def _home_ev(center: mq.Center, piece: str) -> dict | None:
     if not rec or rec.get("verdict") == "agree":
         return None
     def _u(s): return "unclaimed" if s == "__unclaimed__" else s                       # R10
+    note = "evidence only — the piece sits where its file claim put it; nothing re-homed"
+    if _in_models(center, piece):                                                          # Phase 3: a piece a view re-homes points at the cross-model row
+        note += " · cross-model: mcp__gabe-map__entity_models piece=%s" % piece
     return {**rec, "home": _u(rec.get("home")), "to": _u(rec.get("to")), "users": {_u(k): v for k, v in (rec.get("users") or {}).items()},
             "data": {_u(k): v for k, v in (rec.get("data") or {}).items()},
-            "rule": (hom.get("rule") or {}).get("text"), "note": "evidence only — the piece sits where its file claim put it; nothing re-homed"}
+            "rule": (hom.get("rule") or {}).get("text"), "note": note}
+
+
+def _in_models(center: mq.Center, piece: str) -> bool:
+    """True when ANY view's home delta (c4 half or levels half) names this piece — the pointer's only trigger; no block → False (byte-identical answers)."""
+    block, state, _ = center.entity_models()
+    if state != "present":
+        return False
+    maps = [block.get("homes") or {}, (center.entity_models_levels().get("homes") or {})]
+    return any(piece in (m.get(v) or {}) for m in maps for v in ("seeded", "derived", "proposed"))
 
 
 def _fn_record(center: mq.Center, key: str) -> dict:
@@ -613,7 +630,7 @@ def t_entity_shape(args: dict, roots) -> dict:
     shape = es.entity_shape(endpoints, umap)
     out = _base(center, root, source)
     out["shape"] = shape
-    out["one_line"] = es.one_line(shape) or "no finding — every URL domain is owned by exactly the entities the model expects"
+    out["one_line"] = (es.one_line(shape) or "").replace(" orphaned", " detached") or "no finding — every URL domain is owned by exactly the entities the model expects"
     n_unres = len(((center.archmap.get("route_mounts") or {}).get("unresolved")) or [])
     out["mounts_unresolved"] = n_unres                              # F13: an unresolved include_router prefix = routes the domain table cannot see
     if n_unres:
@@ -819,6 +836,7 @@ When a project has a command center (docs/site/center/), ask the map BEFORE grep
 - the ordered path from an endpoint or TASK to the models and providers it reaches (conf per hop) → mcp__gabe-map__trace
 - a celery/background TASK root, a streaming endpoint, a provider (litellm · redis · …) → find / touches take "TASK <name>", stream=true, kind=provider
 - where the map is PARTIAL (unparseable files · unresolved mounts · blocked twin pass · unscanned frontend roots) → mcp__gabe-map__map_census (map_status carries the one-line map_health)
+- which entity does this piece belong to under each model (claim · seeded · derived · proposed) → mcp__gabe-map__entity_models (claim IS the registry; the other three are VIEWS — nothing joins on their names)
 The map is a FLOOR, never a scope: absence in an answer is not proof of absence — grep -rn remains the absence proof. A trace hop marked `inferred` is graft's guess, not a proof. Every answer stamps map@<head> · freshness. No center → the tools say so and point to Grep/Glob."""
 
 
@@ -841,3 +859,7 @@ BY_NAME.update({t["name"]: t for t in _w2.TOOLS})
 import tools_wave3 as _w3  # noqa: E402
 TOOLS.extend(_w3.TOOLS)
 BY_NAME.update({t["name"]: t for t in _w3.TOOLS})
+# ── wave 4 (2026-09-06, entity models Phase 3): entity_models — the four models as one tool; claim stays the join key ──
+import tools_wave4 as _w4  # noqa: E402
+TOOLS.extend(_w4.TOOLS)
+BY_NAME.update({t["name"]: t for t in _w4.TOOLS})

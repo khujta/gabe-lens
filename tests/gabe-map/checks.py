@@ -160,7 +160,29 @@ def center(root: str, head: str):
                "unparseable": [["apps/api/integrations/x.py", "unparseable: bad"]],
                "app_middleware": [{"cls": "RateLimiterMiddleware", "file": "apps/api/app.py", "line": 12, "order": 0, "scope": "all"}]}
     ep_id = "endpoint:GET /things/{item_id}"
-    c4 = {"version": 1, "head": head, "colors": {},
+    # entity models (Phase 3, 2026-09-06): the emitter's block as it sits on c4 — one function piece (`thing`) the SEEDED view moves to
+    # `other`, one endpoint the DERIVED view homes to a table cluster `d:things` (a name that is NOT a slug), one abstained endpoint.
+    MODELS = {"present": True, "head": head, "default": "claim",
+              "rule": "claim = the config's code.* file claims (the map today) · seeded · derived · proposed are views over it",
+              "views": {"claim": {"present": True, "pieces": 6, "note": "the config's code.* claims — the map today"},
+                        "seeded": {"present": True, "moved": 1, "held": 0, "abstained": 0, "weighed": 3, "note": "Part C move verdicts only — NOT free propagation"},
+                        "derived": {"present": True, "features": 1, "aspects": 0, "layers": 1, "atoms": 2, "anchored": 1, "abstained": 1, "purity": 1.0, "new_clusters": 1, "note": "an unanchored atom KEEPS its claim"},
+                        "proposed": {"present": True, "verdicts": {"FEATURE": 1, "SPLIT": 0, "MERGE": 0, "ASPECT": 0, "LAYER": 1}, "unweighed": 0, "candidates": 0, "moved": 0, "note": "as if accepted"}},
+              "bands": {"seeded": {"move_share": 0.6, "move_min_users": 2, "shared_min": 3}},
+              "shared": [{"id": "apps/api/other.py#Helper.run", "class": "default", "homes": 3, "indeg": 20}], "shared_more": 0,
+              "rosters": {"derived": [{"id": "d:things", "twin": None, "name": "things", "kind": "feature", "anchor_table": "things", "anchor_cls": "Thing", "anchor_by": "read",
+                                       "domain": "things", "named_by": "domain", "depth": 1, "truncated": False, "color": "#123456", "endpoints": 1, "screens": 0, "fetchers": 0,
+                                       "purity": 1.0, "claim_mix": {"thing": 1}, "majority": "thing", "members": ["endpoint:GET /things/{item_id}"], "members_more": 0,
+                                       "why": "1 endpoint(s) read things under /things; no endpoint writes this table — anchored on reads"},
+                                      {"id": "l:other", "name": "other", "kind": "layer", "slug": "other", "files": 2, "tables": 1, "drawn": False, "why": "no endpoint — 1 table(s) held for other entities' endpoints"}],
+                          "proposed": [{"slug": "thing", "verdict": "FEATURE", "why": "majority of things and sole-owns 2 URL domain(s)", "evidence": {"feature": "d:things"}},
+                                       {"slug": "other", "verdict": "LAYER", "why": "no endpoint — 1 table(s) held for other entities' endpoints", "evidence": {"files": 2, "tables": 1}}],
+                          "candidates": []},
+              "homes": {"seeded": {}, "derived": {"endpoint:GET /things/{item_id}": "d:things"}, "proposed": {}},
+              "held": {"seeded": [], "derived": []},
+              "abstain": {"seeded": [], "derived": ["endpoint:DELETE /things/{item_id}"], "proposed": []},
+              "stats": {"caps": {"depth_cap": 3, "hub_homes": 3}, "truncated": []}}
+    c4 = {"version": 1, "head": head, "colors": {}, "models": MODELS,
           "l1": {"nodes": [{"id": "thing", "kind": "entity", "slug": "thing"}, {"id": "other", "kind": "entity", "slug": "other"}],
                  "edges": [{"source": "other", "target": "thing", "weight": 1, "kinds": {"fk": 1}}]},
           "l2": {"thing": {"nodes": [{"id": ep_id, "kind": "endpoint", "fn": "get_thing", "label": "GET /things/{item_id}", "stream": True,
@@ -182,14 +204,20 @@ def center(root: str, head: str):
                             {"id": "fe:apps/web/client/types.gen.ts#loginLoginAccessTokenData", "file": "apps/web/client/types.gen.ts",
                              "name": "loginLoginAccessTokenData", "kind": "fe-type"}], "edges": [],
                  "homes": [{"id": "fe·thing", "kind": "fe", "pair": "thing", "pieces": 1, "areas": 1}]},
-          "stats": {"graft": {"present": True, "index_hash": "abc123abc123"},
+          "stats": {"models": {"present": True, "views": ["claim", "seeded", "derived", "proposed"], "features": 1, "shared": 1, "seeded_moved": 1, "derived_abstained": 1, "candidates": 0},
+                    "graft": {"present": True, "index_hash": "abc123abc123"},
                     "web": {"present": True, "extractor": "fetch", "screens": 1, "fetch_sites": 3, "matched": 1, "dynamic": 0, "unhomed": 1,
                             "other_roots": ["mobile/src"], "unmatched": [{"m": "GET", "p": "/x", "from": "web:apps/web/src/other"},
                                                                           {"m": "GET", "p": "/api/v1/things/{id}", "from": "web:apps/web/src/other"}]},
                     "providers": {"count": 1, "by_provider": {"litellm": 1}, "by_pclass": {"llm": 1}}, "gate_endpoints": 2,
                     "fe": {"present": True, "homing": "config"}}, "layout": {}}
     # P0: the levels.json edges the trace/blast tools read — direction matters (reverse s/t = the mutation that must fail the FIRE)
-    levels = {"fn_edges": [{"s": "apps/api/api/things.py#get_thing", "t": "apps/api/services/thing.py#thing", "rel": "calls", "conf": "extracted"},
+    # the levels half of the entity models: the FUNCTION keys' homes per view (Phase 3)
+    LV_MODELS = {"present": True, "head": head, "views": MODELS["views"], "bands": MODELS["bands"],
+                 "homes": {"seeded": {"apps/api/services/thing.py#thing": "other"}, "derived": {"apps/api/api/things.py#get_thing": "d:things"}, "proposed": {}},
+                 "held": {"seeded": [], "derived": []}, "abstain": {"seeded": [], "derived": [], "proposed": []}, "dropped": []}
+    levels = {"models": LV_MODELS,
+              "fn_edges": [{"s": "apps/api/api/things.py#get_thing", "t": "apps/api/services/thing.py#thing", "rel": "calls", "conf": "extracted"},
                            {"s": "apps/api/services/thing.py#thing", "t": "provider:redis", "rel": "reaches", "conf": "inferred"},
                            {"s": "apps/api/api/things.py#get_thing", "t": "apps/api/tasks.py#sweep_things_task", "rel": "dispatches", "conf": "extracted"}],
               # Part C: the membership evidence the emitter writes onto levels.json (read lazily by touches + map_census)
@@ -229,6 +257,7 @@ def older_map(a, c):
     """V_OLD — a map from before the repo-study pass: no tasks/mounts-siblings, no provider/TASK nodes; route_mounts (the sentinel) kept."""
     for k in ("app_middleware", "task_roots", "tasks", "fn_similarity", "unparseable"):
         a.pop(k, None)
+    c.pop("models", None); c["stats"].pop("models", None)          # no entity-models block either (Phase 3): the tool must say not_emitted
     c["l2"]["thing"]["nodes"] = [n for n in c["l2"]["thing"]["nodes"] if n.get("kind") != "provider" and not n["id"].startswith("endpoint:TASK ")]
     c["stats"].pop("providers", None)
     return a, c, False
@@ -322,10 +351,12 @@ def run(T):
     V1 = {"map_status", "entity_context", "touches", "who_calls", "entity_shape", "cases_for", "owner_of"}
     W2 = {"find", "outline", "center_overview", "blast_radius", "map_census", "map_diff", "center_status", "review_drift"}
     W3 = {"trace", "gates"}
-    ok(set(names) == V1 | W2 | W3 and len(names) == 17, "v1 seven + wave-2 eight + wave-3 two tools listed (17)", names)
+    W4 = {"entity_models"}
+    ok(set(names) == V1 | W2 | W3 | W4 and len(names) == 18, "v1 seven + wave-2 eight + wave-3 two + wave-4 one tools listed (18)", names)
     ins = res.get("instructions") or ""
-    ok(all(x in ins for x in ("mcp__gabe-map__gates", "mcp__gabe-map__trace", '"TASK <name>", stream=true, kind=provider', "where the map is PARTIAL", "A trace hop marked `inferred` is graft's guess")) and "orphan" not in ins,
-       "F17: the instructions route gates · trace · TASK/stream/provider · map PARTIAL, the floor law names the inferred hop, and no line says orphan (R10)", ins[-600:])
+    ok(all(x in ins for x in ("mcp__gabe-map__gates", "mcp__gabe-map__trace", '"TASK <name>", stream=true, kind=provider', "where the map is PARTIAL", "A trace hop marked `inferred` is graft's guess",
+                              "mcp__gabe-map__entity_models (claim IS the registry; the other three are VIEWS")) and "orphan" not in ins,
+       "F17: the instructions route gates · trace · TASK/stream/provider · map PARTIAL · entity_models (the join-key law), the floor law names the inferred hop, and no line says orphan (R10)", ins[-600:])
     ok(all(t["inputSchema"].get("type") == "object" for t in tools), "every inputSchema is an object schema")
     ok(all("annotations" in t and "readOnlyHint" in t["annotations"] for t in tools), "every tool carries annotations")
     ok(next(t for t in tools if t["name"] == "who_calls")["annotations"]["readOnlyHint"] is False, "who_calls is not readOnly (the emit)")
@@ -612,8 +643,56 @@ def run(T):
                             {"callee": "require_auth_scope", "fn": "apps/api/deps.py::require_auth_scope", "endpoints": 1, "via": ["param-dep"], "args": 1}]
        and d["gated_total"] == 2 and d["endpoints_total"] == 3 and "1 task root(s) run outside" in d["tasks"],
        "N2: the census — every gate callee with its endpoint count (endpoints_total keeps the map's count); tasks named as outside the gates", d and {k: d.get(k) for k in ("gates", "tasks", "endpoints_total")})
+    # ── wave 4 (entity models Phase 3): entity_models — census · roster · members · the cross-model row; claim stays the join key ──
+    d, _, _, _ = call_json(c, "entity_models", {})
+    ok(d and d["state"] == "present" and d["today"] == "claim" and d["views"]["derived"]["features"] == 1 and d["views"]["seeded"]["moved"] == 1 and d["views"]["proposed"]["verdicts"]["LAYER"] == 1
+       and d["shared_hubs"] == 1 and "join key" in d["law"] and "not_emitted" in d["states"],
+       "W4 FIRE: the census — four views with counts, today = claim, the join-key law, the tri-state vocabulary", d and {k: d.get(k) for k in ("state", "today", "views")})
+    d, _, _, _ = call_json(c, "entity_models", {"model": "derived"})
+    ok(d and d["clusters"][0]["id"] == "d:things" and d["clusters"][0]["named_by"] == "domain" and d["clusters"][0]["anchor_by"] == "read" and d["clusters"][0]["kind"] == "feature"
+       and d["abstained"] == ["endpoint:DELETE /things/{item_id}"] and d["coverage"] == {"moved": 2, "abstained": 1, "held": 0} and d["cap"] == 40,
+       "W4 FIRE: the derived roster — kind · named_by · anchor_by per cluster, the abstained pieces named, coverage counts both halves (c4 + levels), the cap named", d and {k: d.get(k) for k in ("clusters", "abstained", "coverage")})
+    d, _, _, _ = call_json(c, "entity_models", {"piece": "apps/api/services/thing.py::thing"})
+    ok(d and d["found"] and d["homes"] == {"claim": "thing", "seeded": "other", "derived": "thing", "proposed": "thing"} and d["mark"]["seeded"] == "moved" and d["mark"]["derived"] is None
+       and d["why"]["derived"] == "keeps its claim" and "never a slug" in d["note"],
+       "W4 FIRE: the cross-model row of a function — claim thing, seeded other (the levels half, read lazily), derived/proposed keep the claim", d and {k: d.get(k) for k in ("homes", "mark", "why")})
+    d, _, _, _ = call_json(c, "entity_models", {"piece": "GET /things/{item_id}"})
+    ok(d and d["found"] and d["homes"]["derived"] == "d:things" and d["mark"]["derived"] == "moved" and "anchored on reads" in d["why"]["derived"],
+       "W4 FIRE: an endpoint's row — derived homes it to the table cluster (a name that is NOT a slug) with the cluster's why", d and {k: d.get(k) for k in ("homes", "why")})
+    d, _, _, _ = call_json(c, "entity_models", {"piece": "DELETE /things/{item_id}"})
+    ok(d and d["found"] and d["homes"]["derived"] == "thing" and d["mark"]["derived"] == "abstain" and "keeps its claim" in d["why"]["derived"],
+       "W4 ABSTAIN: an abstained atom keeps its claim and the row SAYS so", d and {k: d.get(k) for k in ("homes", "mark", "why")})
+    d, _, _, _ = call_json(c, "entity_models", {"entity": "d:things", "model": "derived"})
+    ok(d and d["found"] and d["what"]["kind"] == "feature" and d["what"]["named_by"] == "domain" and [m["id"] for m in d["members"]] == ["apps/api/api/things.py#get_thing", "endpoint:GET /things/{item_id}"]
+       and all(m["mark"] == "moved" and m["claim"] == "thing" for m in d["members"]) and d["moved_in"] == 2,
+       "W4 FIRE: a cluster's members under derived — the endpoint (c4 half) and its handler (levels half), each marked moved with its claim", d and {k: d.get(k) for k in ("what", "members")})
+    d, _, _, _ = call_json(c, "entity_models", {"entity": "thing"})
+    ok(d and d["found"] and d["what"] == {"id": "thing", "kind": "declared entity", "verdict": "FEATURE", "why": "majority of things and sole-owns 2 URL domain(s)"} and d["members_total"] >= 3
+       and all(m["mark"] is None for m in d["members"]) and "function pieces ride levels.json" in d["note"],
+       "W4: a slug's members under claim — the registry, no marks, its proposed verdict as `what`, functions said to ride levels", d and {k: d.get(k) for k in ("what", "members_total", "note")})
+    d, is_err, _, _ = call_json(c, "entity_models", {"model": "bogus"})
+    ok(is_err and "claim · seeded · derived · proposed" in (d or {}).get("stop", ""), "W4 STOP: an unknown model names the four", d)
+    d, _, _, _ = call_json(c, "entity_models", {"piece": "apps/api/services/nowhere.py::ghost"})
+    ok(d and d["found"] is False and "grep -rn remains the floor" in d["reason"], "W4 SILENT: an unknown piece → found:false + the grep floor", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "entity_context", {"slug": "other"})
+    ok(d and d["proposed"] == {"verdict": "LAYER", "why": "no endpoint — 1 table(s) held for other entities' endpoints", "see": "mcp__gabe-map__entity_models model=proposed"},
+       "W4 FIRE: entity_context carries the proposed verdict on the SLUG (no join hazard)", d and d.get("proposed"))
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/thing.py#thing"})
+    ok(d and "cross-model: mcp__gabe-map__entity_models piece=apps/api/services/thing.py#thing" in d["function"]["home_evidence"]["note"],
+       "W4 FIRE: touches points a re-homed piece at its cross-model row", d and d["function"]["home_evidence"].get("note"))
+    d, _, _, _ = call_json(c, "entity_shape", {})
+    ok(d and "orphan" not in (d.get("one_line") or "").lower(), "R10: entity_shape's one_line never says orphan (the JSON key `orphans` is the contract three callers read)", d and d.get("one_line"))
     # ── the OLDER-MAP variant: absence semantics (P2), honest-empty for the new kinds ──
     variant(root, older_map)
+    d, is_err, _, _ = call_json(c, "entity_models", {})
+    ok(d and not is_err and d["state"] == "not_emitted" and "regen with the current generators" in d["reason"] and "views" not in d,
+       "W4 SILENT: an older map (no models block) → not_emitted with the regen pointer, isError false, no roster invented", d and {k: d.get(k) for k in ("state", "reason")})
+    d, _, _, _ = call_json(c, "entity_models", {"piece": "apps/api/services/thing.py::thing"})
+    ok(d and d["state"] == "not_emitted" and "homes" not in d, "W4 SILENT: a piece row on an older map says not_emitted, never guesses a home", d and d.get("state"))
+    d, _, _, _ = call_json(c, "entity_context", {"slug": "other"})
+    ok(d and "proposed" not in d, "W4 SILENT: entity_context carries no proposed field without the block (the answer's shape is unchanged)", d and sorted(d.keys()))
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/thing.py#thing"})
+    ok(d and "cross-model" not in d["function"]["home_evidence"]["note"], "W4 SILENT: touches carries no cross-model pointer without the block (byte-identical note)", d and d["function"]["home_evidence"].get("note"))
     d, _, _, _ = call_json(c, "map_status", {})
     h = d and d.get("map_health")
     ok(h and h["fn_similarity"] == {"state": "clean", "mode": "exact"} and h["unparseable"] == {"state": "clean", "count": 0} and h["tasks_state"] == "clean" and d["counts"]["tasks"] == 0 and d["counts"]["providers"] == 0,
