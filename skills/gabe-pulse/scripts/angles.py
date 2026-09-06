@@ -53,6 +53,9 @@ THRESHOLDS = {
     # drafter's --min default so the "proposable" count equals what a run writes.
     "workflow_uncovered": 3,
     "workflow_cluster_min": 1,
+    # S18 — candidate entities in entities.draft.json worth a ruling; one candidate is a curiosity,
+    # two are a pattern the registry is missing. A non-FEATURE verdict fires on its own.
+    "entity_candidates": 2,
     # S14 — a codebase-map generator arm whose ACTIVE missed edges have this many
     # distinct entries is diverging enough to be worth a generator look; horizon =
     # commits since an edge last recurred beyond which it reads COLD (self-silencing).
@@ -694,6 +697,48 @@ def s16_workflow_coverage(root: Path, plan: dict | None, cfg: dict | None):
     return (head, "/gabe-cc-update curate-workflows")
 
 
+def s18_entity_proposals(root: Path, plan: dict | None, cfg: dict | None):
+    """Entity proposals — the entity-model DRAFTER (`gabe-cc-update/scripts/draft-entities.py`, Phase 4 2026-09-06)
+    projects the committed c4 `models` block into `docs/site/center/entities.draft.json`: a verdict per declared
+    entity (FEATURE · SPLIT · MERGE · ASPECT · LAYER) + the candidate features no entity declares, each named. This
+    angle reads that COMMITTED draft (the S16 precedent — the REVIEW is owed, not the run) and fires on ≥1 non-FEATURE
+    verdict or ≥ THRESHOLDS['entity_candidates'] candidates. Two states: the draft's `head` equals the committed c4
+    `head` → the review is owed (move: /gabe-cc-init rank, the third lens); heads differ → the draft is STALE and
+    the RUN is owed (move: re-run the drafter). No draft file → silent; unparseable → 0, never a crash; no center →
+    Unavailable. Report-never-gate; nothing here re-homes anything."""
+    if cfg is None:
+        return Unavailable("no center config — the entity draft lives in docs/site/center/")
+    center = fetch_bridge._center(root)
+    dp = center / "entities.draft.json"
+    if not dp.is_file():
+        return None
+    try:
+        d = json.loads(dp.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None                                                  # a broken draft is the drafter's next run to fix, not a pulse crash
+    if not isinstance(d, dict):
+        return None
+    ruled = [x for x in (d.get("declared") or []) if isinstance(x, dict) and x.get("verdict") and x["verdict"] != "FEATURE"]
+    cands = [x for x in (d.get("candidates") or []) if isinstance(x, dict)]
+    if not ruled and len(cands) < THRESHOLDS["entity_candidates"]:
+        return None
+    head = None
+    c4p = center / "c4-graph.json"
+    if c4p.exists():
+        try:
+            head = json.loads(c4p.read_text(encoding="utf-8")).get("head")
+        except Exception:  # noqa: BLE001
+            head = None
+    named_r = " · ".join(f"{x.get('slug')} {x['verdict']}" for x in ruled[:3]) + (f" +{len(ruled) - 3}" if len(ruled) > 3 else "")
+    named_c = " · ".join(str(x.get("name")) for x in cands[:3]) + (f" +{len(cands) - 3}" if len(cands) > 3 else "")
+    body = (f"{len(ruled)} verdict(s) to rule" + (f" ({named_r})" if ruled else "") + f" · {len(cands)} candidate entit{'y' if len(cands) == 1 else 'ies'}" + (f" ({named_c})" if cands else ""))
+    if head and d.get("head") and str(d.get("head")) != str(head):
+        return (f"entity proposals STALE — the draft was projected from map {d.get('head')} but the committed map is {head}; {body} — re-run before trusting",
+                "python3 ~/.claude/skills/gabe-cc-update/scripts/draft-entities.py .  (then /gabe-cc-init rank)")
+    return (f"entity proposals — {body}; the REVIEW is owed (accept = one entities.<slug> edit in center.config.json), nothing re-homed",
+            "/gabe-cc-init rank  (the entity-model third lens reads entities.draft.json)")
+
+
 SIGNALS = [
     ("S1", "adversarial", s1_roast),
     ("S8", "evidence debt", s8_evidence),
@@ -712,6 +757,7 @@ SIGNALS = [
     ("S15", "fe classification", s15_fe_unknown),
     ("S16", "workflow coverage", s16_workflow_coverage),
     ("S17", "homing evidence", s17_homing_evidence),
+    ("S18", "entity proposals", s18_entity_proposals),
 ]
 
 

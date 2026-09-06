@@ -4,7 +4,7 @@ description: "Brownfield command-center adoption — archive-never-delete init, 
 when_to_use: "An existing codebase needs a Testing Command Center, or /gabe-cc-update stopped you with its bootstrap pointer. NOT for a freshly shipped phase (/gabe-cc-update) or doc pages (/gabe-docsite)."
 disable-model-invocation: true
 metadata:
-  version: 1.3.2
+  version: 1.4.0
 ---
 
 # Gabe Adopt — the back-catalog, at human speed
@@ -24,9 +24,17 @@ This skill runs under the suite execution contract — E1 EVIDENCE · E2 RUN-BEF
 | Mode | What it does | Gate |
 |------|--------------|------|
 | **init** | Inventory existing docs + any hand-built center → operator picks what gets ARCHIVED (`docs/_archive/<date>-pre-adoption/`, moved never deleted) → bootstrap the center shell from suite `templates/center/` → write the adoption tracker | Archive list approved before any move |
-| **rank** | Machine-derive the candidate entity list (SCOPE, PLAN incl. archives, routes/modules, test density, churn, walks) → propose critical/high/medium; lists `model_census.unclaimed` — table classes no entity claims — plus `route_census`/`file_census.unclaimed` — route + backend files no entity claims, reach-nearest first (config = ownership, never existence) | Operator trims + approves the shortlist; nothing unranked gets built, and no unclaimed table class, route or backend file is left silent |
+| **rank** | Machine-derive the candidate entity list (SCOPE, PLAN incl. archives, routes/modules, test density, churn, walks) → propose critical/high/medium; lists `model_census.unclaimed` — table classes no entity claims — plus `route_census`/`file_census.unclaimed` — route + backend files no entity claims, reach-nearest first (config = ownership, never existence); **the ENTITY-MODEL THIRD LENS** (2c, advisory): the drafter's `entities.draft.json` — a verdict per declared entity (FEATURE · SPLIT · MERGE · ASPECT · LAYER) + NAMED candidate entities + the witness-coverage number; acceptance = one `entities.<slug>` edit, then `rank` again; STALE when the draft's head ≠ the map's | Operator trims + approves the shortlist; nothing unranked gets built, and no unclaimed table class, route or backend file is left silent |
 | **section \<entity\>** | ONE entity per run: testing inventory (angles present, gaps NAMED) → legacy mining (carry forward only what re-verifies; list what was dropped) → build card/diagrams/testing page/proofs → regen, gate green → checklist | Operator approval, recorded as a walk (`adopt:<entity>`) |
 | **status** | Render the adoption board from the tracker + walks.jsonl: approved / building / awaiting / pending, convergence, suggested next entity | — |
+
+## Bindings (scripts this skill reaches for — a missing one is an E6 STOP, named)
+
+| Binding | Path |
+|---|---|
+| Entity-model drafter (the `rank` third lens) | `~/.claude/skills/gabe-cc-update/scripts/draft-entities.py <root> [--json] [--model proposed\|derived] [--min N]` — projects the committed c4 `models` block into `docs/site/center/entities.draft.json` (a verdict per declared entity + named candidates + coverage); honest-empty ×4 |
+| URL-domain lens (the `rank` second lens) | `mcp__gabe-map__entity_shape`, fallback `~/.claude/skills/gabe-pulse/scripts/entity_shape.py .` |
+| The registry edit acceptance lands in | `docs/site/center/center.config.json` `entities.<slug>` — this skill has no scripts dir and gains none |
 
 ## Procedure
 

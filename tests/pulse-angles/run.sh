@@ -418,5 +418,22 @@ run "$r" | grep -q "workflow coverage" && bad "S16 fired at full coverage with t
 r=$(repo s16d); mkc4 "$r" '{"stats":{"web":{"present":false}}}'
 run "$r" | grep -q "workflow coverage" && bad "S16 fired with no endpoints" || ok "S16 silent without endpoints (no API arm — honest-empty)"
 
+# ── S18 · entity proposals — the committed entities.draft.json (the entity-model drafter's projection); the REVIEW is owed, or the RUN when stale ──
+mkdraft() { printf '%s' "$2" > "$1/docs/site/center/entities.draft.json"; cd "$1" && git add -A && git commit -qm "entity draft" && cd - >/dev/null; }
+r=$(repo s18a); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{"head":"abc1234","declared":[{"slug":"cooking","verdict":"SPLIT","why":"2 clean features inside"},{"slug":"recipe","verdict":"FEATURE"}],"candidates":[{"name":"dish history events"}]}'
+run "$r" | grep -q "entity proposals — 1 verdict(s) to rule (cooking SPLIT) · 1 candidate entity (dish history events); the REVIEW is owed" && ok "S18 fires on a non-FEATURE verdict at the current head — the review is owed" || bad "S18 did not fire on a SPLIT verdict: $(run "$r")"
+run "$r" | grep -q "/gabe-cc-init rank" && ok "S18 moves to /gabe-cc-init rank (the third lens)" || bad "S18 lost its move"
+r=$(repo s18b); mkc4 "$r" '{"head":"def5678","stats":{}}'; mkdraft "$r" '{"head":"abc1234","declared":[{"slug":"cooking","verdict":"SPLIT"}],"candidates":[]}'
+run "$r" | grep -q "entity proposals STALE — the draft was projected from map abc1234 but the committed map is def5678" && run "$r" | grep -q "draft-entities.py" && ok "S18 STALE: a head mismatch names both heads and moves to the RUN" || bad "S18 hid a stale draft: $(run "$r")"
+r=$(repo s18c); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{"head":"abc1234","declared":[{"slug":"cooking","verdict":"FEATURE"},{"slug":"recipe","verdict":"FEATURE"}],"candidates":[{"name":"one"}]}'
+run "$r" | grep -q "entity proposals" && bad "S18 fired on all-FEATURE verdicts with one candidate (below the bar)" || ok "S18 silent: all FEATURE, one candidate (< 2)"
+r=$(repo s18d); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{"head":"abc1234","declared":[{"slug":"a","verdict":"FEATURE"}],"candidates":[{"name":"one"},{"name":"two"}]}'
+run "$r" | grep -q "entity proposals — 0 verdict(s) to rule · 2 candidate entities (one · two)" && ok "S18 fires on two candidates alone (the entity_candidates bar)" || bad "S18 did not fire on two candidates: $(run "$r")"
+r=$(repo s18e); mkc4 "$r" '{"head":"abc1234","stats":{}}'
+run "$r" | grep -q "entity proposals" && bad "S18 fired with no draft file" || ok "S18 silent with no draft file"
+r=$(repo s18f); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{not json'
+run "$r" | grep -q "entity proposals" && bad "S18 fired on an unparseable draft" || ok "S18 silent (0, never a crash) on an unparseable draft"
+run "$r" >/dev/null 2>&1 && ok "angles.py exits clean with a broken draft on disk" || bad "angles.py crashed on a broken draft"
+
 echo "pulse-angles: $pass passed, $fail failed"
 [ "$fail" -eq 0 ] || exit 1

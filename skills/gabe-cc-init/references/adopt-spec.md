@@ -143,6 +143,21 @@ Small, append-only in spirit: rows change status, never vanish.
    knowingly, not by accident). This lens ADVISES; the operator still rules the shortlist
    (2026-07-21 baseline). Honest-skip with one line — `URL-domain lens: no archmap yet, re-run
    after the first section adoption` — when the archmap is absent (initial greenfield rank).
+2c. **The ENTITY-MODEL THIRD LENS (advisory, alongside — entity models Phase 4, 2026-09-06).** When
+   `docs/site/center/c4-graph.json` carries a `models` block, run the drafter —
+   `python3 ~/.claude/skills/gabe-cc-update/scripts/draft-entities.py .` — or read a current
+   `docs/site/center/entities.draft.json`, and present beside the candidate table and the URL lens:
+   **the verdict per declared entity** (FEATURE · SPLIT · MERGE · ASPECT · LAYER, each with the emitter's
+   why and its suggested edit), **the named candidate entities** no entity declares (name · `named_by`
+   domain|table · suggested slug · endpoints · the entities it spans) and **the coverage number**
+   (`coverage.witnessed` — the share of request atoms a table anchors; the abstained rest KEEP their
+   claim and are listed, never proposed). This lens ADVISES; the operator rules. Acceptance is ONE
+   edit — `entities.<slug>` (code.* claims for its files, `models` for its tables) in
+   `docs/site/center/center.config.json` — then `rank` again: the next regen and draft drop it. Two
+   honest-skips, one line each: `entity-model lens: no draft — run the drafter` when the file is absent
+   (or the map carries no `models` block — regen first); `entity-model lens: STALE — draft head <a> ≠ map
+   head <b>, re-run the drafter before trusting it` when the draft predates the committed map (the
+   frozen-example trap). The claim stays the registry: a candidate's `d:<table>` id is never a slug.
 3. **Checkpoint:** the operator trims, re-ranks, adds, drops. On approval: write one
    `sections[]` row per shortlisted entity — `status: "pending"`, `rank`, `display_name` (one
    human-facing word, e.g. `"Transaction"` — D123: the registry's rendered name, never left to

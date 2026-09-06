@@ -3,7 +3,7 @@ name: gabe-cc-update
 description: "Command-center feature coverage — translate shipped work into its entity's lens card, diagrams, and evidence narration; keep the center regenerating green. Also owns scripts/write-inflight.py, the deterministic in-flight projection the E8 beat tail refreshes (inflight.json + .js, read by the board at view time)."
 when_to_use: "Cover a shipped feature, center status, backfill entity-by-entity, curate proof after a green run — ONLY where docs/site/center/center.config.json exists; elsewhere STOP → /gabe-cc-init."
 metadata:
-  version: 1.7.7
+  version: 1.8.0
 ---
 
 # Gabe Feature — the command center's per-feature ritual
@@ -36,6 +36,7 @@ All machinery ships in the suite (`templates/center/` — generators, gate, help
 | Backfill queue | `scripts/next_feature.py` |
 | Status actionables | `scripts/center_status.py` — the `status` mode's linked findings + `→ next` steps (reads registry/cards/config; prints, gates nothing); `mcp__gabe-map__center_status` runs the SUITE's own copy of this generator against the project — never this installed file (WS-2; byte-identical at install, so a locally edited `scripts/center_status.py` is NOT what the tool relays) — capped at 6,000 chars (`truncated` named), and never triggers a regen of its own |
 | Workflow drafts | `scripts/draft-workflows.py <root> [--json] [--min N]` — the `curate-workflows` mode's drafter (reads the committed c4-graph + workflows.js; writes `docs/site/center/workflows.draft.js`; honest-empty without a center) |
+| Entity drafts | `scripts/draft-entities.py <root> [--json] [--model proposed\|derived] [--min N]` — the ENTITY-MODEL drafter (entity models Phase 4, 2026-09-06): a projection of the committed c4-graph `models` block into `docs/site/center/entities.draft.json` — a verdict per declared entity + every candidate entity NAMED (`named_by` domain\|table, `draft_name()`'s action phrase, suggested slug) + `coverage.witnessed` and `abstained` (non-optional); loaded by NO page; honest-empty ×4 (no center · no c4 · unreadable · no `models` block → "regen with the current generators"); COMMITTED so pulse S18 and the cc-init third lens read it across sessions; acceptance is owned by `/gabe-cc-init rank` (one `entities.<slug>` edit) |
 | Census scaffold | `scripts/scaffold_census.py <root> <slug>` — seeds a valid skeleton workflow census from a card's `# FLOWS` (the census ASK's *author now*; a convenience, not E6-mandatory — absent, the census is hand-authored) |
 | Risk sweep | `scripts/risk_sweep.py <root> <slug>` — the P0–P3 ladder collector (step 6); ranked + capped flags routed through `scripts/disposition.py <root> --defer\|--tackle --flag '<json>'` (the disposition contract) |
 | Shell-JS harness | `scripts/verify_center_chrome.mjs <page.html…\|center-dir>` |

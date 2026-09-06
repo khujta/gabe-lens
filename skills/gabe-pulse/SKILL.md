@@ -5,7 +5,7 @@ when_to_use: "After a long or sprawling stretch: did everything that should have
 context: fork
 agent: Explore
 metadata:
-  version: 1.7.7
+  version: 1.8.0
 ---
 
 # Gabe Pulse — is anything important owed?
@@ -133,7 +133,7 @@ $ARGUMENTS
 
 ## The ANGLE family (1.1.0)
 
-`scripts/angles.py` computes seventeen evidence-backed triggers (S17 homing evidence, 2026-09-06, is the latest: pieces whose users/data witnesses disagree with their file — nothing re-homes) — adversarial pass owed (S1),
+`scripts/angles.py` computes eighteen evidence-backed triggers (S18 entity proposals, 2026-09-06, is the latest: the committed `entities.draft.json` — a verdict per declared entity + named candidate entities, projected from the c4 `models` block by `gabe-cc-update/scripts/draft-entities.py` — carries a non-FEATURE verdict or ≥2 candidates; the REVIEW is owed via `/gabe-cc-init rank`, or the RUN when the draft's head is stale; S17 homing evidence: pieces whose users/data witnesses disagree with their file — nothing re-homes) — adversarial pass owed (S1),
 structural scan overdue (S2), journey proof missing (S3), published docs stale (S4), scope drift
 (S5), entity context worth loading (S6), an explanation worth drawing (S7), workflow-census
 capture debt (S8), entity-shape drift (S9 — two arms: a detached URL domain computed fresh, and the aspects the emitter measured, read from the committed c4 `models` block and said `not_emitted` when missing), a diff-added fetch that named no declared endpoint
