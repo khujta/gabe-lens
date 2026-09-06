@@ -89,6 +89,7 @@ The build takes the config's entities as the registry when `adoption.json` is ab
 ## Owed
 
 - twins re-propagation (one pass at the end of the program — the generators moved through six commits).
+- CLOSED 2026-09-06 — the station half of pass 3 (the legend pass, [legend-and-tools-plan.md](legend-and-tools-plan.md) Part A): the `dispatches` wire, the TASK method, the `delivery:stream` + `pclass` badge families, the three Sources rows, the FE homing witness — every element with its legend row + drawn example. Recorded: the suite's EXAMPLE estate (gustify) cannot show TASK or `dispatches` at any sha (no task runtime) — its rows carry the honest `—`; the twins' committed `c4-graph.json` changes when propagated (provider nodes gain `pclass`, `stats.providers.by_pclass` + `stats.route_mounts` appear; `levels.json` byte-identical); one LEGACY contrast pair outside the pass (`role:caller`, dark-on-dark at ~22) is reported by the contrast probe, not failed — owed to a role-palette pass.
 - the LangGraph state-machine lens (tier2 T2/T3 — `add_node`/`add_edge` by string; trigger: the tier2 T2 session) ·
   a second web root (onyx mobile; trigger: a mobile mission) · the 2D fallback drops the frontend.
 - the R10 carve-out as a stated ruling: suite-authored strings only; project identifiers keep their words.

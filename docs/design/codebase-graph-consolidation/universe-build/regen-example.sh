@@ -114,5 +114,6 @@ if [ "$CHECK" = 1 ]; then
 else
   echo "── batteries"
   ( cd "$ROOT" && bash tests/gabe-universe/run.sh ) | tail -1
+  ( cd "$ROOT" && bash tests/codebase-graph/run.sh ) | tail -2   # the 2D station + grammar share the method roster
   echo "Estate landed. Solo proofs: node verify-{panels,search,walk,clustering,explore,routes,ctrl,d2w,dblclick,jrntabs,jrnstep,selanim,backend-journeys,workflows,tiers}.mjs (SOLO-sequential; fleet detached)."
 fi
