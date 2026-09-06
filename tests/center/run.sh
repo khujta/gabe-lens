@@ -759,6 +759,32 @@ assert "config-only" in html, "the adoption board must show the config-only stat
 PY
 
 
+# ── SCALE (review 2026-09-06): the fn twin pass — exact under the budget, BLOCKED on rare identifiers above it, mode named ──
+( cd "$GEN" && python3 - "$T" <<'PYS'
+import sys, tempfile
+from pathlib import Path
+sys.path.insert(0, ".")
+import _a3_code as C
+root = Path(tempfile.mkdtemp(dir=sys.argv[1])); (root / "svc").mkdir()
+body = lambda tag: "    return alpha_k(1) + beta_k(2) + gamma_k(3) + delta_k(4) + epsilon_k(5) + zeta_k(6) + eta_k(7) + theta_k(8) + " + tag + "(9)\n"   # 9 external names → sizable (ids are the body's REFERENCES, not its locals)
+(root / "svc" / "a.py").write_text("def one():\n" + body("frobnicate") + "def two():\n" + body("frobnicate") + "def three():\n" + body("something_else") + "def helper(): return 0\n")
+C.ENTITY_CODE = {"svc": {"services": ["svc/*.py"]}}
+C._FN_INSIGHT = None; C._FN_SIM_MODE = {}
+fi = C.function_insight(root)
+exact = {k: (v.get("sim") or {}).get("cls") for k, v in fi.items()}
+assert C.fn_similarity_mode()["mode"] == "exact", C.fn_similarity_mode()
+assert exact["svc/a.py::one"] == "two" and exact["svc/a.py::two"] == "one", exact            # the pairwise loop
+C._FN_INSIGHT = None; C._FN_SIM_MODE = {}; C._FN_TWIN_BUDGET = 1
+fi2 = C.function_insight(root)
+blocked = {k: (v.get("sim") or {}).get("cls") for k, v in fi2.items()}
+m = C.fn_similarity_mode()
+assert m["mode"] == "blocked" and m["sizable"] == 3 and m["pairs"] >= 2, m                       # FIRE: above the budget the mode is NAMED
+assert blocked["svc/a.py::one"] == "two" and blocked["svc/a.py::two"] == "one", blocked        # a twin sharing a rare identifier (frobnicate) is still found
+C._FN_TWIN_BUDGET = 2500
+print("fn twin scale ok")
+PYS
+) >"$T/fnscale.out" 2>&1 && ok || { bad "scale: fn twin pass exact under budget, blocked + named above it"; cat "$T/fnscale.out"; }
+
 # M04: the single-file set's href carries NO set-name segment.
 grep -q 'proof/solo.png"' "$FIX/docs/site/center/feature-gadget.html" \
   && ok || bad "single-file set: href must be proof-root relative"

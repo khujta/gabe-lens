@@ -1985,6 +1985,9 @@ def main() -> int:
     # read-as-found graft pass — the "how close to the request path" rank the cc-init adopt rail
     # and pulse S13 read; honest-empty without a built index. A claim under a layer center.config
     # never declared is a silent no-op today → report it so the operator sees the drop.
+    _fsm = _a3_code.fn_similarity_mode()            # exact | blocked — the twin pass above its budget is an approximation, said here
+    if _fsm.get("mode") == "blocked":
+        amap["fn_similarity"] = _fsm
     _mts = _a3_code.mount_stats(REPO_ROOT)          # the app → include_router chain the labels were resolved through (review 2026-09-06)
     if _mts:
         amap["route_mounts"] = _mts

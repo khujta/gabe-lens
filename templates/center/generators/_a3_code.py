@@ -1476,6 +1476,22 @@ def model_insight(repo: Path) -> dict:
 _FN_GOD_LINES = 50
 _FN_SIM_FLOOR = 0.6
 _FN_MERGE_FLOOR = 0.85
+# SCALE (review 2026-09-06, onyx: 9,234 mapped defs → 42 M pairwise Jaccards + a regex per (fn, file) — the build sat
+# 10 minutes in this pass on a study repo). Two moves, both NAMED on the archmap (`fn_similarity`):
+#   · the reference scan pre-tokenizes every file ONCE and runs the regex only where the fn's name is a token —
+#     exact (a `\bname\b` match implies the token), so every twin stays byte-identical;
+#   · the twin pass stays the exact pairwise loop up to `_FN_TWIN_BUDGET` sizable functions (gustify 522); above it
+#     candidates are BLOCKED on shared RARE identifiers (document frequency ≤ `_FN_RARE_DF`) — an approximation that
+#     can miss a twin sharing only common names, said out loud as mode "blocked".
+_FN_TWIN_BUDGET = 2500
+_FN_RARE_DF = 40
+_FN_SIM_MODE: dict = {}
+_IDENT_RX = _re_mod.compile(r"[A-Za-z_]\w*")
+
+
+def fn_similarity_mode() -> dict:
+    """{mode: exact | blocked, sizable, budget[, rare_df]} for THIS build — {} until function_insight ran."""
+    return dict(_FN_SIM_MODE)
 _FN_INSIGHT: dict | None = None
 _PY_TEXTS: dict[str, str] = {}
 _FILE_IMPORTS: dict[str, dict] = {}
@@ -2053,12 +2069,15 @@ def function_insight(repo: Path) -> dict:
                         _add(sub, node.name)
     plain_names = {c["name"] for c in fns.values()
                    if not c["method"] and len(c["name"]) >= 4}
+    _ftok = {f: set(_IDENT_RX.findall(text)) for f, text in texts.items()}   # every file's identifier set, once (scale)
     for c in fns.values():
         rx = (_re_mod.compile(rf"\.{_re_mod.escape(c['name'])}\b")
               if c["method"] else
               _re_mod.compile(rf"\b{_re_mod.escape(c['name'])}\b"))
         refs = []
         for f, text in texts.items():
+            if c["name"] not in _ftok[f]:      # exact pre-filter: a regex hit needs the name as a token of the file
+                continue
             if f == c["file"]:
                 # blank the def's own span — self-reference is not usage
                 ls = text.splitlines()
@@ -2082,9 +2101,33 @@ def function_insight(repo: Path) -> dict:
     sizable = [c for c in fns.values() if len(c["ids"]) >= 8]
     for c in fns.values():
         c["sim"] = None
-    for c in sizable:
+    global _FN_SIM_MODE
+    if len(sizable) <= _FN_TWIN_BUDGET:
+        _FN_SIM_MODE = {"mode": "exact", "sizable": len(sizable), "budget": _FN_TWIN_BUDGET}
+        _cands = None
+    else:                                        # blocked: only pairs sharing a RARE identifier are compared
+        _df: dict[str, int] = {}
+        for c in sizable:
+            for t in c["ids"]:
+                _df[t] = _df.get(t, 0) + 1
+        _post: dict[str, list] = {}
+        for i, c in enumerate(sizable):
+            for t in c["ids"]:
+                if _df[t] <= _FN_RARE_DF:
+                    _post.setdefault(t, []).append(i)
+        _cands = []
+        for i, c in enumerate(sizable):
+            s: set[int] = set()
+            for t in c["ids"]:
+                if _df[t] <= _FN_RARE_DF:
+                    s.update(_post[t])
+            s.discard(i)
+            _cands.append(sorted(s))
+        _FN_SIM_MODE = {"mode": "blocked", "sizable": len(sizable), "budget": _FN_TWIN_BUDGET, "rare_df": _FN_RARE_DF,
+                        "pairs": sum(len(x) for x in _cands)}
+    for i, c in enumerate(sizable):
         best, best_j, shared = "", 0.0, 0
-        for o in sizable:
+        for o in (sizable if _cands is None else (sizable[k] for k in _cands[i])):
             if o is c:
                 continue
             union = c["ids"] | o["ids"]
