@@ -1658,7 +1658,7 @@ const { chromium } = require(process.argv[3]);
   //    without the block returns false and stays on claim. Runs LAST so the walk it starts disturbs no earlier probe.
   const modelSw = await p.evaluate(() => { try{
       var M=window.GABE_C4&&GABE_C4.models; if(!M||!M.views) return {err:'no models block on the example feed — regen the example (regen-example.sh)'};
-      var before=nodes.map(function(n){ return n.ent; }), ids=nodes.map(function(n){ return n.id; }), n0=nodes.length, l0=links.length;
+      var before={}; nodes.forEach(function(n){ before[n.id]=n.ent; }); var ids=nodes.map(function(n){ return n.id; }), n0=nodes.length, l0=links.length;   // keyed by id — a walk may load the function layer into `nodes` between the switches
       var other=function(){ return nodes.filter(function(n){ return !n.__cap && n.sub==='other'; }).length; }, o0=other();
       var r={n0:n0, views:Object.keys(M.views).filter(function(k){ return M.views[k].present; })};
       r.seeded=__uniSetModel('seeded'); r.sameN=(nodes.length===n0 && links.length===l0); r.idsOk=ids.every(function(id,i){ return nodes[i]&&nodes[i].id===id&&NIDS[id]===nodes[i]; });
@@ -1667,13 +1667,13 @@ const { chromium } = require(process.argv[3]);
       var ab=nodes.find(function(n){ return n.modelMark==='abstain'; }); r.abstainOk=(!ab || ab.ent===ab.entClaim); r.o0=o0; r.o1=other(); r.otherOk=(other()<=o0);
       r.pill=[].map.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ return b.getAttribute('data-v')+(b.classList.contains('on')?'*':'')+(b.disabled?'-':''); }).join(' ');
       try{ __uniPanelAll(); var pt0=document.getElementById('pbody').textContent; r.srcRow=/entity model/.test(pt0) && (new RegExp('seeded · '+st.moved+' moved · '+st.abstained+' abstained · '+st.held+' held')).test(pt0); }catch(e){ r.srcRow='err:'+e; }
-      var mv=nodes.find(function(n){ return n.modelMark==='moved' && n.__threeObj; }); if(mv){ SEL={kind:'node',data:mv}; showPanel(mv); r.cardRow=/seeded: claim .+ → .+ nothing re-homed on disk/.test(document.getElementById('pbody').textContent); }
+      var mv=nodes.find(function(n){ return n.modelMark==='moved'; })||(_FNNODES||[]).find(function(n){ return n.modelMark==='moved'; }); if(mv){ SEL={kind:'node',data:mv}; showPanel(mv); r.cardRow=/seeded: claim .+ → .+ nothing re-homed on disk/.test(document.getElementById('pbody').textContent); }
       var j=_jrnCollect()[0]; if(j){ __uniJrnStart(j.cid); } var steps=(WALK.steps||[]).slice(), wi=WALK.i;
       r.derived=__uniSetModel('derived'); r.walkOk=((WALK.steps||[]).join('|')===steps.join('|') && WALK.i===wi && _jrnCollect().length>0);
       var asp=CLUSTERS.find(function(c){ return c.level==='ent' && /^a:/.test(c.ekey||''); }); r.aspect=asp?{ekey:asp.ekey, dash:!!asp.dash}:null;
       var d=_ents.find(function(e){ return /^d:/.test(e); }); if(d){ __uniPanelEnt(d); r.entCard=/Entity model · derived/.test(document.getElementById('pbody').textContent); }
-      r.proposed=__uniSetModel('proposed'); var slug=(M.rosters.proposed||[]).filter(function(x){ return x.verdict && _ents.indexOf(x.slug)>=0; })[0]; if(slug){ __uniPanelEnt(slug.slug); r.badge=(document.getElementById('pbody').textContent.match(/\b(FEATURE|SPLIT|MERGE|ASPECT|LAYER)\b/)||[])[1]||null; }
-      r.claim=__uniSetModel('claim'); r.roundTrip=(nodes.every(function(n,i){ return n.ent===before[i]; }) && _ents.length===__uniClaimEnts.length && _ents.every(function(e,i){ return e===__uniClaimEnts[i]; }) && nodes.every(function(n){ return !n.modelMark; }));
+      r.proposed=__uniSetModel('proposed'); var slug=(M.rosters.proposed||[]).filter(function(x){ return x.verdict && _ents.indexOf(x.slug)>=0; })[0]; if(slug){ __uniPanelEnt(slug.slug); r.badge=((document.querySelector('#pbody .pchip.verdict')||{}).textContent)||null; }   // the chip itself — textContent concatenates words, so a \b regex never matches
+      r.claim=__uniSetModel('claim'); r.roundTrip=(nodes.every(function(n){ return !(n.id in before) || n.ent===before[n.id]; }) && Object.keys(before).every(function(id){ return !NIDS[id] || NIDS[id].ent===before[id]; }) && _ents.length===__uniClaimEnts.length && _ents.every(function(e,i){ return e===__uniClaimEnts[i]; }) && nodes.every(function(n){ return !n.modelMark; }));
       r.noDash=!CLUSTERS.some(function(c){ return c.dash; });
       var keep=GABE_C4.models; delete GABE_C4.models; r.absent=(__uniSetModel('derived')===false) && window.__uniModel==='claim'; GABE_C4.models=keep;
       try{ __uniPanelAll(); r.claimRow=/claim — the registry/.test(document.getElementById('pbody').textContent); }catch(e){}
