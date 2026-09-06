@@ -105,6 +105,9 @@ resp, doc, middleware, touches_own}`, `behind`, `access`, `edges_out`, `screens_
   `task_roots`. **endpoint** answers also carry `stream` and the ASGI `app_middleware[{cls,file,line,order,scope}]` + its note. **function**
   answers join `behind.names` on the QUALIFIED name (`Class.method`), and a gate fn carries `gated_endpoints{count, see: gates}`. **file**
   answers on a screen/hook file carry `fe{pieces[{name,kind,hrole,feClass,fed2w,channel,cache,sites,wsites,homed_by,span}], calls[{endpoint,kind}]}`.
+  A function / endpoint / task / fe-piece answer whose membership witnesses disagree carries `home_evidence{home, by, users, data, verdict, to,
+  share, rule, note}` (Part C 2026-09-06, from levels.json `homing.pieces` — read lazily; absent on an agreeing piece or an older map, so an answer's
+  shape never changes where nothing disagrees). `map_census` section `homing` = the counts + the first 12 move candidates / shared aspects.
 
 ### 5.4 `who_calls(symbol, emit?=true, root?)` — read + the ONE write
 `symbol` must match `^[A-Za-z_][A-Za-z0-9_]*$`. Arm A: `graft callers <sym> . --json --no-refresh` when `<root>/graft/`

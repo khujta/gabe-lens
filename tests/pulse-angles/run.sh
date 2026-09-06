@@ -337,6 +337,22 @@ run "$r" | grep -q "fe-unknown residue" && bad "S15 fired with no residue" || ok
 r=$(repo s15c); mkc4 "$r" '{"stats":{"fe":{"present":false,"reason":"no web source"}}}'
 run "$r" | grep -q "fe-unknown residue" && bad "S15 fired when the fe arm is absent" || ok "S15 silent when the fe arm is absent"
 
+# ── S17 · homing evidence — pieces whose users/data witnesses disagree with their file (Part C 2026-09-06; reads stats.homing; nothing re-homes) ──
+r=$(repo s17a); mkc4 "$r" '{"stats":{"homing":{"present":true,"pieces":40,"agree":30,"stay":5,"move":4,"shared":1,"move_named":[{"piece":"a/svc.py#verify_password","home":"auth","to":"users","share":1.0}]}}}'
+run "$r" | grep -q "homing evidence — 4 move candidate(s)" && ok "S17 fires: 4 move candidates (≥60% of ≥2 users in one other entity)" || bad "S17 did not fire on 4 move candidates: $(run "$r")"
+run "$r" | grep -q "verify_password → users" && ok "S17 names the first move candidate and its destination" || bad "S17 did not name the candidate"
+run "$r" | grep -q "re-home is opt-in — nothing moved" && ok "S17 says nothing moved (evidence only)" || bad "S17 lost the evidence-only clause"
+r=$(repo s17b); mkc4 "$r" '{"stats":{"homing":{"present":true,"pieces":40,"agree":38,"stay":0,"move":2,"shared":0,"move_named":[]}}}'
+run "$r" | grep -q "homing evidence" && bad "S17 fired below the threshold (2 move < 3, 0 shared)" || ok "S17 silent below the ≥3 move / ≥1 shared bar"
+r=$(repo s17c); mkc4 "$r" '{"stats":{"homing":{"present":true,"pieces":40,"agree":39,"stay":0,"move":0,"shared":1,"move_named":[]}}}'
+run "$r" | grep -q "homing evidence" && bad "S17 fired on a shared aspect alone (shared is reported, never a trigger)" || ok "S17 SILENT on shared aspects alone — a structural constant, not a debt (review 2026-09-06)"
+r=$(repo s17f); mkc4 "$r" '{"stats":{"homing":{"present":true,"pieces":40,"agree":30,"stay":5,"move":3,"shared":2,"move_named":[]}}}'
+run "$r" | grep -q "homing evidence — 3 move candidate(s).*2 shared aspect(s)" && ok "S17 reports the shared count beside the move trigger" || bad "S17 lost the shared clause"
+r=$(repo s17d); mkc4 "$r" '{"stats":{"homing":{"present":false,"pieces":0,"reason":"no levels graph"}}}'
+run "$r" | grep -q "homing evidence —" && bad "S17 fired with the evidence absent" || ok "S17 silent when the levels graph was absent (no users witness)"
+r=$(repo s17e); mkc4 "$r" '{"stats":{"fe":{"present":true,"by_kind":{}}}}'
+run "$r" | grep -q "homing evidence —" && bad "S17 fired on an older map with no homing block" || ok "S17 silent on an older map (no homing block)"
+
 # ── S16 · workflow coverage — screen-reachable endpoints no curated workflow names (the curate-workflows drafter's
 #    analysis run read-only over the committed c4 + workflows.js; fixture = tests/workflow-drafts' synthetic c4: 3 real
 #    endpoints + 1 infra (_e2e) + BOOT; 2026-09-04) ──

@@ -1220,7 +1220,7 @@ Object.keys(_C4.l2||{}).forEach(function(ent){
     var n={ id:p.id, kind:kind, ent:ent, label:p.label||p.slug||p.id,
       col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"data",
       m:m, det:det, behind:beh, resp:p.resp, ids:p.ids, table:p.table, sites:p.sites, fn:p.fn,
-      middleware:p.middleware, stream:!!p.stream, pclass:p.pclass||null };   // C4: the endpoint's level-2 gate/dep floor → the card's Guards section · stream = SSE/chunked delivery (review 2026-09-06)
+      middleware:p.middleware, stream:!!p.stream, pclass:p.pclass||null, homeEv:p.home_ev||null };   // C4: the endpoint's level-2 gate/dep floor → the card's Guards section · stream = SSE/chunked delivery (review 2026-09-06)
     nodes.push(n); NIDS[n.id]=n; });
 });
 if(_generic) try{ console.warn("[universe] "+_generic+" piece(s) drawn GENERICALLY (kind unknown to this station — a newer emitter; add to KINDS to give it a glyph)"); }catch(e){}
@@ -1249,7 +1249,7 @@ if(_FE){
     var m={ behind:0, depth:0, tests:0, cols:0, fanin:0, god:false, method:null };
     var n={ id:p.id, kind:kind, ent:p.home, label:p.name, col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"web",
       m:m, det:det, behind:{}, fe:true, screen:p.screen||null, sites:p.sites||0, candidate:!!p.candidate,
-      area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null, hrole:p.hrole||null, homedBy:p.homed_by||null,   // AREA + showcase tag + the fold-control class (phase 1)
+      area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null, hrole:p.hrole||null, homedBy:p.homed_by||null, homeEv:p.home_ev||null,   // AREA + showcase tag + the fold-control class (phase 1)
       write:!!p.write, wsites:p.wsites||0, fed2w:(p.fed2w==null?null:p.fed2w) };   // FE d2w: on the WRITE spine · write-method fetch count · hops-to-write (the gradient's number, 0 at the write)
     nodes.push(n); NIDS[n.id]=n; });
 }
@@ -5438,6 +5438,7 @@ var KINDCARD=(function(){
       usage(usageN(n), usageBreak(n)),
       guardsSec(n),
       streamSec(n),
+      homeEvRow(n),
       payloadSec(det),
       liveConns(n),
       behindTree(n),
@@ -5503,9 +5504,21 @@ var KINDCARD=(function(){
     return E.apply(null,[ "div",{class:"sec"}, sechd(n.kind==="type"?"schema":n.kind,"Frontend") ].concat(rows)); }
   /* the FE homing witness on the card (D6): a config-homed piece says so on EVERY fe kind — hook, component, store, type, route, module */
   function homeRow(n){ return n.homedBy==="config"?kv("link","home","claimed by "+String(n.ent||"").replace(/^fe·/,"")+"'s config — no feature folder names it"):null; }
+  /* the membership EVIDENCE row (Part C, 2026-09-06 — location is an indicator, never the definition): when the users / data witnesses
+     disagree with the file, say so on the card. Evidence only — nothing is re-homed; the piece still sits where its file claim put it. */
+  function _hslug(s){ return s==="__unclaimed__"?"unclaimed":String(s||"").replace(/^fe·/,""); }   /* R10: the bucket's raw token never reaches a reader */
+  function homeEvRow(n){ var e=n.homeEv; if(!e||!e.verdict||e.verdict==="agree") return null;
+    var top=function(m){ var ks=Object.keys(m||{}); if(!ks.length) return null; ks.sort(function(a,b){ return m[b]-m[a]; }); var tot=ks.reduce(function(s,k){ return s+m[k]; },0); return _hslug(ks[0])+" "+Math.round(100*m[ks[0]]/tot)+"% of "+tot; };
+    var by=({file:"its file claim",config:"the entity config's web claims",layout:"the feature layout",idiom:"the directory idiom (no feature layout matched)"})[e.by]||e.by||"its file claim";
+    var dest=e.to?((e.to_kind==="fe-area")?("frontend area "+_hslug(e.to)+" (not a declared entity)"):_hslug(e.to)):"";
+    var more=(e.others||0)-1;
+    var word=(e.verdict==="move")?("MOVE CANDIDATE → "+dest+(more>0?(" · also used by "+more+" other entit"+(more===1?"y":"ies")):"")):(e.verdict==="shared")?("SHARED — a cross-cutting aspect across "+(e.others||0)+" consuming entities"):("STAY — the file wins"+(dest?(" over "+dest):""));
+    var u=top(e.users), d=top(e.data);
+    return kv("role","evidence","home "+_hslug(n.ent)+" by "+by+" · "+(u?("users say "+u):"users abstain")+" · "+(d?("data says "+d):(e.data_note?"data abstains — "+e.data_note:"data abstains"))+" → "+word+" — evidence only, nothing re-homed"); }
   function feBuilder(n){ var det=n.det||{}; return [
     usage(usageN(n), usageBreak(n)),
     homeRow(n),
+    homeEvRow(n),
     liveConns(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
@@ -5515,6 +5528,7 @@ var KINDCARD=(function(){
     usage(usageN(n), usageBreak(n)),
     structureSec(n) || E("div",{class:"sec"}, sechd("table","Structure"), E("div",{style:"font-size:12px;color:var(--muted)"}, n.kind==="store"?"— no fields: the value type has no properties (a function-typed context), or no type argument was written":"— no members captured (a union, mapped or imported type)")),
     homeRow(n),
+    homeEvRow(n),
     liveConns(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
@@ -5526,6 +5540,7 @@ var KINDCARD=(function(){
   function feHookBuilder(n){ var det=n.det||{}; return [
     usage(usageN(n), usageBreak(n)),
     homeRow(n),
+    homeEvRow(n),
     liveConns(n),
     shapesSec(n),
     feSec(n),
@@ -5658,6 +5673,8 @@ var KINDCARD=(function(){
       if(st.fe) w.append(srcRow("component","frontend arm",
         st.fe.present===false?("absent — "+(st.fe.reason||"no extractor")):((st.fe.homing==="config"?"homed by the entity config's web claims (no feature layout) · ":st.fe.homing==="layout"?"homed by the feature layout · ":"")+(st.fe.pieces||0)+" pieces · "+(st.fe.edges||0)+" wires · "+(st.fe.screens_absorbed||0)+" screens absorbed · "+((st.fe.excluded||{}).stories||0)+" stories excluded"),
         "the frontend STRUCTURE — components · hooks · stores · routes · types · modules proven by the TypeScript compiler (the twin's own typescript), wired by renders / uses / typed / fecall / imports. Types start OFF (entity pane toggle). HOW pieces were given a home: by the feature layout, or by the entity config's web claims when the repo has no feature layout — the same home, a different witness."));
+      if(st.homing) w.append(srcRow("role","homing evidence", st.homing.present===false?("absent — "+(st.homing.reason||"no levels graph")):(st.homing.pieces+" piece(s) weighed · "+(st.homing.agree||0)+" agree · "+(st.homing.stay||0)+" stay · "+(st.homing.move||0)+" move candidate(s) · "+(st.homing.shared||0)+" shared"),
+        "three witnesses per piece — file (today's claim), users (who calls, renders or fetches it), data (the models it touches). agree = every witness names the file's entity · move candidate = ≥60% of ≥2 users in ONE other entity and data agrees or abstains · shared = ≥3 consuming entities, none ≥60% · stay = below both bars, the file wins. Evidence only — nothing is re-homed; a card's evidence row names the piece (Part C 2026-09-06: location is an indicator, never the definition)."));
       w.append(srcRow("layers","levels feed", window.GABE_LEVELS?"present — functions · communities · journeys":"absent",
         "the 2D levels-lab export: function nodes (the Stars), community clusters, journey walks"));
       pb.append(w); }

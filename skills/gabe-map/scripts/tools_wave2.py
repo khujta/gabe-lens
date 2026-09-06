@@ -374,9 +374,21 @@ def t_map_census(args: dict, roots) -> dict:
                          "unmatched_named": ["%s %s" % (u.get("m") or u.get("method"), u.get("p") or u.get("path")) for u in unm if isinstance(u, dict)][:12],
                          "unmatched_note": ("first 12 of %d named" % len(unm)) if len(unm) > 12 else None}
                         if web.get("present") else {"present": False, "reason": web.get("reason") or "no web arm on this map"})}
+    if want in ("", "homing"):                                       # Part C: the membership evidence — levels.json read lazily, only here and on touches
+        hom = (center.levels or {}).get("homing") if center.levels else None
+        if isinstance(hom, dict) and hom.get("present"):
+            hs = hom.get("stats") or {}
+            sections["homing"] = {"state": "present", **{k: hs.get(k) for k in ("pieces", "agree", "stay", "move", "shared", "by_kind", "thresholds")},
+                                  "move_named": (hs.get("move_named") or [])[:12], "shared_named": (hs.get("shared_named") or [])[:12],
+                                  "rule": (hom.get("rule") or {}).get("text"),
+                                  "text": "pieces whose users / data witnesses disagree with their file — evidence only, nothing re-homed (touches <piece> carries the record)"}
+        elif isinstance(hom, dict):
+            sections["homing"] = {"state": "absent", "reason": hom.get("reason") or "no levels graph"}
+        else:
+            sections["homing"] = {"state": "not_emitted", "text": "no homing block on levels.json — regen with the current generators (Part C 2026-09-06)"}
     if want:
         if want not in sections:
-            raise mq.MapStop("kind must be one of file | model | route | schema | unparseable | mounts | twins | web")
+            raise mq.MapStop("kind must be one of file | model | route | schema | unparseable | mounts | twins | web | homing")
         out["census"] = {want: sections[want]}
     else:
         out["census"] = sections
@@ -680,8 +692,8 @@ TOOLS = [
      "description": "What a change touches: worktree diff (or given files) → entities, functions, models, endpoints reached, tasks dispatched (levels.json, conf per edge), tests, FE pieces, a reading (a FLOOR).",
      "inputSchema": T._schema({"files": {"type": "array", "items": {"type": "string"}, "description": "Changed files; default = worktree vs HEAD + untracked."}, **T.ROOT_PROP})},
     {"name": "map_census", "fn": t_map_census, "annotations": RO,
-     "description": "Where the map is blind: unclaimed files/models/routes, unwired schemas, unparseable files, unresolved route mounts, the blocked twin pass, unscanned frontend roots + unhomed fetches.",
-     "inputSchema": T._schema({"kind": {"type": "string", "enum": ["file", "model", "route", "schema", "unparseable", "mounts", "twins", "web"], "description": "One section only."}, **T.ROOT_PROP})},
+     "description": "Where the map is blind: unclaimed files/models/routes, unwired schemas, unparseable files, unresolved route mounts, the blocked twin pass, unscanned frontend roots; homing evidence (move/shared).",
+     "inputSchema": T._schema({"kind": {"type": "string", "enum": ["file", "model", "route", "schema", "unparseable", "mounts", "twins", "web", "homing"], "description": "One section only."}, **T.ROOT_PROP})},
     {"name": "map_diff", "fn": t_map_diff, "annotations": RO,
      "description": "How the committed map changed between two refs: per entity, endpoints/models/schemas/files added or removed; task roots; census, health and function deltas; says so when not regenerated.",
      "inputSchema": T._schema({"base": {"type": "string", "description": "A sha/branch/tag."}, "head": {"type": "string", "description": "Default: the worktree's archmap."}, **T.ROOT_PROP}, ["base"])},

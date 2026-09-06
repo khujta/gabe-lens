@@ -191,7 +191,15 @@ def center(root: str, head: str):
     # P0: the levels.json edges the trace/blast tools read — direction matters (reverse s/t = the mutation that must fail the FIRE)
     levels = {"fn_edges": [{"s": "apps/api/api/things.py#get_thing", "t": "apps/api/services/thing.py#thing", "rel": "calls", "conf": "extracted"},
                            {"s": "apps/api/services/thing.py#thing", "t": "provider:redis", "rel": "reaches", "conf": "inferred"},
-                           {"s": "apps/api/api/things.py#get_thing", "t": "apps/api/tasks.py#sweep_things_task", "rel": "dispatches", "conf": "extracted"}]}
+                           {"s": "apps/api/api/things.py#get_thing", "t": "apps/api/tasks.py#sweep_things_task", "rel": "dispatches", "conf": "extracted"}],
+              # Part C: the membership evidence the emitter writes onto levels.json (read lazily by touches + map_census)
+              "homing": {"present": True, "rule": {"move_share": 0.6, "move_min_users": 2, "shared_min": 3, "text": "agree · move candidate · shared · stay — evidence only, nothing re-homed"},
+                         "stats": {"present": True, "pieces": 3, "agree": 1, "stay": 0, "move": 1, "shared": 1, "by_kind": {"function": {"pieces": 2, "move": 1, "shared": 1}, "endpoint": {"pieces": 1, "move": 0, "shared": 0}},
+                                   "thresholds": {"move_share": 0.6, "move_min_users": 2, "shared_min": 3},
+                                   "move_named": [{"piece": "apps/api/services/thing.py#thing", "home": "thing", "to": "other", "share": 0.75}], "move_named_note": None, "shared_named": ["apps/api/other.py#Helper.run"]},
+                         "pieces": {"apps/api/services/thing.py#thing": {"kind": "function", "home": "thing", "by": "file", "users": {"other": 3, "thing": 1}, "data": {"other": 1}, "verdict": "move", "to": "other", "share": 0.75},
+                                    "apps/api/other.py#Helper.run": {"kind": "function", "home": "thing", "by": "file", "users": {"other": 1, "thing": 1, "third": 1}, "data": {}, "verdict": "shared", "to": None, "share": 0.33},
+                                    "endpoint:GET /things/{item_id}": {"kind": "endpoint", "home": "thing", "by": "file", "users": {"thing": 1}, "data": {"thing": 1}, "verdict": "agree", "to": None, "share": None}}}}
     cfg = {"entities": {"thing": {"test_rx": "test_", "proofs": [], "models": ["Thing"],
                                   "code": {"services": ["apps/api/services/*.py", "apps/api/other.py"], "api": ["apps/api/api/*.py"], "models": ["apps/api/models/thing.py"]}},
                         "other": {"test_rx": "test_", "proofs": [], "models": ["Widget"], "code": {"models": ["apps/api/models/widget.py"]}}},
@@ -551,6 +559,18 @@ def run(T):
        "F6 FIRE: the four new sections — mounts · twins (sizable over budget, never 'pairs over a budget') · web roots + unmatched named · unparseable rows", cs and {k: cs.get(k) for k in ("mounts", "twins", "web", "unparseable")})
     d, _, _, _ = call_json(c, "map_census", {"kind": "twins"})
     ok(d and list(d["census"].keys()) == ["twins"] and d["census"]["twins"]["state"] == "present", "F6: one section only", d and d.get("census"))
+    # Part C: the membership evidence as fields + a census section (levels.json homing, read lazily)
+    d, _, _, _ = call_json(c, "map_census", {"kind": "homing"})
+    hm = d and d["census"]["homing"]
+    ok(hm and hm["state"] == "present" and hm["move"] == 1 and hm["shared"] == 1 and hm["move_named"][0]["to"] == "other" and hm["shared_named"] == ["apps/api/other.py#Helper.run"] and "nothing re-homed" in hm["text"],
+       "Part C FIRE: map_census(homing) — counts, the move candidates + shared aspects named, evidence only", hm)
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/thing.py#thing"})
+    ok(d and d["function"]["home_evidence"]["verdict"] == "move" and d["function"]["home_evidence"]["to"] == "other" and d["function"]["home_evidence"]["users"] == {"other": 3, "thing": 1} and "nothing re-homed" in d["function"]["home_evidence"]["note"],
+       "Part C FIRE: touches(function) carries the evidence record when the witnesses disagree", d and d["function"].get("home_evidence"))
+    d, _, _, _ = call_json(c, "touches", {"target": "GET /things/{item_id}"})
+    ok(d and "home_evidence" not in d, "Part C SILENT: an agreeing endpoint carries no evidence field (the answer's shape is unchanged)", d and sorted(d.keys()))
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/other.py::Helper.run"})
+    ok(d and d["function"]["home_evidence"]["verdict"] == "shared", "Part C: a shared aspect says so on the function", d and d["function"].get("home_evidence"))
     d, is_err, _, _ = call_json(c, "map_census", {"kind": "bogus"})
     ok(is_err, "map_census: bad kind is a stop")
     # ── wave 3: trace + gates (N1/N2) ──
@@ -645,6 +665,10 @@ def run(T):
     ok(d and d["tasks_dispatched"] == {"reason": "no levels.json — dispatch edges unread"}, "F15 SILENT: no levels.json → the dispatch arm names its absence", d and d.get("tasks_dispatched"))
     d, _, _, _ = call_json(c, "trace", {"start": "GET /things/{item_id}"})
     ok(d and "hops" not in d and d["reason"].startswith("no levels.json in this center"), "N1 SILENT: no levels.json → the named reason, no stack", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "map_census", {"kind": "homing"})
+    ok(d and d["census"]["homing"]["state"] == "not_emitted" and "regen" in d["census"]["homing"]["text"], "Part C SILENT: no levels.json → the homing section says not_emitted (regen), never a crash", d and d.get("census"))
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/thing.py#thing"})
+    ok(d and "home_evidence" not in d["function"], "Part C SILENT: without levels.json the function answer carries no evidence field", d and sorted(d["function"].keys()))
     d, _, _, _ = call_json(c, "touches", {"target": "TASK sweep_things"})
     ok(d and d["dispatched_by"] == {"reason": "no levels.json — dispatch edges unread"}, "F3 SILENT: touches(task) names the missing dispatch source", d and d.get("dispatched_by"))
     os.rename(os.path.join(root, "docs/site/center/levels.json.off"), os.path.join(root, "docs/site/center/levels.json"))

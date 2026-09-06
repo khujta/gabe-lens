@@ -4,7 +4,7 @@ description: "The suite's MCP server — the project's committed codebase map as
 when_to_use: "Manage the gabe-map MCP server: is it registered at user scope, is it disabled in this project, does the running server match the install, does this project have a map. Human-initiated only; the TOOLS themselves are reached for by every skill through mcp__gabe-map__*."
 disable-model-invocation: true
 metadata:
-  version: 1.2.0
+  version: 1.2.1
 ---
 
 # Gabe Map — the codebase map as tools
@@ -27,7 +27,7 @@ Design record: `../../docs/design/gabe-map/README.md`. Binding contract: `refere
 |---|---|---|
 | `map_status` | is there a map here, how fresh, graft index state, regen command, **and where it is partial** (`map_health`: mounts · unparseable · twin pass · web roots — each with its state word present · clean · not_emitted) | archmap · c4 · inflight · git |
 | `entity_context` | one entity's slice (brief · full incl. gates + stream · raw); providers named, tasks counted apart; omit slug → the registered list, **or the config-only list when no adoption.json** | archmap · adoption · config · c4 |
-| `touches` | what touches a file / model / schema / function / entity / endpoint (stream flag, per-route gates + the ASGI middleware that also applies) / task root (`TASK <name>` — registered name or fn, its dispatchers) / case; a screen/hook file → its pieces (hrole · fed2w · homing) and the endpoints it fetches; method targets join on `Class.method` | archmap · c4 · levels (task) |
+| `touches` | what touches a file / model / schema / function / entity / endpoint (stream flag, per-route gates + the ASGI middleware that also applies) / task root (`TASK <name>` — registered name or fn, its dispatchers) / case; a screen/hook file → its pieces (hrole · fed2w · homing) and the endpoints it fetches; method targets join on `Class.method`; a piece whose membership witnesses disagree carries `home_evidence` (Part C) | archmap · c4 · levels (task · homing) |
 | `who_calls` | who calls or uses a symbol — graft callers ∪ word-boundary git grep, code vs prose; `direction=out` walks callees, `depth` the transitive reach, every answer stamped with `map_confidence` | graft index · git grep (+ the emit) |
 | `entity_shape` | who owns URL domain /x; detached domains; a diff's new routes (caveated when route mounts are unresolved) | archmap (fresh) |
 | `cases_for` | which C-ids cover X (incl. `TASK <name>`, honest-empty by name); the corpus's max C-id and next-id floor (suite installs excluded; meaningless without `.kdbp/`, and says so) | archmap · git grep |
@@ -36,7 +36,7 @@ Design record: `../../docs/design/gabe-map/README.md`. Binding contract: `refere
 | `outline` | a file's definitions with spans + signatures, owner, models, tests (graft_file_api's equivalent) | graft index · archmap |
 | `center_overview` | orientation by entity: rank, status, counts, coverage, arms (graft · web extractor · fe homing · providers · app middleware), census gaps (absent ≠ 0), registry mode (config-only when no adoption.json), map_health (graft_repo_map's equivalent) | archmap · adoption · c4 |
 | `blast_radius` | what a change touches — entities, functions, models, endpoints reached, tasks defined + tasks dispatched (levels.json, conf per edge → reading `cross-process`), tests, FE pieces, a reading (floor) | archmap · c4 · levels · git |
-| `map_census` | where the map is blind: unclaimed files/models/routes, unwired/ambiguous schemas, **unparseable files, unresolved route mounts, the blocked twin pass, unscanned frontend roots + unhomed fetches**; the empty schema arm said | archmap · c4 |
+| `map_census` | where the map is blind: unclaimed files/models/routes, unwired/ambiguous schemas, **unparseable files, unresolved route mounts, the blocked twin pass, unscanned frontend roots + unhomed fetches**; the empty schema arm said; the `homing` section — pieces whose users/data witnesses disagree with their file (move candidates · shared aspects; evidence only) | archmap · c4 · levels (homing) |
 | `map_diff` | how the committed map changed between two refs, per entity, plus task roots and the health delta | git show · archmap |
 | `center_status` | the center's actionable list, relayed verbatim | the suite's own `center_status.py` (WS-2) |
 | `review_drift` | a review's deterministic drift subjects vs a base ref; NOT RUN is first-class; the suite's own center hunks never count as project fetches | archmap · c4 · PLAN · git |

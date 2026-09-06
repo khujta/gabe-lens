@@ -30,7 +30,19 @@ for f in "$GEN"/*.py "$GEN"/*.mjs "$GEN"/*.sh; do
     fi
   else new_gen+=("$b"); fi
 done
-[ ${#new_gen[@]} -gt 0 ] && echo "  NEW (not vendored by this twin — adopt deliberately): ${new_gen[*]}"
+# A NEW generator that an UPDATED generator imports is not a new capability — it is a hard dependency the regen
+# below would crash on (2026-09-06: _a3_homing.py imported by build_center_a3.py left both twins with a broken
+# regen). Land it, say so; every other new generator stays a deliberate adoption.
+req_gen=(); opt_gen=()
+for b in "${new_gen[@]}"; do
+  mod="${b%.py}"
+  if [[ "$b" == *.py ]] && grep -lqE "^(import|from) ${mod}\b" "$TGEN"/*.py 2>/dev/null; then
+    if [ "$CHECK" = 1 ]; then echo "  DRIFT $b (NEW, required by $(grep -lE "^(import|from) ${mod}\b" "$TGEN"/*.py | xargs -n1 basename | tr '\n' ' '))"; drift=1
+    else cp "$GEN/$b" "$TGEN/$b"; echo "  landed $b — NEW, required by $(grep -lE "^(import|from) ${mod}\b" "$TGEN"/*.py | xargs -n1 basename | tr '\n' ' ')"; fi
+    req_gen+=("$b")
+  else opt_gen+=("$b"); fi
+done
+[ ${#opt_gen[@]} -gt 0 ] && echo "  NEW (not vendored by this twin — adopt deliberately): ${opt_gen[*]}"
 # graft's AGENT SKILL ("get your context from graft before grepping") contradicts the suite's tool floor
 # (the map tools first — execution-contract.md); graft serves map CREATION only (ruling 2026-09-02). The dir is
 # graft-authored + untracked, so a twin re-decides it every time it is noticed → name it here, once, as

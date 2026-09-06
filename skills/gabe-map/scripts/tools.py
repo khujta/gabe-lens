@@ -294,6 +294,19 @@ def detect_kind(target: str, center: mq.Center) -> tuple[str, object]:
     return "function_bare", t
 
 
+def _home_ev(center: mq.Center, piece: str) -> dict | None:
+    """Part C (2026-09-06): the membership evidence for one piece (`file#fn` · `endpoint:…` · `fe:…`) from levels.json `homing.pieces` —
+    read lazily; None on an older map (no block) or an agreeing piece, so an answer's shape does not change where nothing disagrees."""
+    hom = (center.levels or {}).get("homing") or {}
+    rec = (hom.get("pieces") or {}).get(piece)
+    if not rec or rec.get("verdict") == "agree":
+        return None
+    def _u(s): return "unclaimed" if s == "__unclaimed__" else s                       # R10
+    return {**rec, "home": _u(rec.get("home")), "to": _u(rec.get("to")), "users": {_u(k): v for k, v in (rec.get("users") or {}).items()},
+            "data": {_u(k): v for k, v in (rec.get("data") or {}).items()},
+            "rule": (hom.get("rule") or {}).get("text"), "note": "evidence only — the piece sits where its file claim put it; nothing re-homed"}
+
+
 def _fn_record(center: mq.Center, key: str) -> dict:
     a, idx = center.archmap, center.idx()
     rec = (a.get("function_insight") or {}).get(key)
@@ -317,6 +330,7 @@ def _fn_record(center: mq.Center, key: str) -> dict:
     return {"key": key, "entity": rec.get("entity"), "layer": rec.get("layer"), "handler": rec.get("handler"),
             **({"gated_endpoints": {"count": gated, "see": "mcp__gabe-map__gates (by callee · fn key · argument string)"}} if gated else {}),
             **({"task_root": {"name": troot, "see": "touches 'TASK %s' — dispatchers, behind, the worker note" % troot}} if troot else {}),
+            **({"home_evidence": _hev} if (_hev := _home_ev(center, key.replace("::", "#", 1))) else {}),
             "handler_of": idx["handler_of"].get(key), "async": rec.get("async"), "lines": rec.get("lines"),
             "returns": rec.get("returns"), "doc": (rec.get("doc") or "")[:160], "usage": rec.get("usage"),
             "access_ops": (rec.get("access") or {}).get("ops"),
@@ -367,6 +381,8 @@ def t_touches(args: dict, roots) -> dict:
                     "edges_out": [{"target": t, "kind": k} for t, k, _ in idx["edges_out"].get(nid, [])][:mq.CAP],
                     "screens_in": [{"source": s, "kind": k} for s, k, _ in idx["edges_in"].get(nid, []) if k == "bridge"][:mq.CAP],
                     "tests": {"cases": cases[:mq.CAP], "covered_by_test_files": files[:mq.CAP]}})
+        if (_hev := _home_ev(center, nid)):
+            out["home_evidence"] = _hev
         web = ((center.c4.get("stats") or {}).get("web") or {})
         unm = web.get("unmatched") if isinstance(web.get("unmatched"), list) else []
         out["web_unmatched_fetches"] = [u for u in unm if isinstance(u, dict) and norm_path(str(u.get("p") or u.get("path") or "")) == want
@@ -394,6 +410,7 @@ def t_touches(args: dict, roots) -> dict:
                     "edges_out": [{"target": t, "kind": k} for t, k, _ in idx["edges_out"].get(nid, [])][:mq.CAP],
                     "tests": {"cases": cases[:mq.CAP], "covered_by_test_files": files[:mq.CAP]},
                     "unresolved_dispatch_kinds": list(((a.get("tasks") or {}).get("stats") or {}).get("unresolved") or []),
+                    **({"home_evidence": _hev} if (_hev := _home_ev(center, nid)) else {}),
                     "note": "a TASK root is a worker entrypoint dispatched by name (Celery / ARQ / Taskiq), never an HTTP endpoint; "
                             "tasks registered under a computed name are NOT on this list — grep the broker for the rest"})
         return out
@@ -440,7 +457,7 @@ def t_touches(args: dict, roots) -> dict:
         if pieces_here or web:                                     # F9 (2026-09-06): the screen→endpoint leg as FIELDS, not a tool
             _FEK = ("name", "kind", "hrole", "feClass", "fed2w", "channel", "cache", "sites", "wsites", "homed_by", "span")
             calls = [{"endpoint": t, "kind": k} for t, k, _ in idx["edges_out"].get(web[1].get("id"), [])] if web else []
-            out["fe"] = {"pieces": [{k2: x.get(k2) for k2 in _FEK if x.get(k2) is not None} for x in pieces_here][:mq.CAP],
+            out["fe"] = {"pieces": [{**{k2: x.get(k2) for k2 in _FEK if x.get(k2) is not None}, **({"home_evidence": _hev} if (_hev := _home_ev(center, x.get("id") or "")) else {})} for x in pieces_here][:mq.CAP],
                          "pieces_more": max(0, len(pieces_here) - mq.CAP),
                          "calls": calls[:mq.CAP], "calls_note": "bridge = a fetch site in this file matched to the endpoint it names (the web arm, a FLOOR)"}
         if is_test:

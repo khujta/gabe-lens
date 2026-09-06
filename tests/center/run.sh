@@ -744,6 +744,19 @@ bash "$GEN/bootstrap_center.sh" "$BS" >"$T/bootstrap2.out" 2>&1; grep -q "exists
   && ok || { bad "bootstrap SILENT: a second run keeps the hand-filled config"; cat "$T/bootstrap2.out"; }
 grep -c "gabe suite — local-only runtime artifacts" "$BS/.gitignore" | grep -qx 1 && ok || bad "bootstrap SILENT: gitignore seeds are added once"
 bash "$GEN/propagate.sh" "$BS" --check >"$T/bootstrap3.out" 2>&1; grep -q "in sync" "$T/bootstrap3.out" && ok || { bad "bootstrap: a bootstrapped repo reads in sync to propagate.sh"; cat "$T/bootstrap3.out"; }
+# propagate.sh (2026-09-06): a NEW generator that a twin-side generator IMPORTS is a hard dependency — it lands and says so;
+# a new generator nobody imports stays a deliberate adoption (the twins' regen crashed at `import _a3_homing` before this rule)
+rm -f "$BS/scripts/_a3_homing.py"
+bash "$GEN/propagate.sh" "$BS" --check >"$T/prop-req.out" 2>&1; grep -q "DRIFT _a3_homing.py (NEW, required by build_center_a3.py" "$T/prop-req.out" \
+  && ok || { bad "propagate FIRE (--check): a missing generator the twin imports reads as REQUIRED drift, named with its importer"; cat "$T/prop-req.out"; }
+bash "$GEN/propagate.sh" "$BS" >"$T/prop-req2.out" 2>&1; grep -q "landed _a3_homing.py — NEW, required by build_center_a3.py" "$T/prop-req2.out" && [ -f "$BS/scripts/_a3_homing.py" ] \
+  && ok || { bad "propagate FIRE: the required new generator LANDS and the log says which file needed it"; cat "$T/prop-req2.out" | head -20; }
+grep -lE "^(import|from) scaffold_census\b" "$BS"/scripts/*.py >/dev/null 2>&1 && bad "propagate SILENT precondition: scaffold_census.py must be imported by nothing" || true
+rm -f "$BS/scripts/scaffold_census.py"
+bash "$GEN/propagate.sh" "$BS" --check >"$T/prop-opt.out" 2>&1; grep -q "NEW (not vendored by this twin — adopt deliberately): scaffold_census.py" "$T/prop-opt.out" && ! grep -q "DRIFT scaffold_census" "$T/prop-opt.out" \
+  && ok || { bad "propagate SILENT: a new generator nobody imports is reported, never landed"; cat "$T/prop-opt.out"; }
+bash "$GEN/propagate.sh" "$BS" >/dev/null 2>&1; [ ! -e "$BS/scripts/scaffold_census.py" ] && ok || bad "propagate SILENT: the copy mode still does not land an unrequired new generator"
+bash "$GEN/bootstrap_center.sh" "$BS" >/dev/null 2>&1   # restore the fixture (bootstrap lands missing files)
 # a bootstrapped repo with ONE config entity and NO tracker must BUILD (the tier1 install crashed on a synthesized row missing `status`)
 python3 - "$BS" <<'PY'
 import json, sys; from pathlib import Path

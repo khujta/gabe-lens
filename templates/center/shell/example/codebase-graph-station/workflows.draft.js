@@ -1,5 +1,5 @@
 // DRAFT user workflows — machine-proposed by `/gabe-cc-update curate-workflows` (draft-workflows.py)
-// from the committed c4-graph (head 4af05294): every endpoint no curated workflow names, clustered by
+// from the committed c4-graph (head 21fa7e2a): every endpoint no curated workflow names, clustered by
 // entity · the screen that drives it, steps ordered read→write, NAMED in the user's words (what the person
 // does — the legend reference's definitions logic) and LEVELED into its tier (Orientation · Core ·
 // Specialized), so each draft already sits in its section of the workflows tab wearing the DRAFT chip.

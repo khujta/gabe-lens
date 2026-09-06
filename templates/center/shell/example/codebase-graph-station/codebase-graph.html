@@ -456,7 +456,7 @@
   <a class="navitem" href="releases.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> Releases</a>
   <div class="navlabel g-leaf">Leaf</div>
   <span class="navsub" style="opacity:.5">none wired yet</span>
-  <div class="foot">regen 2026-09-06 15:48Z<br>HEAD 4af05294 · build_center_a3.py</div>
+  <div class="foot">regen 2026-09-06 17:40Z<br>HEAD 74ba34e6 · build_center_a3.py</div>
 </aside>
 
 <main class="main" style="display:flex;flex-direction:column;height:100vh;overflow:hidden">
@@ -1527,7 +1527,7 @@
   }
   function drawPieceIcon(g, p){
     if(p.kind==="schema") sBadge(g, 7, "var(--c-schema)");
-    else if(p.kind==="endpoint"){ var m=methodOf(p.label)||"GET"; epMark(g, 6.5, m); }
+    else if(p.kind==="endpoint"){ var m=methodOf(p.label)||null; epMark(g, 6.5, m); }
     else if(p.kind==="fn") fGlyph(g, 8.5, "var(--c-fn-api)", true);
     else cylinder(g, 8, "var(--c-model)");
   }

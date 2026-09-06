@@ -5,7 +5,7 @@ when_to_use: "After a long or sprawling stretch: did everything that should have
 context: fork
 agent: Explore
 metadata:
-  version: 1.7.6
+  version: 1.7.7
 ---
 
 # Gabe Pulse — is anything important owed?
@@ -133,7 +133,7 @@ $ARGUMENTS
 
 ## The ANGLE family (1.1.0)
 
-`scripts/angles.py` computes thirteen evidence-backed triggers — adversarial pass owed (S1),
+`scripts/angles.py` computes seventeen evidence-backed triggers (S17 homing evidence, 2026-09-06, is the latest: pieces whose users/data witnesses disagree with their file — nothing re-homes) — adversarial pass owed (S1),
 structural scan overdue (S2), journey proof missing (S3), published docs stale (S4), scope drift
 (S5), entity context worth loading (S6), an explanation worth drawing (S7), workflow-census
 capture debt (S8), entity-shape drift (S9), a diff-added fetch that named no declared endpoint

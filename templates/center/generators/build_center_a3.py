@@ -39,6 +39,7 @@ import _a3_code
 import _a3_graft  # noqa: E402  (the graft-wiring arm — topology provider)
 import _a3_graph  # noqa: E402  (the C4 codebase-graph derivation)
 import _a3_levels  # noqa: E402  (the rich LEVELS graph — the lab-native station feed)
+import _a3_homing  # noqa: E402  (the membership EVIDENCE — file · users · data witnesses per piece; nothing re-homes)
 import _a3_sim  # noqa: E402  (the live change-simulation projection — window.GABE_SIM)
 import _a3_commits  # noqa: E402  (recent git commits → the elements they touched — window.GABE_COMMITS)
 import _a3_web  # noqa: E402  (the web→API bridge extractor — the fetch arm)
@@ -2135,21 +2136,39 @@ def main() -> int:
             amap, labels=LABELS,
             status={s["entity"]: s.get("status") for s in sections},
             colors=_gcolors, graft=_garm, web=_warm, fe=_fearm)
-        _a3_graph.emit(_graph, CENTER_OUT)
-        wrote.append(("c4-graph.json", 0))
         # the LEVELS graph (window.GABE_LEVELS) — the lab-native station's rich feed:
         # functions · use-cases · communities · use-edges, ALL from the archmap insight
         # blocks (_a3_code already writes them) + the C4 topology; only cross-file call
         # edges need graft, honest-empty otherwise. A derivation error degrades the
         # station to topology-only (window.GABE_LEVELS absent), never blanks the center.
+        _levels = None
         try:
             _levels = _a3_levels.build_levels(amap, _graph, graft=_garm)
+        except Exception as _le:  # noqa: BLE001
+            print(f"    ⚠ levels SKIPPED (derivation error, station degrades to topology): {_le}")
+        # the membership EVIDENCE (Part C, 2026-09-06): three witnesses per piece — file · users · data —
+        # weighed over the archmap + c4 + levels; the per-piece detail rides levels.json (the station
+        # already loads it, gabe-map reads it lazily), the counts ride c4 stats.homing + `home_ev` on the
+        # endpoint nodes / fe pieces whose witnesses disagree. NOTHING re-homes — evidence only.
+        try:
+            _hom = _a3_homing.evidence(amap, _graph, _levels)
+        except Exception as _he:  # noqa: BLE001
+            _hr = f"homing evidence error: {_he}"
+            _hom = {"present": False, "reason": _hr, "pieces": {}, "stats": {"present": False, "pieces": 0, "reason": _hr}}
+            print(f"    ⚠ homing evidence SKIPPED (derivation error): {_he}")
+        _a3_homing.attach(_graph, _hom)
+        if _levels is not None:
+            _levels["homing"] = _hom
             _a3_levels.emit(_levels, CENTER_OUT)
             wrote.append(("levels.json", 0))
             print(f"    wrote docs/site/center/levels.json — {len(_levels['fn_nodes'])} fn(s) "
                   f"· {len(_levels['use_edges'])} use-edge(s)")
-        except Exception as _le:  # noqa: BLE001
-            print(f"    ⚠ levels SKIPPED (derivation error, station degrades to topology): {_le}")
+        _hs = _hom.get("stats") or {}
+        print("    homing evidence: " + (f"{_hs.get('pieces')} piece(s) weighed · {_hs.get('agree', 0)} agree · {_hs.get('stay', 0)} stay · "
+                                        f"{_hs.get('move', 0)} move candidate(s) · {_hs.get('shared', 0)} shared — evidence only, nothing re-homed"
+                                        if _hs.get("present") else f"absent — {_hom.get('reason')}"))
+        _a3_graph.emit(_graph, CENTER_OUT)      # emitted AFTER the evidence attach — the stats carry stats.homing
+        wrote.append(("c4-graph.json", 0))
         _st = _graph["stats"]
         _gst = _st.get("graft") or {}
         _fst = _st.get("fe") or {}

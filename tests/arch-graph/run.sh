@@ -1483,6 +1483,81 @@ _gs0 = G.build_c4_graph(FIX, labels=LABELS, status=STATUS)["stats"]
 check(all(k not in _gs0 for k in ("unparseable", "route_mounts", "fn_similarity")), "Step 4 SILENT: an archmap without the blocks emits none of the three keys")
 check(json.dumps(G.build_c4_graph(FIX, labels=LABELS, status=STATUS), sort_keys=True) == json.dumps(_gbt0, sort_keys=True), "Step 4 byte-identical: the plain build is unchanged by the new keys")
 
+# ── Part C (2026-09-06) · the membership EVIDENCE — _a3_homing.evidence: file · users · data witnesses per piece, three-outcome rule, nothing re-homed ──
+_hspec = importlib.util.spec_from_file_location("_a3_homing", gen + "/_a3_homing.py"); H = importlib.util.module_from_spec(_hspec); _hspec.loader.exec_module(H)
+_ha = {"entities": {"alpha": {"files": [["api", "a/api.py", 9], ["services", "a/svc.py", 9]], "models": [{"cls": "A", "table": "as"}]},
+                    "beta": {"files": [["services", "b/svc.py", 9]], "models": [{"cls": "B", "table": "bs"}]},
+                    "gamma": {"files": [["services", "g/svc.py", 9]], "models": []}, "delta": {"files": [], "models": []}},
+       "function_insight": {"a/svc.py::mover": {"entity": "alpha", "access": {"ops": [{"model": "B", "rw": "r"}]}},      # 2 beta callers + beta data → MOVE
+                            "a/svc.py::lone": {"entity": "alpha", "access": {"ops": [{"model": "B", "rw": "r"}]}},       # 1 beta caller → STAY (a single caller never flips)
+                            "a/svc.py::hub": {"entity": "alpha", "access": {"ops": []}},                                   # beta · gamma · delta callers, none ≥60% → SHARED
+                            "a/svc.py::home": {"entity": "alpha", "access": {"ops": [{"model": "A", "rw": "w"}]}},       # alpha caller + alpha data → AGREE
+                            "a/svc.py::torn": {"entity": "alpha", "access": {"ops": [{"model": "A", "rw": "w"}]}},       # 2 beta callers but the data says alpha → STAY
+                            "a/svc.py::silent": {"entity": "alpha", "access": {"ops": []}}},                              # no witness → not weighed
+       "task_roots": []}
+_hg = {"l2": {"alpha": {"nodes": [{"id": "endpoint:GET /a", "kind": "endpoint", "access": {"ops": [{"model": "B", "rw": "r"}]}}]}},
+       "cross_edges": [{"kind": "bridge", "from": "web:w/x", "from_slug": "beta", "to": "endpoint:GET /a", "to_slug": "alpha", "export": "fe:w/x.ts#useX"},
+                       {"kind": "bridge", "from": "web:w/y", "from_slug": "beta", "to": "endpoint:GET /a", "to_slug": "alpha"}],
+       "fe": {"pieces": [{"id": "fe:w/x.ts#useX", "file": "w/x.ts", "home": "fe·alpha", "homed_by": "config", "kind": "hook"},
+                         {"id": "fe:w/p.tsx#P", "file": "w/p.tsx", "home": "fe·beta", "kind": "component"},
+                         {"id": "fe:w/q.tsx#Q", "file": "w/q.tsx", "home": "fe·beta", "kind": "component"}],
+              "edges": [[1, 0, "uses-hook"], [2, 0, "uses-hook"]]}}
+_hl = {"fn_edges": [{"s": "b/svc.py#b1", "ss": "beta", "t": "a/svc.py#mover", "ds": "alpha", "rel": "calls"}, {"s": "b/svc.py#b2", "ss": "beta", "t": "a/svc.py#mover", "ds": "alpha", "rel": "calls"},
+                    {"s": "b/svc.py#b1", "ss": "beta", "t": "a/svc.py#lone", "ds": "alpha", "rel": "calls"},
+                    {"s": "b/svc.py#b1", "ss": "beta", "t": "a/svc.py#hub", "ds": "alpha", "rel": "calls"}, {"s": "g/svc.py#g1", "ss": "gamma", "t": "a/svc.py#hub", "ds": "alpha", "rel": "depends"}, {"s": "d/svc.py#d1", "ss": "delta", "t": "a/svc.py#hub", "ds": "alpha", "rel": "calls"},
+                    {"s": "a/api.py#h", "ss": "alpha", "t": "a/svc.py#home", "ds": "alpha", "rel": "calls"},
+                    {"s": "b/svc.py#b1", "ss": "beta", "t": "a/svc.py#torn", "ds": "alpha", "rel": "calls"}, {"s": "b/svc.py#b2", "ss": "beta", "t": "a/svc.py#torn", "ds": "alpha", "rel": "calls"},
+                    {"s": "a/api.py#h", "ss": "alpha", "t": "provider:redis", "ds": "alpha", "rel": "reaches"}]}
+_hev = H.evidence(_ha, _hg, _hl); _hp = _hev["pieces"]
+check(_hp["a/svc.py#mover"]["verdict"] == "move" and _hp["a/svc.py#mover"]["to"] == "beta" and _hp["a/svc.py#mover"]["share"] == 1.0 and _hp["a/svc.py#mover"]["users"] == {"beta": 2} and _hp["a/svc.py#mover"]["data"] == {"beta": 1},
+      f"Part C FIRE (move): 2 beta callers + beta data on an alpha-filed function → move candidate to beta, share 1.0 ({_hp.get('a/svc.py#mover')})")
+check(_hp["a/svc.py#lone"]["verdict"] == "stay" and _hp["a/svc.py#lone"]["to"] == "beta", f"Part C: ONE beta caller never flips — stay, with beta named ({_hp.get('a/svc.py#lone')})")
+check(_hp["a/svc.py#hub"]["verdict"] == "shared" and _hp["a/svc.py#hub"]["to"] is None and set(_hp["a/svc.py#hub"]["users"]) == {"beta", "gamma", "delta"},
+      f"Part C FIRE (shared): three consuming entities, none ≥60% → a cross-cutting aspect ({_hp.get('a/svc.py#hub')})")
+check("a/svc.py#home" not in _hp and _hev["stats"]["agree"] == 1, "Part C SILENT (agree): an alpha caller + alpha data → every witness names the file's entity; the agree record is COUNTED, never carried (review 2026-09-06)")
+check(_hp["a/svc.py#torn"]["verdict"] == "stay" and _hp["a/svc.py#torn"]["to"] == "beta", f"Part C: 2 beta callers but the data says alpha → stay, the file wins ({_hp.get('a/svc.py#torn')})")
+check("a/svc.py#silent" not in _hp, "Part C SILENT: a function with no witness beyond file is not weighed (never counted as agree)")
+check(_hp["endpoint:GET /a"]["verdict"] == "move" and _hp["endpoint:GET /a"]["kind"] == "endpoint" and _hp["endpoint:GET /a"]["users"] == {"beta": 2},
+      f"Part C FIRE (endpoint): two beta screens fetch an alpha endpoint that reads beta's table → move candidate ({_hp.get('endpoint:GET /a')})")
+check(_hp["fe:w/x.ts#useX"]["verdict"] == "stay" and _hp["fe:w/x.ts#useX"]["by"] == "config" and _hp["fe:w/x.ts#useX"]["users"] == {"beta": 2} and _hp["fe:w/x.ts#useX"]["data"] == {"alpha": 1},
+      f"Part C (fe): two beta components use an alpha-homed hook whose fetch lands in alpha → the data witness contradicts → stay; `by` says config ({_hp.get('fe:w/x.ts#useX')})")
+_hs = _hev["stats"]
+check(_hs["present"] and _hs["pieces"] == 7 and _hs["move"] == 2 and _hs["shared"] == 1 and _hs["agree"] == 1 and _hs["stay"] == 3 and _hs["by_kind"]["fe"]["pieces"] == 1
+      and _hs["thresholds"] == {"move_share": 0.6, "move_min_users": 2, "shared_min": 3} and _hs["move_named"][0]["piece"] in ("a/svc.py#mover", "endpoint:GET /a"),
+      f"Part C stats: counts per verdict, per kind, the thresholds printed, move candidates named ({ {k: _hs.get(k) for k in ('pieces', 'agree', 'stay', 'move', 'shared')} })")
+# review 2026-09-06 · agree is a strict MAJORITY: a 1-1 tie reads the same whichever edge comes first; breadth rides `others`; a fe-area destination is said; an error keeps its reason
+_tie = {"fn_edges": [{"s": "a/api.py#h", "ss": "alpha", "t": "a/svc.py#hub", "ds": "alpha", "rel": "calls"}, {"s": "b/svc.py#b1", "ss": "beta", "t": "a/svc.py#hub", "ds": "alpha", "rel": "calls"}]}
+_tie_r = {"fn_edges": list(reversed(_tie["fn_edges"]))}
+_v1 = H.evidence(_ha, {"l2": {}, "cross_edges": [], "fe": {}}, _tie)["pieces"].get("a/svc.py#hub"); _v2 = H.evidence(_ha, {"l2": {}, "cross_edges": [], "fe": {}}, _tie_r)["pieces"].get("a/svc.py#hub")
+check(_v1 and _v2 and _v1["verdict"] == "stay" and _v2["verdict"] == _v1["verdict"] and _v1["to"] == "beta", f"Part C (review): a 1-1 tie is never `agree` and reads the same in either edge order ({_v1 and _v1['verdict']} / {_v2 and _v2['verdict']})")
+_hb = json.loads(json.dumps(_hl)); _hb["fn_edges"] += [{"s": "b/svc.py#b3", "ss": "beta", "t": "a/svc.py#wide", "ds": "alpha", "rel": "calls"}] * 7 + [{"s": "g/svc.py#g1", "ss": "gamma", "t": "a/svc.py#wide", "ds": "alpha", "rel": "calls"}] * 2 + [{"s": "d/svc.py#d1", "ss": "delta", "t": "a/svc.py#wide", "ds": "alpha", "rel": "calls"}]
+_ha2 = json.loads(json.dumps(_ha)); _ha2["function_insight"]["a/svc.py::wide"] = {"entity": "alpha", "access": {"ops": []}}
+_w = H.evidence(_ha2, _hg, _hb)["pieces"]["a/svc.py#wide"]
+check(_w["verdict"] == "move" and _w["to"] == "beta" and _w["share"] == 0.7 and _w["others"] == 3 and _w["to_kind"] == "entity", f"Part C (review): a 70% concentration across 3 consuming entities is a move candidate that CARRIES its breadth (others 3) ({_w})")
+_hg3 = json.loads(json.dumps(_hg)); _hg3["stats"] = {"fe": {"homing": "config"}}
+_hg3["fe"]["pieces"][1]["home"] = "fe·app-shell"; _hg3["fe"]["pieces"][2]["home"] = "fe·app-shell"       # the consumers sit in a frontend-only area
+_hg3["fe"]["pieces"].append({"id": "fe:w/z.tsx#Z", "file": "w/z.tsx", "home": "fe·app-shell", "kind": "component"})
+_hg3["cross_edges"].append({"kind": "bridge", "from": "web:w/z", "from_slug": "beta", "to": "endpoint:GET /a", "to_slug": "alpha", "export": "fe:w/z.tsx#Z"})
+_hg3["fe"]["pieces"].append({"id": "fe:w/q2.tsx#Q2", "file": "w/q2.tsx", "home": "fe·beta", "kind": "component"})   # one beta consumer of Z → Z is weighed (not agree)
+_hg3["fe"]["edges"].append([4, 3, "renders"])
+_e3 = H.evidence(_ha, _hg3, _hl)["pieces"]
+check(_e3["fe:w/x.ts#useX"]["by"] == "config" and _e3["fe:w/x.ts#useX"]["to"] == "app-shell" and _e3["fe:w/x.ts#useX"]["to_kind"] == "fe-area",
+      f"Part C (review): a destination that is a frontend-only area is said (to_kind fe-area), never passed off as an entity ({_e3.get('fe:w/x.ts#useX')})")
+check(_e3["fe:w/z.tsx#Z"]["by"] == "idiom" and _e3["fe:w/z.tsx#Z"]["data"] == {} and "frontend area" in _e3["fe:w/z.tsx#Z"]["data_note"],
+      f"Part C (review): on a config-homed estate a piece no claim matched sits `by idiom`; a piece homed in a frontend area has NO comparable data witness — data abstains and says why ({_e3.get('fe:w/z.tsx#Z')})")
+_hg4 = json.loads(json.dumps(_hg)); _err = {"present": False, "reason": "homing evidence error: boom", "pieces": {}, "stats": {"present": False, "pieces": 0, "reason": "homing evidence error: boom"}}; H.attach(_hg4, _err)
+check(_hg4["stats"]["homing"] == {"present": False, "pieces": 0, "reason": "homing evidence error: boom"}, "Part C (review): a derivation error keeps its REASON on the stats the map carries (pulse + station name the real cause)")
+check(all(v["verdict"] != "agree" for v in _hev["pieces"].values()) and _hev["stats"]["pieces"] == 7 and _hev["stats"]["agree"] == 1, "Part C (review): no agree record rides the block; the counts still weigh every piece")
+_hg2 = json.loads(json.dumps(_hg)); H.attach(_hg2, _hev)
+check(_hg2["stats"]["homing"]["move"] == 2 and _hg2["l2"]["alpha"]["nodes"][0]["home_ev"]["verdict"] == "move" and _hg2["l2"]["alpha"]["nodes"][0]["home_ev"]["others"] == 1 and _hg2["fe"]["pieces"][0]["home_ev"]["verdict"] == "stay" and "home_ev" not in _hg2["fe"]["pieces"][1],
+      "Part C attach: stats.homing on the graph; home_ev on the endpoint node and the fe piece whose witnesses disagree; nothing on an unweighed piece")
+_hn = H.evidence(_ha, {"l2": {}, "cross_edges": [], "fe": {}}, None)
+check(_hn["present"] is False and _hn["stats"] == {"present": False, "pieces": 0, "reason": _hn["reason"]} and "levels" in _hn["reason"], f"Part C SILENT: no levels graph → present False with the reason (never a crash) ({_hn.get('reason')})")
+_hm = json.loads(json.dumps(_hl)); _hm["fn_edges"][1]["ss"] = "alpha"                       # the mutation lever: one caller re-filed → the majority drops to 50%
+check(H.evidence(_ha, _hg, _hm)["pieces"]["a/svc.py#mover"]["verdict"] == "stay", "Part C mutation: flipping one caller's entity drops mover below the 60% bar → stay (the users witness is READ, not assumed)")
+check(json.dumps(H.evidence(_ha, _hg, _hl), sort_keys=True) == json.dumps(_hev, sort_keys=True), "Part C: byte-identical on a re-run (no wallclock, sorted)")
+check(all("orphan" not in json.dumps(x) for x in (_hev, H.__doc__)), "Part C R10: no 'orphan' in the evidence or its doc")
+
 print(f"arch-graph battery: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)
 PY

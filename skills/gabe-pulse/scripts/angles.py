@@ -584,6 +584,37 @@ def _pending_drafts(p: Path) -> int:
         return 0
 
 
+def s17_homing_evidence(root: Path, plan: dict | None, cfg: dict | None):
+    """Membership evidence — pieces whose USERS / DATA witnesses disagree with their FILE (Part C, 2026-09-06:
+    location is an indicator, never the definition). READS the committed c4-graph.json ``stats.homing`` — the
+    emitter (_a3_homing) weighs three witnesses per piece and records a verdict; NOTHING re-homes. Fires at ≥ 3
+    move candidates (≥60% of ≥2 users in ONE other entity, data agrees or abstains); the shared count (≥3
+    consuming entities, none ≥60%) is REPORTED beside it, never a trigger — a shared utility is a structural constant
+    (5 of 6 estates carry ≥ 1), not a debt anyone clears. The move is the entity walk; re-homing stays opt-in. Report-never-gate;
+    silent on an older map (no block) and when the levels graph was absent (no users witness)."""
+    if cfg is None:
+        return Unavailable("no center config — the homing evidence lives in c4-graph.json")
+    c4 = fetch_bridge._center(root) / "c4-graph.json"
+    if not c4.exists():
+        return Unavailable("no c4-graph.json yet — the center regen weighs the witnesses")
+    try:
+        hom = (json.loads(c4.read_text(encoding="utf-8")).get("stats") or {}).get("homing")
+    except Exception as e:  # noqa: BLE001
+        return Unavailable(f"c4-graph.json unreadable ({e.__class__.__name__})")
+    if not isinstance(hom, dict):
+        return Unavailable("no homing block on this map — regen with the current generators (Part C 2026-09-06)")
+    if not hom.get("present"):
+        return Unavailable(f"homing evidence absent — {hom.get('reason') or 'no levels graph'}")
+    move, shared = int(hom.get("move") or 0), int(hom.get("shared") or 0)
+    if move < 3:                       # shared is a structural constant of any real codebase (5 of 6 estates ≥ 1) — reported, never a trigger (review 2026-09-06)
+        return None
+    named = " · ".join(f"{str(m.get('piece', '?')).split('#')[-1]} → {m.get('to')}" for m in (hom.get("move_named") or [])[:3])
+    return (f"homing evidence — {move} move candidate(s) (≥60% of ≥2 users in one other entity, data agrees) · {shared} shared aspect(s)"
+            f"{(' · e.g. ' + named) if named else ''}; a piece's home is its file claim and its users say otherwise "
+            f"(re-home is opt-in — nothing moved)",
+            "/gabe-cc-init section  (the entity walk; mcp__gabe-map__map_census kind=homing lists the candidates)")
+
+
 def s16_workflow_coverage(root: Path, plan: dict | None, cfg: dict | None):
     """Workflow coverage — the curated user workflows (window.GABE_WORKFLOWS, docs/site/center/workflows.js)
     are hand-authored and go stale as endpoints land. The DRAFTER (`/gabe-cc-update curate-workflows`)
@@ -641,6 +672,7 @@ SIGNALS = [
     ("S14", "map deltas", s14_map_deltas),
     ("S15", "fe classification", s15_fe_unknown),
     ("S16", "workflow coverage", s16_workflow_coverage),
+    ("S17", "homing evidence", s17_homing_evidence),
 ]
 
 

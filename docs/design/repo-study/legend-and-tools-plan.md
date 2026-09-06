@@ -490,3 +490,57 @@ The one tool that reads no map; the arm-difference IS its health signal. Note fo
 - The "dry-run against a COPY" rule: the server is read-only, so the study repos ARE the copies — the commit message records the numbers: tier3 `trace POST /chat/send-chat-message` hop count vs `behind.fns 269`; `gates require_permission` = 476 = `stats.gate_endpoints`; tier0 `find("login").hits[0]` = the endpoint; tier1 `touches PATCH /rate-limits/{name}` shows `RateLimiterMiddleware`; tier3 `map_census` names 3 mounts / twins blocked / 2 other_roots / schemas empty-arm; tier0/tier3 `cases_for` corpus → None with the note; timings (`map_status` must stay ≤ 200 ms on tier3 — P0 must not load).
 - Size budget: `tools.py` 695 + ≈ 90 and `tools_wave2.py` 552 + ≈ 230 stay under the 800 CODE budget; if `trace` pushes `tools_wave2.py` past it, `trace`+`gates` go to a `tools_wave3.py` sibling (the pattern already used) — state the numbers in the commit either way.
 - No `.kdbp/` in this repo (R8): the advisory arm only — battery + doctor + this section as the roast record.
+---
+
+# Part C — location is an indicator, never the definition
+
+**Status: BUILT 2026-09-06** — C1 `_a3_homing.py` · C2 build order (levels → evidence → c4 emit) · C3 the station rows · C4 pulse S17 · C5 gabe-map fields + census section · C6 batteries · C7 estates · C8 docs. Evidence only — nothing re-homed; the opt-in switch waits on its trigger.
+
+## C.0 The ruling and today's definition
+
+**Ruling (operator, 2026-09-06):** a code piece is identified by its CONTENT, its FUNCTIONALITY and its USAGE. Where the code sits in the tree is an INDICATOR — a prior and a tie-breaker — never the DEFINITION of what it belongs to.
+
+**Today's entity definition** (`center.config.json` `entities.<slug>`): a name + FILE CLAIMS (`code.api/models/schemas/services/web` — literal paths or globs) + a `models` allowlist + `test_rx`; the registry is `adoption.json` (or config-only after `bootstrap_center.sh`). Membership is the file claim: a piece belongs to the entity whose claim matches its file (`_a3_code` per layer; `_a3_fe` by the feature layout, or by the config's `code.web` claims when the tree has no feature layout — D6). So a function whose callers and data all live in another entity is homed by its folder, and the graph draws it there.
+
+**Measured 2026-09-06 (file witness vs the data witness, per backend function with model access):** gustify 29% disagree · onyx 17%; endpoints vs their data rollup in the same band; frontend pieces vs the entities that render/use them: gustify 40% · onyx 85% (onyx is config-homed — the file witness is weakest exactly where the layout is not feature-shaped). The map already holds every witness; it never says when they disagree.
+
+## C.1 The three witnesses and the three-outcome rule (per piece)
+
+| Witness | Backend function (`file#fn`) | Endpoint (`endpoint:METHOD /path` · `TASK <name>`) | Frontend piece (`fe:file#name`) |
+|---|---|---|---|
+| **file** (today's home) | the entity whose file claim owns the file | the entity the router file is claimed by | `home` (fe·<slug>; `homed_by` layout \| config) |
+| **users** (who consumes it) | callers' entities — `levels.fn_edges` with rel `calls` · `depends` · `dispatches`, the edge's `ss` | the screens that fetch it — bridge `cross_edges` `from_slug` (+ dispatchers' entities for a TASK) | the pieces that `renders` · `uses-hook` · `uses-store` · `imports` · `fecall` it — the source piece's `home` |
+| **data** (what it touches) | `function_insight.access.ops` models → the entity that declares the model | the c4 node's `access.ops` rollup → model entities | the endpoints it fetches (bridge `to_slug`) |
+
+Verdict, computed from the witnesses that EXIST (an absent witness abstains; `__unclaimed__` counts as a consumer but never as a destination):
+
+- **agree** — every present witness holds a strict MAJORITY (> half) for the file entity — never a plurality, never a tie (review 2026-09-06: a plurality with an insertion-order tie-break read `AppHeader` at 20% of its users as "every witness agrees").
+- **move candidate** — ONE other entity holds ≥ 60% of ≥ 2 users AND the data witness agrees with it (a majority) or abstains. Named with the share. The bars are NOT disjoint: a ≥60% concentration wins over breadth, so the record carries `others` (the consuming entities besides home) and the card says "also used by N other entities" — the reader sees the breadth before acting.
+- **shared / aspect** — ≥ 3 distinct consuming entities and no entity holds ≥ 60%. The piece is cross-cutting; a candidate for an aspect entity, not a move.
+- **stay** — disagreement that meets neither bar (a minority user elsewhere, a single caller, or data contradicting the users). File wins as the tie-breaker.
+
+A destination that is not a declared entity (a frontend-only area such as `app-shell`) is said so (`to_kind: fe-area`); a frontend piece homed in such an area has no comparable data witness (the data witness names BACKEND entities), so data abstains with `data_note`. Thresholds are constants in one place (`_a3_homing.MOVE_SHARE = 0.60`, `MOVE_MIN_USERS = 2`, `SHARED_MIN = 3`) and printed in the stats so a reader knows the bar.
+
+## C.2 What gets built (evidence first — NOTHING re-homes)
+
+| Id | Where | Change |
+|---|---|---|
+| **C1** emitter | NEW `templates/center/generators/_a3_homing.py` `evidence(amap, graph, levels) -> {pieces, stats, rule}` | pure derivation over the in-memory archmap + c4 + levels (no source read, no new arm). `pieces[key] = {kind, home, by, users{slug:n}, data{slug:n}, verdict, to, to_kind, share, others, data_note?}` only for pieces whose witnesses DISAGREE — the agree count rides `stats` (no consumer reads an agree record; 46% of the block on onyx before the cut); `stats = {pieces, agree, stay, move, shared, by_kind{…}, thresholds, move_named, shared_named}`. |
+| **C2** build order | `build_center_a3.py` L2134–2150 | levels build first, then `_hom = _a3_homing.evidence(…)`; `_levels["homing"] = _hom` (the per-piece detail rides levels.json — the station already loads it, gabe-map reads it lazily); `_graph["stats"]["homing"] = _hom["stats"]` + `home_ev: {verdict, to, share}` on every endpoint node / fe piece whose verdict ≠ agree; c4 emitted AFTER (the emit is a dump — no order dependency). c4 ALWAYS carries `stats.homing`: `present:false` + the reason when levels are absent (graft arm) or the derivation raised — the reason rides the stats so pulse and the station name the real cause. |
+| **C3** station (both copies) | `gabe-universe.html` Sources + cards | Sources row `homing evidence` — `N pieces weighed · A agree · S stay · M move candidate(s) · K shared` (+ the thresholds in the tooltip; `present:false` → the reason). Card row `homeEvRow(n)` on endpoint and fe cards when `home_ev` exists: `home <slug> by file · users say <to> (72%) · data says <to> → MOVE CANDIDATE — evidence only, nothing re-homed`. No new glyph or wire (a row, not a visual element → no legend entry; the reference gains a one-line definition under Sources). |
+| **C4** pulse | `skills/gabe-pulse/scripts/angles.py` S17 | reads the committed `c4-graph.json` `stats.homing`: fires at ≥ 3 move candidates → `S17 homing evidence — M move candidate(s) (≥60% of ≥2 users in one other entity, data agrees) · K shared aspect(s) … → /gabe-cc-init section (re-home is opt-in — nothing moved)`. The shared count is REPORTED, never a trigger (5 of 6 estates carry ≥ 1 — a structural constant, not a debt; review 2026-09-06). Nothing stored. |
+| **C5** gabe-map | `map_census` section `homing` (counts + the first 12 move candidates / shared aspects, from levels.json lazily) · `touches` function/endpoint/task/fe-piece answers carry `home_evidence` when the piece has one (the unclaimed bucket spelled `unclaimed`) | projections over C1's block; every line names the rule. DEFERRED: an `entity_context` per-entity disagree count — trigger: a study session asks "how much of THIS entity is disputed". |
+| **C6** batteries | `tests/arch-graph` (the emitter: FIRE move · shared · stay · SILENT agree, absent levels; mutation: flip one caller's `ss`) · `tests/gabe-universe` (row pins + a render probe: the example's Sources row and one card row) · `tests/pulse-angles` (S17 FIRE/SILENT) · `tests/gabe-map` (3 cases) | every FIRE with a SILENT sibling. |
+| **C7** estates | example regen → tiers 0–3 (serial) → twins | the numbers land in the design record: per estate `agree / stay / move / shared`. |
+| **C8** docs | `CLAUDE.md` (the entity-definition sentence + the ruling: file claim = membership TODAY, evidence rows say where usage disagrees, re-home is opt-in) · design record · this plan | — |
+
+**Opt-in re-home (NOT this pass):** `center.config.json` `homing: usage-first` would let the emitter home a `move` piece by its users. Trigger: an operator accepts ≥ 5 move candidates on a twin by hand (moves the file claims) — then the switch saves the hand-moves; before that it is a heuristic with no ground truth.
+
+**Recorded as S items (not built):** gate-by-behaviour (a middleware that only reads is not a gate — behaviour, not name) · content-based module classes (`mclass` from what a module's body does, not its path). Both are the same ruling applied to two more classifiers; each needs its own measurement first.
+
+## C.3 Invariants
+
+- **Nothing re-homes.** Byte-identical entities/files/models on every estate; only `levels.json.homing`, `c4.stats.homing` and the `home_ev` fields appear.
+- **Honest-empty.** No levels → `present:false` + reason; a piece with no witness beyond file is not weighed (never counted as agree).
+- **R10.** Copy uses move candidate · shared · stay · agree; `__unclaimed__` is named "unclaimed", never "orphan".
+- **Two-file law** for the station; **mutation proof** for every new pin.
