@@ -720,6 +720,31 @@ print("pass-3 ok")
 PY
 ) >"$T/pass3.out" 2>&1 && ok || { bad "pass 3: task dispatch by name · task roots · streaming marker"; cat "$T/pass3.out"; }
 
+# ── bootstrap_center.sh (review 2026-09-06): the config-only adoption — lands generators + shell + a config skeleton, never a tracker, never overwrites ──
+BS="$T/bootstrap"; mkdir -p "$BS/src"; (cd "$BS" && git init -q && git commit -q --allow-empty -m init)
+bash "$GEN/bootstrap_center.sh" "$BS" --name demo --display "Demo App" >"$T/bootstrap.out" 2>&1 && ok || { bad "bootstrap: the script must exit 0 on a bare repo"; cat "$T/bootstrap.out"; }
+[ -f "$BS/scripts/build_center_a3.py" ] && [ -f "$BS/scripts/refresh_center.sh" ] && [ ! -e "$BS/scripts/propagate.sh" ] && [ ! -e "$BS/scripts/bootstrap_center.sh" ] \
+  && ok || bad "bootstrap: generators land in scripts/, the suite's drivers do not"
+[ -f "$BS/templates/center/shell/gabe-universe.html" ] && [ ! -d "$BS/templates/center/shell/example" ] \
+  && ok || bad "bootstrap: the shell lands minus example/"
+python3 - "$BS" <<'PY' && ok || bad "bootstrap: config skeleton (name filled, entities empty), NO adoption.json, gitignore seeded"
+import json, sys
+from pathlib import Path
+r = Path(sys.argv[1]); cfg = json.loads((r / "docs/site/center/center.config.json").read_text())
+assert cfg["project"] == {"name": "demo", "display_name": "Demo App", "lang": "en"}, cfg["project"]
+assert cfg["entities"] == {} and "_bootstrap" in cfg
+assert not (r / "docs/site/center/adoption.json").exists()
+gi = (r / ".gitignore").read_text(); assert "docs/site/center/sim.data.js" in gi and "scripts/__pycache__/" in gi
+PY
+python3 - "$BS" <<'PY'
+import json, sys; from pathlib import Path
+p = Path(sys.argv[1]) / "docs/site/center/center.config.json"; c = json.loads(p.read_text()); c["entities"] = {"keep": {"test_rx": "keep"}}; p.write_text(json.dumps(c))
+PY
+bash "$GEN/bootstrap_center.sh" "$BS" >"$T/bootstrap2.out" 2>&1; grep -q "exists — kept" "$T/bootstrap2.out" && python3 -c "import json,sys; assert json.load(open(sys.argv[1]))['entities']=={'keep': {'test_rx': 'keep'}}" "$BS/docs/site/center/center.config.json" \
+  && ok || { bad "bootstrap SILENT: a second run keeps the hand-filled config"; cat "$T/bootstrap2.out"; }
+grep -c "gabe suite — local-only runtime artifacts" "$BS/.gitignore" | grep -qx 1 && ok || bad "bootstrap SILENT: gitignore seeds are added once"
+bash "$GEN/propagate.sh" "$BS" --check >"$T/bootstrap3.out" 2>&1; grep -q "in sync" "$T/bootstrap3.out" && ok || { bad "bootstrap: a bootstrapped repo reads in sync to propagate.sh"; cat "$T/bootstrap3.out"; }
+
 # M04: the single-file set's href carries NO set-name segment.
 grep -q 'proof/solo.png"' "$FIX/docs/site/center/feature-gadget.html" \
   && ok || bad "single-file set: href must be proof-root relative"

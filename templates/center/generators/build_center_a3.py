@@ -236,12 +236,12 @@ adopt_path = CENTER / "adoption.json"
 if adopt_path.exists():
     adoption = json.loads(adopt_path.read_text())
 sections = adoption.get("sections", [])
-if not adopt_path.exists():
-    # review 2026-09-06 (repo-study): a repo adopted by config alone has no adoption record yet —
-    # its center.config.json entities ARE the registry. Said out loud, never a SystemExit.
+if not adopt_path.exists() or not sections:
+    # review 2026-09-06 (repo-study): a repo adopted by config alone (bootstrap_center.sh) has no adoption record
+    # yet, or an empty tracker — its center.config.json entities ARE the registry. Said out loud, never a SystemExit.
     sections = [{"entity": _s, "display_name": _s} for _s in sorted(ENTITY_CODE)]
-    print(f"  ⚠ adoption.json absent at {adopt_path} — entity registry taken from center.config.json "
-          f"({len(sections)} entities); /gabe-cc-init records the adoption sections")
+    print(f"  ⚠ adoption.json {'absent' if not adopt_path.exists() else 'has no sections'} at {adopt_path} — entity registry "
+          f"taken from center.config.json ({len(sections)} entities); /gabe-cc-init records the adoption sections")
 
 walks = []
 _walks_path = REPO_ROOT / ".kdbp" / "walks.jsonl"

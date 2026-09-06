@@ -23,7 +23,7 @@ TGEN="$TWIN/scripts"; TSHELL="$TWIN/templates/center/shell"
 drift=0; new_gen=()
 echo "── generators → $TGEN (update-only)"
 for f in "$GEN"/*.py "$GEN"/*.mjs "$GEN"/*.sh; do
-  b=$(basename "$f"); [ "$b" = "propagate.sh" ] && continue   # the driver (review 2026-09-05: refresh_center.sh — the regen this script RUNS — drifted silently while --check said "in sync")
+  b=$(basename "$f"); case "$b" in propagate.sh|bootstrap_center.sh) continue;; esac   # the suite's drivers, never twin assets (review 2026-09-05: refresh_center.sh — the regen this script RUNS — drifted silently while --check said "in sync")
   if [ -e "$TGEN/$b" ]; then
     if diff -q "$f" "$TGEN/$b" >/dev/null 2>&1; then :; else
       if [ "$CHECK" = 1 ]; then echo "  DRIFT $b"; drift=1; else cp "$f" "$TGEN/$b"; echo "  updated $b"; fi

@@ -97,5 +97,6 @@ GABE_CONFIG=<twin>/docs/site/center/center.config.json GABE_SHELL_SRC=$PWD/templ
 GABE_CENTER_OUT=$(mktemp -d) python3 templates/center/generators/build_center_a3.py`.
 
 **Propagate to an adopted twin**: `bash templates/center/generators/propagate.sh <twin-root>`
+- `bootstrap_center.sh <repo> [--name <slug>] [--display "<name>"]` — the CONFIG-ONLY adoption of the center into a repo that has none (review 2026-09-06): lands the generators into `scripts/`, the shell (minus `example/`) into `templates/center/shell/`, a `center.config.json` skeleton (`entities: {}` — fill it), the `.gitignore` seeds; never a tracker (the build takes the config's entities as the registry, out loud), never overwrites, re-runnable. Then `bash scripts/refresh_center.sh regen`. A suite-side driver like `propagate.sh` — never vendored.
 (`--check` reports drift, writes nothing) — updates the twin's vendored generators + shell,
 then runs the twin's `scripts/refresh_center.sh regen`.
