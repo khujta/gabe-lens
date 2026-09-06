@@ -102,6 +102,39 @@ const refsOf = node => {
   return { hasJsx, jsx: [...jsx].sort(), calls: [...calls].sort(), types: [...types].sort(), idents: [...idents].sort(), ctxArgs: [...ctxArgs].sort() };
 };
 
+// ── D5 (operator 2026-09-05): a TYPE's MEMBERS — the frontend's schema fields — and a STORE's SHAPE — the value
+//    type on createContext<T>() / create<T>()(…), the frontend's table columns. A member = [name, type text];
+//    a method signature = name(). The shape keeps the type text, the type-reference names inside it (the arm
+//    resolves them to type pieces → fields + a typed wire) and, for an inline literal, its members directly.
+const STORE_CALLEES = /^(create|createStore|createContext|createSlice|configureStore|atom|atomWithStorage|atomFamily|signal|observable|makeAutoObservable|proxy|createSignal|writable|readable)$/;
+const typeText = (t, sf) => t ? t.getText(sf).replace(/\s+/g, ' ').slice(0, 80) : '';
+const membersOfNodes = (ms, sf) => { const out = []; for (const m of ms) { if ((ts.isPropertySignature(m) || ts.isMethodSignature(m)) && m.name) { const nm = m.name.getText(sf); out.push([nm, ts.isMethodSignature(m) ? nm + '()' : typeText(m.type, sf)]); } } return out; };
+const membersOf = d => {
+  if (!d) return null; const sf = d.getSourceFile();
+  if (ts.isInterfaceDeclaration(d)) return membersOfNodes(d.members, sf);
+  if (ts.isTypeAliasDeclaration(d) && ts.isTypeLiteralNode(d.type)) return membersOfNodes(d.type.members, sf);
+  return null;
+};
+const shapeOf = d => {
+  if (!d || !ts.isVariableDeclaration(d) || !d.initializer || !ts.isCallExpression(d.initializer)) return null;
+  let c = d.initializer; while (ts.isCallExpression(c.expression)) c = c.expression;   // create<S>()(…) — the inner call carries the type args
+  const callee = leftmost(c.expression); if (!callee || !STORE_CALLEES.test(callee)) return null;
+  const ta = c.typeArguments && c.typeArguments[0]; const sf = d.getSourceFile();
+  if (!ta) return { text: '', refs: [], members: null };
+  const refs = new Set(); const walk = n => { if (ts.isTypeReferenceNode(n)) { const t = leftmost(n.typeName); if (t) refs.add(t); } ts.forEachChild(n, walk); }; walk(ta);
+  let members = ts.isTypeLiteralNode(ta) ? membersOfNodes(ta.members, sf) : null;
+  if (!members) {                         // a named type — exported or NOT (useUiStore's local UiState): ask the checker for its properties
+    try {
+      let t = checker.getTypeAtLocation(ta); if (t.getNonNullableType) t = t.getNonNullableType();   // AuthContextValue | undefined → AuthContextValue
+      if (t.flags & ts.TypeFlags.Object) {   // object types only — a primitive (string) would list its prototype methods
+        const props = t.getProperties();
+        if (props.length) members = props.map(p => [p.name, checker.typeToString(checker.getTypeOfSymbolAtLocation(p, ta)).replace(/\s+/g, ' ').slice(0, 80)]);
+      }
+    } catch {}
+  }
+  return { text: typeText(ta, sf), refs: [...refs].sort(), members };
+};
+
 const files = {};
 for (const sf of program.getSourceFiles()) {
   const f = sf.fileName;
@@ -185,6 +218,8 @@ for (const sf of program.getSourceFiles()) {
       // the body = the whole declaration (a `const X = memo(() => <jsx/>)` keeps its JSX)
       const body = ts.isVariableDeclaration(d) ? d : d;
       Object.assign(ex, refsOf(body));
+      const mem = membersOf(d); if (mem && mem.length) ex.members = mem;   // D5
+      const sh = shapeOf(d); if (sh) ex.shape = sh;                       // D5
       ex.span = [sf.getLineAndCharacterOfPosition(d.getStart(sf)).line + 1, sf.getLineAndCharacterOfPosition(d.getEnd()).line + 1];
     }
     rec.exports.push(ex);

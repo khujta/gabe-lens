@@ -1243,7 +1243,8 @@ if(_FE){
   _ents.forEach(function(e,i){ EX[e]=_ents.length<=1?0:(-300+i*(600/(_ents.length-1))); if(EY[e]==null) EY[e]=0; if(EZ[e]==null) EZ[e]=0; });   // re-band with the new clusters
   _FE.pieces.forEach(function(p){ var kind=FE_KIND[p.kind]||p.kind; if(!KINDS[kind]){ KINDS[kind]=_genericKind(kind); KINDCOL[kind]="#8a8f98"; if(typeof GLYPH!=="undefined"&&!GLYPH[kind]) GLYPH[kind]=GLYPH.__generic; _generic++; }   // unknown FE kind draws generically too
     if(NIDS[p.id]) return;
-    var det={ file:p.file, flines:p.span?(p.span[0]+"-"+p.span[1]):null, exported:true, fe_kind:p.kind, exports:p.exports||null, doc:"" };
+    var det={ file:p.file, flines:p.span?(p.span[0]+"-"+p.span[1]):null, exported:true, fe_kind:p.kind, exports:p.exports||null, doc:"",
+      cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null };   /* D5: a store's fields / a type's members ride det.cols like a table's columns */
     var m={ behind:0, depth:0, tests:0, cols:0, fanin:0, god:false, method:null };
     var n={ id:p.id, kind:kind, ent:p.home, label:p.name, col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"web",
       m:m, det:det, behind:{}, fe:true, screen:p.screen||null, sites:p.sites||0, candidate:!!p.candidate,
@@ -4380,7 +4381,7 @@ window.__uniLegRef=function(){
     component:"a piece of UI that draws something on a screen",
     hook:"reusable logic a component calls — it remembers state for it",
     type:"a shape of data — describes things, never runs",
-    store:"frontend state that outlives one screen (a context, a store)",
+    store:"frontend state that outlives one screen (a context, a store) — the frontend's table: its fields are its value type's members",
     module:"the leftover shelf — helpers, API calls and feature logic that aren't UI",
     web:"a place in the frontend that calls the API",
     unknown:"\"we could not tell\" — said out loud, instead of calling it a module",
@@ -4658,6 +4659,9 @@ window.__uniJrnDetail=function(){
       fromG=_grp(n.id,"in",{writes_to:"written by",fnwrites:"written by"}); toG=_grp(n.id,"in",{reads_from:"read by",fnreads:"read by",touches:"touched by"}); }
     else if(n.kind==="schema"){ op="a body shape"; opk="schema"; fields=(n.det&&n.det.cols)||null;
       fromG=_grp(n.id,"in",{resp:"returned by",serializes:"serialized by",returns:"returned by",takes:"taken by"}); }
+    else if(n.kind==="store"){ op="client state"; opk="store"; fields=(n.det&&n.det.cols)||null;
+      fromG=_grp(n.id,"in",{uses:"used by",reads:"read by","uses-store":"used by"}); }   /* D5: the store is the frontend's table — its fields are its value type's members */
+    else if(n.kind==="type"){ op="a shape"; opk="schema"; fields=(n.det&&n.det.cols)||null; fromG=_grp(n.id,"in",{typed:"typed by",uses:"used by"}); }
     else if(n.kind==="middleware"){ op="gates"; opk="gate"; if(n.det&&n.det.gates) note="gates "+n.det.gates; fromG=_grp(n.id,"in",{depends:"protects",handler:"guards"}); }
     else if(n.kind==="route"){ op="a screen"; opk="call"; toG=_grp(n.id,"out",{renders:"renders",mounts:"mounts"}); }
     else if(n.kind==="web"){ op="fetches"; opk="call"; toG=_grp(n.id,"out",{bridge:"fetches",fecall:"fetches"}); }

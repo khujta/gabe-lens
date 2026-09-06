@@ -226,6 +226,10 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                            "candidate": bool(cand), "span": ex.get("span"), "area": _area_of(path, home)}
             if _FIXTURE_RX.search(path):
                 pieces[pid]["fixture"] = True                   # showcase data, not domain mass — tagged, kept
+            if ex.get("members"):                        # D5: a type's fields (the frontend's schema)
+                pieces[pid]["members"] = ex["members"]
+            if ex.get("shape") and k == "store":          # D5: a store's value type (its text now; fields + the typed wire once bindings resolve)
+                pieces[pid]["shape"] = ex["shape"].get("text") or ""
             ids.append(pid)
             export_piece[(path, ex["name"])] = pid
             if ex.get("isDefault"):
@@ -383,6 +387,19 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                 add(src, t, "uses-store" if tk == "store" else "uses-hook" if tk == "hook" else "fecall")
             for ty in ex.get("types") or []:
                 seen.add(ty); add(src, target_of(binds.get(ty)), "typed")
+            _sh = ex.get("shape")
+            if _sh and pieces[src]["kind"] == "store":     # D5: the store's SHAPE → its fields + a typed wire to the type piece
+                _flds = None
+                for _ref in _sh.get("refs") or []:
+                    _tgt = target_of(binds.get(_ref)) or (_piece_id(path, _ref) if _piece_id(path, _ref) in pieces else None)
+                    if _tgt and _tgt != src:
+                        add(src, _tgt, "typed")
+                        if _flds is None and pieces[_tgt].get("members"):
+                            _flds = pieces[_tgt]["members"]
+                if _flds is None and _sh.get("members"):
+                    _flds = _sh["members"]                # an inline literal: create<{ dense: boolean }>()
+                if _flds:
+                    pieces[src]["fields"] = _flds
             for idn in ex.get("idents") or []:
                 if idn in seen or idn not in binds:
                     continue
@@ -539,7 +556,7 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                   "by_home": dict(sorted(by_home.items())), "edges": len(edge_list),
                   "by_rel": dict(sorted(by_rel.items())), "cross": sum(1 for e in edge_list if e["cross"]),
                   "screens_absorbed": absorbed, "screens_by_export": by_export, "unresolved": unresolved, "local_refs": local["refs"],
-                  "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "by_hrole": dict(sorted(by_hrole.items())), "promoted": promoted,
+                  "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "by_hrole": dict(sorted(by_hrole.items())), "stores_with_fields": sum(1 for _p in pieces.values() if _p["kind"] == "store" and _p.get("fields")), "types_with_members": sum(1 for _p in pieces.values() if _p["kind"] == "fe-type" and _p.get("members")), "promoted": promoted,
                   "by_channel": by_channel, "state_pieces": len(touches_state),
                   "cache_pieces": sum(1 for p in pieces.values() if p.get("cache")),
                   "write_pieces": len(touches_write),

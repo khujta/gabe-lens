@@ -414,6 +414,31 @@ _fe8m = _a3_fe.build_fe(_X8, {"r": {}}, [_S8[1]])
 check({p["name"]: p.get("hrole") for p in _fe8m["pieces"] if p["name"] == "useFetchR"} == {"useFetchR": "deriver"},
       "HOOK ROLES MUTATION: without its fetch site useFetchR falls to deriver (the role is READ from wires, never assumed)")
 
+# ── D5 (2026-09-05): a STORE's SHAPE (its value type → fields + a typed wire) · a TYPE's MEMBERS ──
+_PF = {p["name"]: p for p in fe["pieces"]}
+check(_PF["useUiStore"].get("shape") == "{ dense: boolean }" and _PF["useUiStore"].get("fields") == [["dense", "boolean"]],
+      "D5 FIRE (fixture): create<{ dense: boolean }>() — the zustand store carries its inline shape as fields")
+check(_PF["ThemeContext"].get("shape") == "string" and not _PF["ThemeContext"].get("fields"),
+      "D5 (fixture): createContext<string>() — a primitive shape has text and no fields (honest-empty)")
+check(_PF["Recipe"].get("members") == [["id", "string"], ["title", "string"], ["score", "number"]] and _PF["RecipeProps"].get("members") == [["id", "string"]],
+      "D5 (fixture): type/interface exports carry their members — the frontend's schema fields")
+check(fe["stats"].get("stores_with_fields") == 1 and fe["stats"].get("types_with_members") == len([p for p in fe["pieces"] if p["kind"] == "fe-type" and p.get("members")]) and fe["stats"].get("types_with_members") >= 2,
+      "D5: stats.stores_with_fields / types_with_members tally the fixture (every typed export with members, Recipe + RecipeProps among them)")
+_X9 = {"byFile": {
+    "src/features/cart/types.ts": {"exports": [{"name": "CartState", "kind": "type", "hasJsx": False, "members": [["items", "Item[]"], ["total", "number"]]}], "bindings": {}},
+    "src/features/cart/useCartStore.ts": {"exports": [{"name": "useCartStore", "kind": "call:create", "hasJsx": False, "calls": ["create"], "types": ["CartState"],
+                                                        "shape": {"text": "CartState", "refs": ["CartState"], "members": None}}],
+                                          "bindings": {"create": {"ext": True}, "CartState": {"file": "src/features/cart/types.ts", "name": "CartState"}}}}}
+_fe9 = _a3_fe.build_fe(_X9, {"cart": {}}, [])
+_P9 = {p["name"]: p for p in _fe9["pieces"]}
+_E9 = {(_fe9["pieces"][e[0]]["name"], _fe9["pieces"][e[1]]["name"]): e[2] for e in _fe9["edges"]}
+check(_P9["useCartStore"]["kind"] == "store" and _P9["useCartStore"].get("fields") == [["items", "Item[]"], ["total", "number"]] and _E9.get(("useCartStore", "CartState")) == "typed",
+      "D5 FIRE (synthetic): a store whose shape names a type in another file takes that type's members as fields + a typed wire to it")
+_X9m = {"byFile": {k: dict(v, exports=[{kk: vv for kk, vv in ex.items() if kk != "shape"} for ex in v["exports"]]) for k, v in _X9["byFile"].items()}}
+_fe9m = _a3_fe.build_fe(_X9m, {"cart": {}}, [])
+check(not next(p for p in _fe9m["pieces"] if p["name"] == "useCartStore").get("fields") and _fe9m["stats"].get("stores_with_fields") == 0,
+      "D5 MUTATION: no shape on the store export → no fields (the store's columns are READ from its value type, never assumed)")
+
 print(f"frontend battery: {pass_} passed, {fail} failed" + (f", {len(skipped)} skipped" if skipped else ""))
 sys.exit(1 if fail else 0)
 PY
