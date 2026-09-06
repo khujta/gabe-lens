@@ -3863,6 +3863,15 @@ window.__uniAddLayoutTab=function(){ var cfg=document.getElementById("cfg"); if(
    bundle wires between capsules. Click a capsule (or its card's Expand, or the fleet row, or
    any search/chip hit inside it) → the entity opens to its pieces; the CAP toggle in the
    config flips the whole mechanism. Restore-then-apply keeps the surgery idempotent. ── */
+window.__uniBudget=1600;   /* review 2026-09-06 (repo-study — onyx draws ≈3.9k nodes, 3× gustify): above this node count the station boots FOLDED (capsules on · tier 0) instead of every node at once; the Sources row says so; raise it to draw more */
+window.__uniScaleGuard=function(){ var n=(typeof nodes!=="undefined"&&nodes)?nodes.length:0, b=window.__uniBudget||1600; if(n<=b){ window.__uniBudgetHit=null; return false; }
+  window.__uniBudgetHit={nodes:n, budget:b}; UNICAP.on=true; try{ if(window.__uniApplyCapsules) __uniApplyCapsules(); }catch(e){} if(window.__uniSetTier){ try{ __uniSetTier(0); }catch(e){} }
+  try{ console.info("gabe-universe: "+n+" nodes > budget "+b+" — booted folded (capsules on, tier 0); raise window.__uniBudget to draw more"); }catch(e){} return true; };
+window.__uniApplyDeepLinks=function(){   /* ?journey=<name|cid> opens ONE walk · ?ent=<slug> opens that entity's panel — the ramp-up's "one trace per session" (review 2026-09-06) */
+  var jv=window.__jrn, ev=window.__ent;
+  if(jv && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
+    if(j) __uniJrnStart(j.cid); else console.info("gabe-universe: ?journey="+jv+" names no journey (workflows tab lists them)"); }catch(e){} }
+  if(ev && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
 window.UNICAP={ on:false, threshold:80, open:{} };   // DEFAULT OFF (operator): simplification is control-driven (tiers) now, not the capsule click-fold — the CAP fleet toggle can still turn the legacy fold back on
 var _CAPST=null;   // {nodes:[...], links:[...], caps:[capIds], byPiece:{pieceId:capId}}
 window.__uniApplyCapsules=function(){ try{
@@ -5005,6 +5014,7 @@ function build(){
       if(window.__drive && !window.__driveDone){ window.__driveDone=true;   // regression: flip shape AFTER settle (the path that was broken)
         CFG.shape=window.__drive; CFG.subOn=true; CFG.entOn=true; buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); buildClusters(); updateClusters(true); }
       if(window.__panel){ var pn=nodes.find(function(x){return x.id===window.__panel;}); if(pn){ SEL={kind:"node",data:pn}; showPanel(pn); refreshEncSel(); } }
+      if(window.__uniApplyDeepLinks){ try{ __uniApplyDeepLinks(); }catch(e){} }
       if(window.__link){ var pr=window.__link.split(">"); var ll=links.find(function(x){ return (x.source.id||x.source)===pr[0] && (x.target.id||x.target)===pr[1]; }); if(ll){ SEL={kind:"link",data:ll}; showLinkPanel(ll); refreshEncSel(); } } });
   try{ Graph.d3Force("layer", zForce); }catch(e){}
   try{ Graph.d3Force("charge").strength(-60).distanceMax(150); }catch(e){}
@@ -5592,6 +5602,8 @@ var KINDCARD=(function(){
     var st=(window.GABE_C4&&window.GABE_C4.stats)||null;
     if(st){ var w=E("div",{class:"sec"}, sechd("down","Sources", null, false,
         {icon:"info",cls:"info",text:"The committed feeds this graph is drawn from — each row is one input and what it contributed."}));
+      if(window.__uniBudgetHit) w.append(srcRow("entity","scale", window.__uniBudgetHit.nodes+" nodes > budget "+window.__uniBudgetHit.budget+" — booted folded (capsules on · tier 0)",
+        "above its node budget the station opens FOLDED so a large repo stays navigable — open a planet, or raise window.__uniBudget, to draw more"));
       if(st.cross_touches!=null) w.append(srcRow("model","cross-entity touches", String(st.cross_touches),
         "models one entity references while ANOTHER documents them — resolved into the dotted touches wires between entities"));
       if(st.web){ var unm=Array.isArray(st.web.unmatched)?st.web.unmatched:[], unmN=Array.isArray(st.web.unmatched)?unm.length:(st.web.unmatched||0);
@@ -5609,6 +5621,7 @@ var KINDCARD=(function(){
       pb.append(w); }
     pb.append(E("div",{class:"sec"}, sechd("nav","Above"), E("div",{class:"sublbl"}, icoEl("info"), "— the top level (Esc returns here)")));
     openPanel(); }
+  window.__uniPanelEnt=function(e){ return panelEnt(e); };   /* the ?ent= deep link reaches the entity panel from outside this scope */
   function panelEnt(ent){ try{ if(window.__uniCardPrune) __uniCardPrune(); }catch(e){} window.__uniPView={lvl:"ent",ent:ent}; _hulls(ent,null);
     var mem=nodes.filter(function(n){ return n.ent===ent; });
     _phead((window.__uniEntLabel?__uniEntLabel(ent):ent),"ENTITY","entity",(typeof ENT!=="undefined"&&ENT[ent])||null);
@@ -6048,7 +6061,7 @@ buildLegend(); palLoop();   // legend renders now (placeholders); thumbnails pai
   ["iso","sub","entNodeR","entTubeR","subNodeR","subTubeR","entRes","subRes","every"].forEach(function(k){ var v=q.get("w"+k); if(v!=null) WRAPCFG[k]=+v; });
   var ep=q.get("enc"); if(ep&&PRESETS[ep]){ applyPreset(ep); buildExpl(); }
   var hb=q.get("heatBy"); if(hb){ ENC.heatBy=hb; } var cm=q.get("cmode"); if(cm){ ENC.color=cm; buildExpl(); } var sp=q.get("speed"); if(sp!=null){ ENC.speed=+sp; buildExpl(); }
-  window.__drive=q.get("drive"); window.__panel=q.get("panel"); window.__link=q.get("link"); window.__cam=q.get("cam"); if(changed && document.getElementById("cfg")){ buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); if(window.__uniFleetSync) __uniFleetSync(); } })();
+  window.__drive=q.get("drive"); window.__panel=q.get("panel"); window.__link=q.get("link"); window.__cam=q.get("cam"); window.__jrn=q.get("journey"); window.__ent=q.get("ent"); if(changed && document.getElementById("cfg")){ buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); if(window.__uniFleetSync) __uniFleetSync(); } })();
 buildExpl();   // build the encode panel now that DIMR/drow exist
-preloadBillboards(function(){ try{ recomputeEX(CFG.entLayout); (window.__uniAssignSplit?__uniAssignSplit():assignSub(CFG.coreByBE||"kind")); recomputeSubAnchors(); }catch(e){} build(); try{ if(window.__uniComputeSolo) __uniComputeSolo(); }catch(e){} try{ __uniSetupOrbit(); }catch(e){} setTimeout(function(){ try{ if(window.__uniSetKindState) __uniSetKindState("function","critical"); }catch(e){} if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400); window.__spikeKindsReady=true; loadShips(); });   // load the ship/sat GLBs → onShipsReady() repaints fleets
+preloadBillboards(function(){ try{ recomputeEX(CFG.entLayout); (window.__uniAssignSplit?__uniAssignSplit():assignSub(CFG.coreByBE||"kind")); recomputeSubAnchors(); }catch(e){} build(); try{ if(window.__uniComputeSolo) __uniComputeSolo(); }catch(e){} try{ __uniSetupOrbit(); }catch(e){} setTimeout(function(){ try{ if(window.__uniSetKindState) __uniSetKindState("function","critical"); }catch(e){} if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400); window.__spikeKindsReady=true; loadShips(); });   // load the ship/sat GLBs → onShipsReady() repaints fleets
 </script></body></html>

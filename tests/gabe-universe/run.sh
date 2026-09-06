@@ -890,6 +890,8 @@ check('(kind==="mclass")?"module class":' not in page and '(kind==="mclass")?["a
       "__badgePop's key ternary carries no string branch for mclass (2026-09-05: keys.forEach threw on the Module ⓘ)")
 check('if(!_bm && !sel) return;' in page and 'window.__uniSelectLink=function(l)' in page and 'if(window.__uniSelectLink) __uniSelectLink(l);' in page and 'function wireVisSec(l)' in page and 'function fkKey(s, t)' in page and 'class="lrex lrexl"' in page and '.lrex:not(.lrexl)' in page,
       "WIRE SELECTION (2026-09-05): a selected wire draws even when its kind beam is 0 (the vanishing rollup); one select path; the card says why a wire is hidden; the FK key line; example WIRE chips on the reference's connector rows")
+check('window.__uniBudget=1600;' in page and 'window.__uniScaleGuard=function' in page and 'window.__uniApplyDeepLinks=function' in page and 'q.get("journey")' in page and 'window.__uniPanelEnt=function' in page and 'if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} }' in page,
+      "PASS 4 (2026-09-06): the node budget + scale guard (booted folded above it), the ?journey= / ?ent= deep links, the entity-panel handle")
 check('C.store=feDataBuilder; C.type=feDataBuilder; C.hook=feHookBuilder; C.component=feHookBuilder;' in page and 'function carriesSec(l)' in page and page.count('carriesSec(l)')>=1 and 'function carriesSec(l)' in page and '{t:"ln",k:"renders"' in page and '"x:typed":' in page and 'if(/tog$/.test(it.t||"")) return;' in page and page.count('structureSec(n),\n') >= 1,
       "CARD ORDER + CARRIES + CONNECTORS (2026-09-05): data kinds put Structure before Connections; hooks/components list the shapes they handle; every wire card says what it carries; the frontend wires join the connector roster; the reference lists wires only")
 check('cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null' in page and 'n.kind==="store"){ op="client state"; opk="store"; fields=(n.det&&n.det.cols)||null;' in page and 'the frontend\'s table: its fields are its value type' in page,
@@ -1123,7 +1125,7 @@ check('if(n&&n.kind==="capsule"){ if(window.__uniCapExpand) __uniCapExpand(n.ent
 check('if(_CAPST&&_CAPST.byPiece[id])' in page, "goto/search into a folded piece no longer auto-expands")
 check('g:"collapsed"' in page and 'opens the capsule' in page,
       "stashed pieces vanished from search (the index must list them and expand on open)")
-check('if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400);' in page,
+check('if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400);' in page,
       "the boot 400ms settle applies the T1 tier (capsules default off → the tier is the boot-time simplification)")
 check('KINDS.capsule={' in page and 'f==="pod"' in page and 'C.capsule=function(n)' in page,
       "the capsule kind lost its form/card")
@@ -1335,6 +1337,13 @@ const { chromium } = require(process.argv[3]);
       window.__uniSelLink=null; SEL=null; try{ updateConnectors(); }catch(e){}
       return {drawn:drawn, vis:heads.indexOf('Visibility')>=0, chips:chips, key:key, beam:window.__uniBeam&&window.__uniBeam.rollup}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
   console.log('  wireSel '+JSON.stringify(wireSel));
+  // PASS 4 (2026-09-06): the scale guard folds an over-budget field; the deep links open one journey / one entity
+  const scaleDL = await p.evaluate(() => { try{ var was={on:UNICAP.on, tier:window.__uniTier}; window.__uniBudget=10; var hit=__uniScaleGuard();
+      var r={hit:hit, capOn:UNICAP.on, tier:window.__uniTier, row:!!window.__uniBudgetHit};
+      window.__uniBudget=1600; UNICAP.on=was.on; try{ __uniApplyCapsules(); }catch(e){} if(window.__uniSetTier) __uniSetTier(was.tier||1); window.__uniBudgetHit=null;
+      var j0=(_jrnCollect().filter(function(x){ return x.wf && !x.draft; })[0]||{}); window.__jrn=j0.name||null; window.__jrnDone=false; __uniApplyDeepLinks(); r.jrn=j0.name||null; r.steps=(WALK&&WALK.steps||[]).length; try{ __uniJrnStart(null); }catch(e){}
+      window.__ent=(Object.keys(ENT)[0]||null); window.__entDone=false; __uniApplyDeepLinks(); r.ent=(window.__uniPView&&window.__uniPView.lvl)||null; return r; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
+  console.log('  scaleDL '+JSON.stringify(scaleDL));
   // TIER KEY regression (operator bug): plain 1–4 fired the tier handler AND the fleet-column handler
   // (two listeners, preventDefault can't stop the second) → the same tier rendered differently each
   // press. Tiers now require Alt+Digit1–4; plain digits must NO LONGER move the tier, and Alt+Digit is
@@ -1593,7 +1602,8 @@ const { chromium } = require(process.argv[3]);
     && jd.matrixOk && jd.frozenOk && jd.walkSyncOk && jd.flagsOk && jd.opcFrozen && jd.indirect>0;
   const sc=storeCheck, storeOk = sc && !sc.err && sc.storeCols>=1 && sc.storeFlagOn && sc.litStore>=1 && sc.iconInline && sc.titleHot && sc.cellClean && sc.row0Lit>=0 && sc.row0Lit<=5 && sc.anchorKind==='route' && sc.anchorKind3==='route' && sc.lgbiOk===true && /useCreatePantryItem/.test(sc.feStart||'') && sc.hookRoles && sc.hookRoles.hooks>0 && sc.hookRoles.withRole===sc.hookRoles.hooks && sc.hookRoles.kinds>=3 && sc.storeShape && sc.storeShape.stores>0 && sc.storeShape.shaped>=1 && sc.cardOrder && !sc.cardOrder.err && /Usage/.test(sc.cardOrder.store[0]||'') && /Structure/.test(sc.cardOrder.store[1]||'') && /Structure/.test(sc.cardOrder.model[1]||'') && sc.cardOrder.carries===true && sc.cardOrder.ref && sc.cardOrder.ref.blank===0 && sc.cardOrder.ref.fe===true && sc.drafts>=1 && sc.draftWalk>0 && sc.draftGrp && sc.draftLeveled && sc.draftNamed && sc.viewType==='View (FE)' && sc.viewCol==='#d946ef' && (sc.viewIcon==='heat'||sc.viewIcon==='#d946ef');
   const wireSelOk = !!(wireSel && !wireSel.err && wireSel.drawn===true && wireSel.vis===true && wireSel.chips>=8 && wireSel.key===true && wireSel.beam===0);
-  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk;
+  const scaleOk = !!(scaleDL && !scaleDL.err && scaleDL.hit===true && scaleDL.capOn===true && scaleDL.tier===0 && scaleDL.row===true && scaleDL.jrn && scaleDL.steps>0 && scaleDL.ent==='ent');
+  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk;
   if(ok) console.log(`  render: PASS — ${r.nodes} live nodes, 0 errors, card renders (st-pass=${r.stPass}, faces=${r.face}); frontend ${f.present?`${f.feNodes} pieces · ${f.absorbed} screens absorbed · ${f.typesHeld} types held · FE-write heat off-by-default, bands blue→magenta`:'absent (honest-empty)'}`);
   else { console.error('  render FAIL:', JSON.stringify(r), 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
 })();
