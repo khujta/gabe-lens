@@ -102,6 +102,23 @@ the draft's `coverage` + `abstained`. 31/29/46/29% witness coverage must never r
 Zero candidates accepted across three drafts on both twins ⇒ the pill is a picture, not a proposal. Say so here (with the
 three draft heads), keep the pill, do not delete the emitter — a picture of the disagreement is still the operator's ask.
 
+## The estates as shipped (2026-09-06, suite `a6cf665`)
+
+| Estate | seeded moved · held | derived features · anchored/atoms · abstained · purity | proposed | candidates | hubs |
+|---|---|---|---|---|---|
+| gustify (`afb646c9`, pushed) | 9 · 4 | 25 · 78/80 · 2 · 0.897 | FEATURE 2 · SPLIT 3 · ASPECT 1 · LAYER 1 | dish history events | 55 |
+| gastify (pushed) | 7 · 0 | 12 · 49/49 · 0 · 0.897 | FEATURE 2 · SPLIT 3 | — | 20 |
+| tier0 (local) | 4 · 1 | 2 · 9/23 · 14 · 0.778 | FEATURE 2 · MERGE 1 | — | 13 |
+| tier1 (local) | 2 · 0 | absent — no atom carries a table (said) | absent (said) | — | 1 |
+| tier2 (local) | 1 · 0 | 1 · 2/11 · 9 · 1.0 | FEATURE 1 | — | 0 |
+| tier3 / onyx (local) | 96 · 2 | 65 · 327/545 · 218 · 0.893 | FEATURE 1 · SPLIT 4 · ASPECT 2 · LAYER 2 | search settings · user user group | 28 |
+
+Every estate carries `entities.draft.json` (head-stamped); tier1's drafter wrote nothing and said why. On onyx
+`?model=derived&ent=d:persona` resolves against the derived clusters and the Sources row reads `327/545 atoms anchored · 218
+abstained` (the station boots unfolded there — the T1 field is 794 nodes, under the scale guard's 1,600 budget). One reading
+worth a ruling: the sibling naming law yields `Manage manage — users · permissions …` for onyx's `/manage/*` candidate — the
+noun IS the domain word; the human renames on acceptance.
+
 ## Batteries
 
 `tests/entity-models` (the emitter, 69, every rule with a named mutation lever) · `tests/arch-graph` (byte-identity when
