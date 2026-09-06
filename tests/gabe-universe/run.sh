@@ -1158,6 +1158,17 @@ check('window.__uniClaimEnts=_ents.slice();' in page and page.find('window.__uni
 check('KINDS.element={' in page and 'KINDCOL.element=' in page and 'order.push("element")' in page and '"prompt","element"].forEach' in page
       and '"prompt","element"].filter' in page and 'element:"a backend file' in page and '"prompt","element"];' in page,
       "B1: the element kind lacks its registry / legend row / compact-legend row / tier list / tip")
+check('"claimed by "+String(n.entClaim||n.ent||"")' in page and '"home "+_hslug(n.entClaim||n.ent)+" by "+by' in page and '_hslug(n.ent)+" by "' not in page and 'String(n.ent||"").replace(/^fe·/,"")+"\'s config' not in page,
+      "R2: the homing-evidence and config-home card rows must join on the CLAIM (n.entClaim), never the view's home")
+_sm1=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('window.__uniAddWireView=function()')]
+check('pools.push(_FETYPES)' in _sm1 and 'live={}; pools.forEach(function(pool){ pool.forEach(function(n){ if(n&&!n.__cap&&n.ent) live[n.ent]=1; }); });' in _sm1 and 'live={}; nodes.forEach' not in _sm1,
+      "R2: the held fe-type pool re-homes and the cluster registry is built over EVERY pool (a function-only cluster must be minted with functions OFF)")
+_sm2=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('window.__uniAddWireView=function()')]
+check(_sm2.find('window.__uniModel=v;') < _sm2.find('var pools=[nodes]') and _sm2.count('window.__uniModel=v;')==1,
+      "R2: the model flag is set BEFORE the re-cluster (buildClusters reads it for the aspect dash)")
+check('if(!mem.length) return;' in page[page.find('function buildClusters()'):page.find('function hull(ms, pad)')], "R2: a registered cluster with zero drawn members allocates no hull (no label at the origin)")
+check('" unclaimed file(s) in the map"' in page and 'hidden at this tier (drawn from Trace)' in page and 'unclaimed file(s) drawn' not in page, "R2: the elements Sources row says the state (drawn from which tier), not the intent")
+check('fnsN:(kind==="element"?_num(p.fns):null)' in page and 'more (the census lists 12)' in page, "R2: the element card names the functions beyond the 12 its det lists")
 check('var pc=D.pieces[n.entClaim||n.ent];' in page and 'D.pieces[n.ent];' not in page,
       "B2: the levels group map must join on the CLAIM — a moved piece would lose its use-case / community / fk group and land in 'other'")
 _em=page[page.find('if(!document.getElementById("entmodel"))'):page.find('if(document.getElementById("wireview")) return;')]
@@ -1663,11 +1674,20 @@ const { chromium } = require(process.argv[3]);
       var r={n0:n0, views:Object.keys(M.views).filter(function(k){ return M.views[k].present; })};
       r.seeded=__uniSetModel('seeded'); r.sameN=(nodes.length===n0 && links.length===l0); r.idsOk=ids.every(function(id,i){ return nodes[i]&&nodes[i].id===id&&NIDS[id]===nodes[i]; });
       var st=window.__uniModelStats; r.moved=st.moved; r.feedMoved=M.views.seeded.moved; r.movedOk=(st.moved===M.views.seeded.moved);
+      var LVM=(window.GABE_LEVELS&&GABE_LEVELS.models)||{}; var feedN=function(map,v){ var a=((M[map]||{})[v]||[]), b=(((LVM[map]||{})[v])||[]); return a.length+b.length; };
+      r.heldOk=(st.held===feedN('held','seeded')); r.abstainN=(st.abstained===feedN('abstain','seeded')); r.feedHeld=feedN('held','seeded'); r.stHeld=st.held;   // the live tally vs the FEED, both halves (review: a count asserted against itself proves nothing)
       var newC=_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; }); r.newClusters=newC.length; r.regOk=newC.every(function(e){ return !!ENT[e] && !!UNIVIS.ent[e]; });
       var ab=nodes.find(function(n){ return n.modelMark==='abstain'; }); r.abstainOk=(!ab || ab.ent===ab.entClaim); r.o0=o0; r.o1=other(); r.otherOk=(other()<=o0);
       r.pill=[].map.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ return b.getAttribute('data-v')+(b.classList.contains('on')?'*':'')+(b.disabled?'-':''); }).join(' ');
       try{ __uniPanelAll(); var pt0=document.getElementById('pbody').textContent; r.srcRow=/entity model/.test(pt0) && (new RegExp('seeded · '+st.moved+' moved · '+st.abstained+' abstained · '+st.held+' held')).test(pt0); }catch(e){ r.srcRow='err:'+e; }
-      var mv=nodes.find(function(n){ return n.modelMark==='moved'; })||(_FNNODES||[]).find(function(n){ return n.modelMark==='moved'; }); if(mv){ SEL={kind:'node',data:mv}; showPanel(mv); r.cardRow=/seeded: claim .+ → .+ nothing re-homed on disk/.test(document.getElementById('pbody').textContent); }
+      var mv=nodes.find(function(n){ return n.modelMark==='moved'; })||(_FNNODES||[]).find(function(n){ return n.modelMark==='moved'; }); if(mv){ SEL={kind:'node',data:mv}; showPanel(mv); var _pt=document.getElementById('pbody').textContent; r.cardRow=/seeded: claim .+ → .+ nothing re-homed on disk/.test(_pt);
+        var _hs=function(x){ return x==='__unclaimed__'?'unclaimed':String(x||'').replace(/^fe·/,''); }; var _ev=(_pt.match(/home (\S+) by /)||[])[1]; r.evClaim=_ev?(_ev===_hs(mv.entClaim)):null; }   // the evidence row names the CLAIM slug, not the view's destination (review)
+      // a function-only cluster registers with functions OFF (the default resting state): derived from claim with the fn layer hidden
+      r.claim0=__uniSetModel('claim'); var _fnWasOn=(typeof _fnsOn!=='undefined'&&_fnsOn); if(_fnWasOn){ try{ toggleFns(false); }catch(e){} }
+      r.derivedOff=__uniSetModel('derived'); r.aspectReg=(_ents.indexOf('a:get_auth_context')>=0 && !!ENT['a:get_auth_context'] && !!UNIVIS.ent['a:get_auth_context']); r.noEmptyHull=!CLUSTERS.some(function(c){ return c.level==='ent' && !c.members.length; });
+      try{ toggleFns(true); }catch(e){} r.aspectHullAfterLoad=!!CLUSTERS.find(function(c){ return c.level==='ent' && c.ekey==='a:get_auth_context' && c.dash; });
+      r.newClustersFeed=(_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; }).length===M.views.derived.new_clusters); r.newClustersN=[_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; }).length, M.views.derived.new_clusters];
+      __uniSetModel('seeded');
       var j=_jrnCollect()[0]; if(j){ __uniJrnStart(j.cid); } var steps=(WALK.steps||[]).slice(), wi=WALK.i;
       r.derived=__uniSetModel('derived'); r.walkOk=((WALK.steps||[]).join('|')===steps.join('|') && WALK.i===wi && _jrnCollect().length>0);
       var asp=CLUSTERS.find(function(c){ return c.level==='ent' && /^a:/.test(c.ekey||''); }); r.aspect=asp?{ekey:asp.ekey, dash:!!asp.dash}:null;
@@ -1675,11 +1695,22 @@ const { chromium } = require(process.argv[3]);
       r.proposed=__uniSetModel('proposed'); var slug=(M.rosters.proposed||[]).filter(function(x){ return x.verdict && _ents.indexOf(x.slug)>=0; })[0]; if(slug){ __uniPanelEnt(slug.slug); r.badge=((document.querySelector('#pbody .pchip.verdict')||{}).textContent)||null; }   // the chip itself — textContent concatenates words, so a \b regex never matches
       r.claim=__uniSetModel('claim'); r.roundTrip=(nodes.every(function(n){ return !(n.id in before) || n.ent===before[n.id]; }) && Object.keys(before).every(function(id){ return !NIDS[id] || NIDS[id].ent===before[id]; }) && _ents.length===__uniClaimEnts.length && _ents.every(function(e,i){ return e===__uniClaimEnts[i]; }) && nodes.every(function(n){ return !n.modelMark; }));
       r.noDash=!CLUSTERS.some(function(c){ return c.dash; });
-      var keep=GABE_C4.models; delete GABE_C4.models; r.absent=(__uniSetModel('derived')===false) && window.__uniModel==='claim'; GABE_C4.models=keep;
+      var keep=GABE_C4.models; delete GABE_C4.models; r.absent=(__uniSetModel('derived')===false) && window.__uniModel==='claim';
+      try{ __uniPanelAll(); r.absentRow=/claim — the registry .*the only model this feed carries \(no entity-models block/.test(document.getElementById('pbody').textContent); }catch(e){}
+      try{ var _em=document.getElementById('entmodel'); if(_em) _em.remove(); __uniAddWireView(); r.pillAbsent=[].map.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ return b.getAttribute('data-v')+(b.classList.contains('on')?'*':'')+(b.disabled?'-':''); }).join(' '); }catch(e){ r.pillAbsent='err:'+e; }
+      try{ window.localStorage.setItem('gabe:universe:model','derived'); window.__modelDone=false; window.__model=null; __uniApplyDeepLinks(); r.storedFallback=(window.__uniModel==='claim'); window.localStorage.removeItem('gabe:universe:model'); }catch(e){ r.storedFallback='err:'+e; }
+      GABE_C4.models=keep;
+      try{ var _em2=document.getElementById('entmodel'); if(_em2) _em2.remove(); __uniAddWireView(); }catch(e){}
+      try{ var _d0=(M.rosters.derived||[]).filter(function(x){ return x.kind==='feature'; })[0]; window.__model='derived'; window.__ent=_d0&&_d0.id; window.__modelDone=false; window.__entDone=false; __uniApplyDeepLinks();
+        r.deepLink=(window.__uniModel==='derived' && window.__uniPView && window.__uniPView.lvl==='ent' && window.__uniPView.ent===(_d0&&_d0.id)); window.__model=null; window.__ent=null; }catch(e){ r.deepLink='err:'+e; }
+      try{ var _el=nodes.find(function(n){ return n.kind==='element'; })||(_CAPST&&_CAPST.nodes.find(function(n){ return n.kind==='element'; })); if(_el){ SEL={kind:'node',data:_el}; showPanel(_el); var _et=document.getElementById('pbody').textContent; r.elementCard=/Unclaimed file/.test(_et) && _et.indexOf(_el.det.file)>=0 && /functions/.test(_et); } else r.elementCard='no element node on the feed'; }catch(e){ r.elementCard='err:'+e; }
+      __uniSetModel('claim');
       try{ __uniPanelAll(); r.claimRow=/claim — the registry/.test(document.getElementById('pbody').textContent); }catch(e){}
       return r; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
   console.log('  modelSw '+JSON.stringify(modelSw));
-  const modelOk = !!(modelSw && !modelSw.err && modelSw.seeded===true && modelSw.sameN && modelSw.idsOk && modelSw.movedOk && modelSw.regOk && modelSw.abstainOk && modelSw.otherOk
+  const modelOk = !!(modelSw && !modelSw.err && modelSw.seeded===true && modelSw.sameN && modelSw.idsOk && modelSw.movedOk && modelSw.heldOk && modelSw.abstainN && modelSw.regOk && modelSw.abstainOk && modelSw.otherOk
+    && modelSw.evClaim!==false && modelSw.claim0===true && modelSw.derivedOff===true && modelSw.aspectReg===true && modelSw.noEmptyHull===true && modelSw.aspectHullAfterLoad===true && modelSw.newClustersFeed===true
+    && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
     && /claim seeded\*/.test(modelSw.pill||'') && modelSw.srcRow===true && modelSw.cardRow===true && modelSw.derived===true && modelSw.walkOk && modelSw.aspect && modelSw.aspect.dash===true
     && modelSw.entCard===true && modelSw.proposed===true && ['FEATURE','SPLIT','MERGE','ASPECT','LAYER'].indexOf(modelSw.badge)>=0 && modelSw.claim===true && modelSw.roundTrip===true && modelSw.noDash && modelSw.absent===true && modelSw.claimRow===true);
   await b.close();

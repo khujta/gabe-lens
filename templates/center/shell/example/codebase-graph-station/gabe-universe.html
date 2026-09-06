@@ -1231,7 +1231,7 @@ Object.keys(_C4.l2||{}).forEach(function(ent){
     var n={ id:p.id, kind:kind, ent:ent, entClaim:ent, label:p.label||p.slug||p.id,   /* ent = the MUTABLE current home (an entity-model view may move it) · entClaim = the immutable claim, the join key */
       col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"data",
       m:m, det:det, behind:beh, resp:p.resp, ids:p.ids, table:p.table, sites:p.sites, fn:p.fn,
-      middleware:p.middleware, stream:!!p.stream, pclass:p.pclass||null, homeEv:p.home_ev||null };   // C4: the endpoint's level-2 gate/dep floor → the card's Guards section · stream = SSE/chunked delivery (review 2026-09-06)
+      middleware:p.middleware, stream:!!p.stream, pclass:p.pclass||null, homeEv:p.home_ev||null, fnsN:(kind==="element"?_num(p.fns):null) };   // C4: the endpoint's level-2 gate/dep floor · fnsN: an element's function COUNT (its det lists 12) → the card's Guards section · stream = SSE/chunked delivery (review 2026-09-06)
     nodes.push(n); NIDS[n.id]=n; });
 });
 if(_generic) try{ console.warn("[universe] "+_generic+" piece(s) drawn GENERICALLY (kind unknown to this station — a newer emitter; add to KINDS to give it a glyph)"); }catch(e){}
@@ -3972,13 +3972,14 @@ window.__uniSetModel=function(v, opts){ opts=opts||{}; v=String(v||"claim"); var
   if(v!=="claim"){ var hc=(m.homes||{})[v]||{}, hl=(LV.homes||{})[v]||{}; Object.keys(hc).forEach(function(k){ H[k]=hc[k]; }); Object.keys(hl).forEach(function(k){ H[k]=hl[k]; });
     ((m.abstain||{})[v]||[]).concat((LV.abstain||{})[v]||[]).forEach(function(k){ AB[k]=1; }); ((m.held||{})[v]||[]).concat((LV.held||{})[v]||[]).forEach(function(k){ HD[k]=1; }); }
   /* (b) every node in every pool — drawn · capsule-stashed · the function layer — takes the view's delta or its claim; nothing else on the node moves (no id, no colour, no det, no array) */
-  var pools=[nodes]; if(typeof _CAPST!=="undefined"&&_CAPST&&_CAPST.nodes) pools.push(_CAPST.nodes); if(typeof _FNNODES!=="undefined"&&_FNNODES) pools.push(_FNNODES);
+  window.__uniModel=v;                                                                          /* set BEFORE the re-cluster: buildClusters reads it for the aspect dash (review 2026-09-06) */
+  var pools=[nodes]; if(typeof _CAPST!=="undefined"&&_CAPST&&_CAPST.nodes) pools.push(_CAPST.nodes); if(typeof _FNNODES!=="undefined"&&_FNNODES) pools.push(_FNNODES); if(typeof _FETYPES!=="undefined"&&_FETYPES&&_FETYPES.length) pools.push(_FETYPES);   /* the held fe-type pool re-homes too */
   var st={moved:0, abstained:0, held:0, clusters:0}, seen={};
   pools.forEach(function(pool){ pool.forEach(function(n){ if(!n||n.__cap||seen[n.id]) return; seen[n.id]=1; var c=n.entClaim||n.ent; if(!n.entClaim) n.entClaim=c;
     n.ent=H[n.id]||c; n.modelMark=H[n.id]?"moved":(AB[n.id]?"abstain":(HD[n.id]?"held":null));
     if(n.modelMark==="moved") st.moved++; else if(n.modelMark==="abstain") st.abstained++; else if(n.modelMark==="held") st.held++; }); });
   /* (c) the cluster registry: the claim entities that still hold a piece ∪ the view's live cluster ids — the claim view restores the registry EXACTLY */
-  var claimEnts=window.__uniClaimEnts||_ents.slice(), live={}; nodes.forEach(function(n){ if(!n.__cap&&n.ent) live[n.ent]=1; }); if(typeof _CAPST!=="undefined"&&_CAPST) _CAPST.nodes.forEach(function(n){ if(n.ent) live[n.ent]=1; });
+  var claimEnts=window.__uniClaimEnts||_ents.slice(), live={}; pools.forEach(function(pool){ pool.forEach(function(n){ if(n&&!n.__cap&&n.ent) live[n.ent]=1; }); });   /* EVERY pool — a cluster that lives only in the hidden function/type layer is registered now, so it has a colour, an anchor and a fleet row the moment its pieces load (review 2026-09-06) */
   var next=(v==="claim")?claimEnts.slice():claimEnts.filter(function(e){ return live[e]; }); Object.keys(live).sort().forEach(function(e){ if(next.indexOf(e)<0) next.push(e); });
   /* (d) colour · visibility · pairing for a cluster the claim lacks — the roster's colour for a feature / aspect / candidate, the twin TINT for fe·; a minted id is pruned the moment it empties */
   var roster=__uniModelRoster(), minted=window.__uniModelMinted||(window.__uniModelMinted={});
@@ -3994,7 +3995,7 @@ window.__uniSetModel=function(v, opts){ opts=opts||{}; v=String(v||"claim"); var
   try{ recomputeEX(CFG.entLayout); }catch(e){} try{ __uniAssignSplit(); }catch(e){} try{ recomputeSubAnchors(); }catch(e){}
   try{ __uniApplyCapsules(); }catch(e){}
   try{ Graph.d3ReheatSimulation(); }catch(e){}
-  JRN=null; window.__uniModel=v; st.clusters=next.filter(function(e){ return claimEnts.indexOf(e)<0; }).length; window.__uniModelStats=st;
+  JRN=null; st.clusters=next.filter(function(e){ return claimEnts.indexOf(e)<0; }).length; window.__uniModelStats=st;
   try{ if(window.__uniFleetRender) __uniFleetRender(); }catch(e){}
   try{ var pv=window.__uniPView; if(pv&&pv.lvl==="ent"){ if(_ents.indexOf(pv.ent)>=0) __uniPanelEnt(pv.ent); else if(window.__uniPanelAll) __uniPanelAll(); } else if(pv&&pv.lvl==="all"&&window.__uniPanelAll) __uniPanelAll(); }catch(e){}
   try{ applyVis("all"); }catch(e){}
@@ -5031,6 +5032,7 @@ function makeCluster(members, color, shape, op, level, label, dash){
 }
 function buildClusters(){ clearClusters();
   if(CFG.entOn) Object.keys(ENT).forEach(function(e){ if(!visEnt(e).show) return; var mem=nodes.filter(function(n){return n.ent===e;}).map(function(n){return n.id;});
+    if(!mem.length) return;                                                                     /* a registered cluster whose pieces sit in a hidden pool draws no hull (and parks no label at the origin) until they load (review 2026-09-06) */
     var _mr=(window.__uniModelRosterRow&&window.__uniModel!=="claim")?__uniModelRosterRow(e):null, _dash=!!(_mr&&_mr.kind==="aspect");   /* an aspect cluster (derived / proposed) wears the dashed rim */
     CLUSTERS.push(Object.assign(makeCluster(mem, ENT[e], CFG.shape, OPMAP[CFG.shape][CFG.entOp], "ent", e, _dash), {ekey:e, dash:_dash})); });
   if(CFG.subOn){ var subs={}; nodes.forEach(function(n){ if(!visEnt(n.ent).show||!visEnt(n.ent).subs) return;
@@ -5558,7 +5560,7 @@ var KINDCARD=(function(){
     rows.push(E("div",{class:"doc"}, KINDTIP[n.kind]||""));   // ONE meaning per kind — the Elements rows + the card share it
     return E.apply(null,[ "div",{class:"sec"}, sechd(n.kind==="type"?"schema":n.kind,"Frontend") ].concat(rows)); }
   /* the FE homing witness on the card (D6): a config-homed piece says so on EVERY fe kind — hook, component, store, type, route, module */
-  function homeRow(n){ return n.homedBy==="config"?kv("link","home","claimed by "+String(n.ent||"").replace(/^fe·/,"")+"'s config — no feature folder names it"):null; }
+  function homeRow(n){ return n.homedBy==="config"?kv("link","home","claimed by "+String(n.entClaim||n.ent||"").replace(/^fe·/,"")+"'s config — no feature folder names it"):null; }   /* the CLAIM, never the view's home (review 2026-09-06) */
   /* the membership EVIDENCE row (Part C, 2026-09-06 — location is an indicator, never the definition): when the users / data witnesses
      disagree with the file, say so on the card. Evidence only — nothing is re-homed; the piece still sits where its file claim put it. */
   function _hslug(s){ return s==="__unclaimed__"?"unclaimed":String(s||"").replace(/^fe·/,""); }   /* R10: the bucket's raw token never reaches a reader */
@@ -5569,7 +5571,7 @@ var KINDCARD=(function(){
     var more=(e.others||0)-1;
     var word=(e.verdict==="move")?("MOVE CANDIDATE → "+dest+(more>0?(" · also used by "+more+" other entit"+(more===1?"y":"ies")):"")):(e.verdict==="shared")?("SHARED — a cross-cutting aspect across "+(e.others||0)+" consuming entities"):("STAY — the file wins"+(dest?(" over "+dest):""));
     var u=top(e.users), d=top(e.data);
-    return kv("role","evidence","home "+_hslug(n.ent)+" by "+by+" · "+(u?("users say "+u):"users abstain")+" · "+(d?("data says "+d):(e.data_note?"data abstains — "+e.data_note:"data abstains"))+" → "+word+" — evidence only, nothing re-homed"); }
+    return kv("role","evidence","home "+_hslug(n.entClaim||n.ent)+" by "+by+" · "+(u?("users say "+u):"users abstain")+" · "+(d?("data says "+d):(e.data_note?"data abstains — "+e.data_note:"data abstains"))+" → "+word+" — evidence only, nothing re-homed"); }
   /* the ENTITY-MODEL row (Phase 2, 2026-09-06): under a non-claim model, where the view put this piece and why — the claim stays the join key */
   function modelRow(n){ var v=window.__uniModel||"claim"; if(v==="claim"||!n||!n.entClaim||!n.modelMark) return null;
     var nm=function(e){ var r=(window.__uniModelRosterRow?__uniModelRosterRow(e):null); return (r&&r.name&&!/^fe·/.test(e))?(r.name+" · "+_hslug(e)):(window.__uniEntLabel?__uniEntLabel(e):_hslug(e)); };
@@ -5625,7 +5627,7 @@ var KINDCARD=(function(){
   C.element=function(n){ var d=n.det||{}, fns=d.fns||[]; return [
     E("div",{class:"sec"}, sechd("info","Unclaimed file"),
       kv("link","file", d.file||"—"),
-      kv("function","functions", fns.length?(fns.slice(0,12).join(" · ")+(fns.length>12?(" · +"+(fns.length-12)):"")):"— none at top level"),
+      kv("function","functions", fns.length?(fns.slice(0,12).join(" · ")+((n.fnsN||fns.length)>12?(" · +"+((n.fnsN||fns.length)-12)+" more (the census lists 12)"):"")):"— none at top level"),
       E("div",{class:"doc"}, "no entity's code.* claims this file — "+(d.reason||"outside every claim root")+". A claim in the entity config moves it home; until then it sits in the unclaimed area so the blind spot has a shape.")),
     modelRow(n),
     liveConns(n),
@@ -5749,8 +5751,9 @@ var KINDCARD=(function(){
         ? ("claim — the registry (the map today)"+(_mm&&_mm.views?(_others.length?(" · this feed also carries "+_others.join(" · ")):(" · the only model this feed carries — "+(((_mm.views.derived||{}).reason)||((_mm.views.seeded||{}).reason)||"no other view present"))):" · the only model this feed carries (no entity-models block — regen the center)"))
         : (_mv+" · "+(_mst.moved||0)+" moved · "+(_mst.abstained||0)+" abstained · "+(_mst.held||0)+" held · "+(_mst.clusters||0)+" new cluster(s)"+(_mvw&&_mvw.aspects!=null?(" · "+_mvw.aspects+" aspect(s)"):"")+(_mvw&&_mvw.layers!=null?(" · "+_mvw.layers+" layer(s)"):"")+(_mvw&&_mvw.purity!=null?(" · purity "+_mvw.purity):"")+(window.__uniFoldedN?(" · "+window.__uniFoldedN+" cluster(s) folded at this model"):"")),
         "which ENTITY MODEL clusters the field. claim = the registry every tool joins on; seeded / derived / proposed are VIEWS over it — per-piece home deltas the station applies live. Nothing is re-homed on disk."));
-      if(st.elements&&st.elements.present) w.append(srcRow("info","elements", st.elements.files+" unclaimed file(s) drawn"+(st.elements.truncated?" (capped at the element budget)":"")+" · "+st.elements.fns+" function(s) named"+(st.elements.unparseable?(" · "+st.elements.unparseable+" unparseable"):""),
-        "backend .py files no entity's code.* claims — the element census names them and the map draws them muted in the unclaimed area, so the blind spot has a shape"));
+      if(st.elements&&st.elements.present){ var _elOn=(window.__uniKindState&&__uniKindState.element)||"all";
+        w.append(srcRow("info","elements", st.elements.files+" unclaimed file(s) in the map"+(st.elements.truncated?" (capped at the element budget)":"")+" · "+st.elements.fns+" function(s) named"+(st.elements.unparseable?(" · "+st.elements.unparseable+" unparseable"):"")+(_elOn==="off"?" · hidden at this tier (drawn from Trace)":" · drawn"),
+          "backend .py files no entity's code.* claims — the element census names them and the map draws them muted in the unclaimed area from tier Trace, so the blind spot has a shape; TypeScript files no piece claims are not minted (deferred — the design record names the trigger)")); }
       if(st.cross_touches!=null) w.append(srcRow("model","cross-entity touches", String(st.cross_touches),
         "models one entity references while ANOTHER documents them — resolved into the dotted touches wires between entities"));
       if(st.unparseable&&st.unparseable.count) w.append(srcRow("alert","files skipped", st.unparseable.count+" .py file(s) the scanner could not parse", "Every mapped .py the AST scanners skipped — a NAMED gap, never silence. Whatever those files define is missing from this graph: "+(st.unparseable.files||[]).join(", ")));
