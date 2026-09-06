@@ -390,6 +390,13 @@ AMAPn = json.loads(json.dumps(AMAPt)); AMAPn.pop("task_roots", None)
 ck(json.dumps(_a3_levels.build_levels(AMAPn, graph, graft=_GWx)["fn_edges"], sort_keys=True) == json.dumps(_lvx["fn_edges"], sort_keys=True)
    and json.dumps(_a3_levels.build_levels(AMAPn, graph, graft=_GWx)["fn_edges"], sort_keys=True) != json.dumps(_lvt["fn_edges"], sort_keys=True),
    "class 13 byte-identical: the task-root arm changes nothing when task_roots is absent — and something when present")
+# entity-models (2026-09-06): a `models` key on the levels dict rides emit() untouched (the function-id half of the views)
+import tempfile, pathlib, json as _j
+_lv2 = copy.deepcopy(levels) if "levels" in dir() else _a3_levels.build_levels(AMAP, _a3_graph.build_c4_graph(AMAP, labels={}, status={}))
+_lv2["models"] = {"present": True, "head": "testsha", "homes": {"seeded": {"api/orders.py#list_orders": "billing"}, "derived": {}, "proposed": {}}, "held": {"seeded": [], "derived": []}, "abstain": {"seeded": [], "derived": [], "proposed": []}}
+_td = pathlib.Path(tempfile.mkdtemp()); _a3_levels.emit(_lv2, _td)
+_back = _j.loads((_td / "levels.json").read_text(encoding="utf-8"))
+ck(_back.get("models", {}).get("homes", {}).get("seeded", {}).get("api/orders.py#list_orders") == "billing", "entity-models: the levels.json mirror slice survives emit() (the station's function nodes and gabe-map read it there)")
 print(f"levels battery: {p} passed, {f} failed")
 sys.exit(1 if f else 0)
 PY

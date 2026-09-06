@@ -1584,6 +1584,19 @@ _fixel2 = json.loads(json.dumps(_fixel)); _fixel2["element_census"]["elements"] 
 _gel2 = G.build_c4_graph(_fixel2, labels=LABELS, status=STATUS)
 check(_gel2["stats"]["elements"]["files"] == 2000 and _gel2["stats"]["elements"]["truncated"] is True, "Phase 0 CAP: 2,005 census rows mint 2,000 nodes and say truncated")
 
+# ── entity-models Phase 1 (2026-09-06) · the `models` block is a pure addition: strip it and the plain build returns ──
+_mspec = importlib.util.spec_from_file_location("_a3_models", gen + "/_a3_models.py"); MM = importlib.util.module_from_spec(_mspec); _mspec.loader.exec_module(MM)
+_gm = G.build_c4_graph(FIX, labels=LABELS, status=STATUS)
+_mod = MM.build(FIX, _gm, {"fn_edges": [{"s": "app/api.py#handler", "t": "app/svc.py#f", "ss": "alpha", "ds": "alpha", "rel": "calls", "conf": "extracted"}]}, hom={"present": False, "reason": "no evidence in this fixture"})
+MM.attach(_gm, _mod)
+check(_gm["stats"]["models"]["present"] and "models" in _gm and _gm["models"]["default"] == "claim" and _gm["models"]["views"]["claim"]["present"], "Phase 1 FIRE: attach puts stats.models + the models block (claim always present) on the graph")
+_gm_strip = json.loads(json.dumps(_gm)); _gm_strip.pop("models"); _gm_strip["stats"].pop("models")
+check(json.dumps(_gm_strip, sort_keys=True) == json.dumps(G.build_c4_graph(FIX, labels=LABELS, status=STATUS), sort_keys=True), "Phase 1 BYTE-IDENTITY: the graph minus `models` + `stats.models` is the plain build (no per-node field, no reordering)")
+check(all(k in {n["id"] for g_ in _gm["l2"].values() for n in g_["nodes"]} for v in _gm["models"]["homes"].values() for k in v), "Phase 1: every c4-side home key resolves to an l2/fe id (never a function id)")
+_gm2 = G.build_c4_graph(FIX, labels=LABELS, status=STATUS); MM.attach(_gm2, {"present": False, "reason": "no levels graph"})
+check(_gm2["stats"]["models"] == {"present": False, "reason": "no levels graph"} and "models" not in _gm2, "Phase 1 SILENT: an absent models block → stats.models says why and no `models` key")
+check(all("orphan" not in json.dumps(x) for x in (_gm.get("models"), MM.__doc__)), "Phase 1 R10: no 'orphan' in the block or its doc")
+
 print(f"arch-graph battery: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)
 PY

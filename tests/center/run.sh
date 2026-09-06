@@ -322,6 +322,38 @@ gate() { # $1 = fixture root; echoes exit code
 FIX="$T/fix"; mk_fixture "$FIX"
 [ "$(build "$FIX" "$SHELL_SRC")" = 0 ] && ok || { bad "builder: happy fixture must build (see $T/build.out)"; cat "$T/build.out"; }
 [ -f "$FIX/docs/site/center/feature-gadget.html" ] && ok || bad "builder: feature page written for carded entity"
+# A9 (entity models, 2026-09-06): the build WIRES the four models — the report line names every view, the c4 block and the
+# levels slice share the head, the slice names what it dropped; a derivation error leaves BOTH files written with the honest
+# absence (stats.models.present False + the reason, no half-attached block) and the build still exits 0.
+grep -q "entity models: claim · seeded" "$T/build.out" && grep -q "derived .* proposed .* shared hub(s) — views over the claim, nothing re-homed" "$T/build.out" \
+  && ok || { bad "A9: the build report names the four views (claim · seeded · derived · proposed) on one line"; grep "entity models" "$T/build.out"; }
+python3 - "$FIX/docs/site/center" <<'PY' && ok || bad "A9: c4 stats.models.present + models.head == head; levels.models shares the head and names dropped=[]"
+import json, sys; from pathlib import Path
+c = Path(sys.argv[1]); g = json.loads((c / "c4-graph.json").read_text()); l = json.loads((c / "levels.json").read_text())
+assert g["stats"]["models"]["present"] is True, g["stats"].get("models")
+assert g["models"]["head"] == g["head"] and g["models"]["default"] == "claim" and "claim" in g["models"]["views"], (g["models"]["head"], g["head"])
+assert l["models"]["present"] is True and l["models"]["head"] == g["models"]["head"] and l["models"]["dropped"] == [], l.get("models")
+assert not (set().union(*[set(v) for v in g["models"]["homes"].values()]) & set().union(*[set(v) for v in l["models"]["homes"].values()])), "the two halves overlap"
+PY
+MB="$T/mboom"; rm -rf "$MB"; cp -r "$FIX" "$MB"; rm -f "$MB/docs/site/center/c4-graph.json" "$MB/docs/site/center/levels.json"
+_mb=$(cd "$T" && GABE_REPO_ROOT="$MB" GABE_SHELL_SRC="$SHELL_SRC" python3 - "$GEN" >"$T/build-mboom.out" 2>&1 <<'PY'
+import sys, runpy; gen = sys.argv[1]; sys.path.insert(0, gen)
+import _a3_models
+def boom(*a, **k): raise RuntimeError("boom")
+_a3_models.build = boom                       # the derivation blows up — the wiring must not
+sys.argv = [gen + "/build_center_a3.py"]; runpy.run_path(gen + "/build_center_a3.py", run_name="__main__")
+PY
+echo $?)
+[ "$_mb" = 0 ] && grep -q "entity models SKIPPED (derivation error" "$T/build-mboom.out" && grep -q "entity models: absent — entity-models error: boom" "$T/build-mboom.out" \
+  && ok || { bad "A9 SILENT: a raising _a3_models.build still exits 0 and SAYS it skipped (exit $_mb)"; grep -i "entity models\|Traceback\|Error" "$T/build-mboom.out" | head; }
+python3 - "$MB/docs/site/center" <<'PY' && ok || bad "A9 SILENT: both files written; c4 stats.models.present False + reason, NO models key; levels.models present False"
+import json, sys; from pathlib import Path
+c = Path(sys.argv[1]); g = json.loads((c / "c4-graph.json").read_text()); l = json.loads((c / "levels.json").read_text())
+assert g["stats"]["models"] == {"present": False, "reason": "entity-models error: boom"}, g["stats"].get("models")
+assert "models" not in g, "a half-attached models block survived the error"
+assert l["models"]["present"] is False and "boom" in l["models"]["reason"], l.get("models")
+assert l.get("homing") is not None, "the homing block still rides levels.json"
+PY
 # Data-model Description column: kwarg + trailing-comment sources render,
 # a bare field stays an em dash (never invented).
 grep -q '<th>Description</th>' "$FIX/docs/site/center/feature-gadget.html" \
@@ -756,6 +788,16 @@ rm -f "$BS/scripts/scaffold_census.py"
 bash "$GEN/propagate.sh" "$BS" --check >"$T/prop-opt.out" 2>&1; grep -q "NEW (not vendored by this twin — adopt deliberately): scaffold_census.py" "$T/prop-opt.out" && ! grep -q "DRIFT scaffold_census" "$T/prop-opt.out" \
   && ok || { bad "propagate SILENT: a new generator nobody imports is reported, never landed"; cat "$T/prop-opt.out"; }
 bash "$GEN/propagate.sh" "$BS" >/dev/null 2>&1; [ ! -e "$BS/scripts/scaffold_census.py" ] && ok || bad "propagate SILENT: the copy mode still does not land an unrequired new generator"
+rm -f "$BS/scripts/_a3_models.py"
+bash "$GEN/propagate.sh" "$BS" --check >"$T/prop-mod.out" 2>&1; grep -q "DRIFT _a3_models.py (NEW, required by build_center_a3.py" "$T/prop-mod.out" \
+  && ok || { bad "propagate: _a3_models.py is a REQUIRED new generator (imported by build_center_a3.py) — a twin without it would crash at import"; cat "$T/prop-mod.out"; }
+# the requirement is read from the SUITE's generators, not the twin's STALE ones (review 2026-09-06): a twin whose build_center_a3.py
+# predates the import would otherwise call the new generator optional — and crash the moment the new build lands beside its absence
+sed -i '/^import _a3_models/d' "$BS/scripts/build_center_a3.py"; grep -q "^import _a3_models" "$BS/scripts/build_center_a3.py" && bad "propagate stale-import precondition: the twin's build must not import _a3_models" || true
+bash "$GEN/propagate.sh" "$BS" --check >"$T/prop-stale.out" 2>&1; grep -q "DRIFT _a3_models.py (NEW, required by build_center_a3.py" "$T/prop-stale.out" && grep -q "DRIFT build_center_a3.py" "$T/prop-stale.out" \
+  && ok || { bad "propagate FIRE (stale twin): a NEW generator the SUITE's build imports reads as REQUIRED even when the twin's old build does not import it yet"; cat "$T/prop-stale.out"; }
+bash "$GEN/propagate.sh" "$BS" >"$T/prop-stale2.out" 2>&1; [ -f "$BS/scripts/_a3_models.py" ] && grep -q "^import _a3_models" "$BS/scripts/build_center_a3.py" \
+  && ok || { bad "propagate (stale twin): the copy lands the generator AND the build that imports it in one pass"; cat "$T/prop-stale2.out" | head; }
 bash "$GEN/bootstrap_center.sh" "$BS" >/dev/null 2>&1   # restore the fixture (bootstrap lands missing files)
 # a bootstrapped repo with ONE config entity and NO tracker must BUILD (the tier1 install crashed on a synthesized row missing `status`)
 python3 - "$BS" <<'PY'

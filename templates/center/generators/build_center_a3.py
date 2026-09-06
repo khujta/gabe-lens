@@ -40,6 +40,7 @@ import _a3_graft  # noqa: E402  (the graft-wiring arm — topology provider)
 import _a3_graph  # noqa: E402  (the C4 codebase-graph derivation)
 import _a3_levels  # noqa: E402  (the rich LEVELS graph — the lab-native station feed)
 import _a3_homing  # noqa: E402  (the membership EVIDENCE — file · users · data witnesses per piece; nothing re-homes)
+import _a3_models  # noqa: E402  (the four entity models — claim · seeded · derived · proposed — views over the claim; nothing re-homes)
 import _a3_sim  # noqa: E402  (the live change-simulation projection — window.GABE_SIM)
 import _a3_commits  # noqa: E402  (recent git commits → the elements they touched — window.GABE_COMMITS)
 import _a3_web  # noqa: E402  (the web→API bridge extractor — the fetch arm)
@@ -2162,8 +2163,21 @@ def main() -> int:
             _hom = {"present": False, "reason": _hr, "pieces": {}, "stats": {"present": False, "pieces": 0, "reason": _hr}}
             print(f"    ⚠ homing evidence SKIPPED (derivation error): {_he}")
         _a3_homing.attach(_graph, _hom)
+        # the four ENTITY MODELS (docs/design/entity-models/plan.md, 2026-09-06): views over the claim — seeded (Part C's
+        # move band, hubs held) · derived (request atoms on the write-majority table, named by URL domain) · proposed (one
+        # verdict per declared entity, as if accepted). Own try/except: a failure leaves the claim view alone and SAYS so.
+        try:
+            _mod = _a3_models.build(amap, _graph, _levels, hom=_hom)
+            _a3_models.attach(_graph, _mod)
+            _mslice = _a3_models.levels_slice(_mod, _graph)
+        except Exception as _me:  # noqa: BLE001
+            _mod = {"present": False, "reason": f"entity-models error: {_me}"}
+            _a3_models.attach(_graph, _mod)               # the honest absence — never a half-attached block
+            _mslice = {"present": False, "reason": _mod["reason"]}
+            print(f"    ⚠ entity models SKIPPED (derivation error, the station shows claim only): {_me}")
         if _levels is not None:
             _levels["homing"] = _hom
+            _levels["models"] = _mslice
             _a3_levels.emit(_levels, CENTER_OUT)
             wrote.append(("levels.json", 0))
             print(f"    wrote docs/site/center/levels.json — {len(_levels['fn_nodes'])} fn(s) "
@@ -2172,7 +2186,15 @@ def main() -> int:
         print("    homing evidence: " + (f"{_hs.get('pieces')} piece(s) weighed · {_hs.get('agree', 0)} agree · {_hs.get('stay', 0)} stay · "
                                         f"{_hs.get('move', 0)} move candidate(s) · {_hs.get('shared', 0)} shared — evidence only, nothing re-homed"
                                         if _hs.get("present") else f"absent — {_hom.get('reason')}"))
-        _a3_graph.emit(_graph, CENTER_OUT)      # emitted AFTER the evidence attach — the stats carry stats.homing
+        _mv = (_mod.get("views") or {}) if _mod.get("present") else {}
+        print("    entity models: " + ((f"claim · seeded {'✓' if (_mv.get('seeded') or {}).get('present') else '—'} "
+                                       f"({(_mv.get('seeded') or {}).get('moved', 0)} moved · {(_mv.get('seeded') or {}).get('held', 0)} held) · "
+                                       f"derived {'✓' if (_mv.get('derived') or {}).get('present') else '—'} ({(_mv.get('derived') or {}).get('features', 0)} feature(s) · "
+                                       f"{(_mv.get('derived') or {}).get('anchored', 0)}/{(_mv.get('derived') or {}).get('atoms', 0)} atoms anchored · purity {(_mv.get('derived') or {}).get('purity')}) · "
+                                       f"proposed {'✓' if (_mv.get('proposed') or {}).get('present') else '—'} ({(_mv.get('proposed') or {}).get('verdicts')} · "
+                                       f"{(_mv.get('proposed') or {}).get('candidates', 0)} candidate(s)) · {len(_mod.get('shared') or [])} shared hub(s) — views over the claim, nothing re-homed")
+                                      if _mod.get("present") else f"absent — {_mod.get('reason')}"))
+        _a3_graph.emit(_graph, CENTER_OUT)      # emitted AFTER the evidence + models attach — the stats carry stats.homing / stats.models
         wrote.append(("c4-graph.json", 0))
         _st = _graph["stats"]
         _gst = _st.get("graft") or {}
