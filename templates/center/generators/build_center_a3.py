@@ -239,7 +239,10 @@ sections = adoption.get("sections", [])
 if not adopt_path.exists() or not sections:
     # review 2026-09-06 (repo-study): a repo adopted by config alone (bootstrap_center.sh) has no adoption record
     # yet, or an empty tracker — its center.config.json entities ARE the registry. Said out loud, never a SystemExit.
-    sections = [{"entity": _s, "display_name": _s} for _s in sorted(ENTITY_CODE)]
+    sections = [{"entity": _s, "display_name": _s, "rank": "unranked", "status": "config-only",   # every field the board reads (tier1's first build crashed on `status`)
+                 "checklist": {}, "signals": "center.config.json — no adoption record yet",
+                 "approved_walk": None, "notes": "adopted by config (bootstrap_center.sh); /gabe-cc-init records the adoption"}
+                for _s in sorted(ENTITY_CODE)]
     print(f"  ⚠ adoption.json {'absent' if not adopt_path.exists() else 'has no sections'} at {adopt_path} — entity registry "
           f"taken from center.config.json ({len(sections)} entities); /gabe-cc-init records the adoption sections")
 

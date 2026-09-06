@@ -744,6 +744,20 @@ bash "$GEN/bootstrap_center.sh" "$BS" >"$T/bootstrap2.out" 2>&1; grep -q "exists
   && ok || { bad "bootstrap SILENT: a second run keeps the hand-filled config"; cat "$T/bootstrap2.out"; }
 grep -c "gabe suite — local-only runtime artifacts" "$BS/.gitignore" | grep -qx 1 && ok || bad "bootstrap SILENT: gitignore seeds are added once"
 bash "$GEN/propagate.sh" "$BS" --check >"$T/bootstrap3.out" 2>&1; grep -q "in sync" "$T/bootstrap3.out" && ok || { bad "bootstrap: a bootstrapped repo reads in sync to propagate.sh"; cat "$T/bootstrap3.out"; }
+# a bootstrapped repo with ONE config entity and NO tracker must BUILD (the tier1 install crashed on a synthesized row missing `status`)
+python3 - "$BS" <<'PY'
+import json, sys; from pathlib import Path
+r = Path(sys.argv[1]); (r / "src" / "api.py").write_text('router = APIRouter(prefix="/demo")\n@router.get("/one")\ndef one():\n    """One."""\n    return 1\n')
+p = r / "docs/site/center/center.config.json"; c = json.loads(p.read_text()); c["entities"] = {"demo": {"test_rx": "demo", "code": {"api": ["src/api.py"]}}}; p.write_text(json.dumps(c))
+PY
+[ "$(build "$BS" "$SHELL_SRC")" = 0 ] && grep -q "entity registry taken from center.config.json" "$T/build.out" && [ -f "$BS/docs/site/center/archmap.json" ] \
+  && ok || { bad "bootstrap FIRE: a config-only repo (no adoption.json) must build end to end, registry from the config"; tail -12 "$T/build.out"; }
+python3 - "$BS" <<'PY' && ok || bad "bootstrap: the synthesized registry row carries every field the adoption board reads"
+import json, sys; from pathlib import Path
+html = (Path(sys.argv[1]) / "docs/site/center/index.html").read_text()
+assert "config-only" in html, "the adoption board must show the config-only status"
+PY
+
 
 # M04: the single-file set's href carries NO set-name segment.
 grep -q 'proof/solo.png"' "$FIX/docs/site/center/feature-gadget.html" \
