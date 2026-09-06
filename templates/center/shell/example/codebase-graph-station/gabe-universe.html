@@ -4430,6 +4430,11 @@ window.__uniLegRef=function(){
     "x:bridge":"the frontend calling the API",
     "x:rollup":"an endpoint reaching a table through the functions it calls",
     "x:access":"the actual read or write of a table by a function",
+    "x:renders":"a component draws another — or a route mounts its view (compiler-proven)",
+    "x:uses":"a component or hook calls a hook",
+    "x:reads":"a component or hook reads a store — the frontend's table",
+    "x:typed":"a piece handles a shape: the type it takes or returns",
+    "x:fecall":"a piece calls a plain function in a module (inferred by graft — a floor)",
     "x:Cargo":"data moving between areas — a bigger ship carries a bigger payload",
     "x:Test chip":"a test that crosses areas end to end",
     "x:api":"backend tests (pytest)",
@@ -4567,6 +4572,7 @@ window.__uniLegRef=function(){
   function _connSection(){ var items=(typeof LEGEND!=="undefined"&&LEGEND.Connectors)||[];
     var h='<div class="lrsec"><div class="lrsh">CONNECTORS · what wires elements together</div>';
     items.forEach(function(it){ if(it.t==="grp"){ h+='<div class="lrgrp">'+it.l+'</div>'; return; }
+      if(/tog$/.test(it.t||"")) return;   /* a VIEW SWITCH (d2w colour · fe heat · write ring) is not a wire — the compact legend keeps the toggle, the reference lists wires only (operator 2026-09-05: three blank rows) */
       h+='<div class="lrrow lrb"><span class="lrico">'+_refIco(it)+'</span><div class="lrtx">'+_refTx(it.l)+'</div><div class="lrdef">'+_esc(_defOf(it.l))+'</div>'+_tierCell(null,"any")+'</div>'; });
     return h+'</div>'; }
   function _planetSection(){ var P=(typeof LEGEND!=="undefined"&&LEGEND.Planet)||null; if(!P) return "";
@@ -5373,35 +5379,35 @@ var KINDCARD=(function(){
   var C={
     endpoint:function(n){ var det=n.det||{}; return [
       usage(usageN(n), usageBreak(n)),
+      guardsSec(n),
+      payloadSec(det),
       liveConns(n),
+      behindTree(n),
       testsSec(det),
       journeysSection(n.ent,"endpoint",det),
-      payloadSec(det),
-      guardsSec(n),
-      behindTree(n),
       identSec(n),
       sigSec(det),
       docSec(det),
       fileRowSec(n) ]; },
     "function":function(n){ var det=n.det||{}; return [
       usage(usageN(n), usageBreak(n)),
-      liveConns(n),
       accessSec(n),
+      liveConns(n),
       behindTree(n),
       testsSec(det),
       identSec(n), sigSec(det), docSec(det), fileRowSec(n) ]; },
     model:function(n){ var det=n.det||{}; return [
       usage(usageN(n), usageBreak(n)),
-      liveConns(n),
       structureSec(n),
       keysSec(det),
+      liveConns(n),
       testsSec(det),
       journeysSection(n.ent,"model",det),
       docSec(det), fileRowSec(n) ]; },
     schema:function(n){ var det=n.det||{}; return [
       usage(usageN(n), usageBreak(n)),
-      liveConns(n),
       structureSec(n) || E("div",{class:"sec"}, sechd("table","Fields"), E("div",{style:"font-size:12px;color:var(--muted)"},"— shape not captured")),
+      liveConns(n),
       testsSec(det),
       journeysSection(n.ent,"schema",det),
       docSec(det), fileRowSec(n) ]; },
@@ -5436,6 +5442,26 @@ var KINDCARD=(function(){
     liveConns(n),
     feSec(n),
     identSec(n), docSec(det), fileRowSec(n) ]; }
+  /* DATA FIRST (operator 2026-09-05): a store or a type is data — its STRUCTURE comes right after usage, before the
+     connections; a hook or component shows the SHAPES it handles (its typed wires) right after its connections. */
+  function feDataBuilder(n){ var det=n.det||{}; return [
+    usage(usageN(n), usageBreak(n)),
+    structureSec(n) || E("div",{class:"sec"}, sechd("table","Structure"), E("div",{style:"font-size:12px;color:var(--muted)"}, n.kind==="store"?"— no fields: the value type has no properties (a function-typed context), or no type argument was written":"— no members captured (a union, mapped or imported type)")),
+    liveConns(n),
+    feSec(n),
+    identSec(n), docSec(det), fileRowSec(n) ]; }
+  function shapesSec(n){ var shapes=[], seen={}; links.forEach(function(l){ if(l.rel==="typed" && lid(l.source)===n.id){ var t=NIDS[lid(l.target)]; if(t && !seen[t.id]){ seen[t.id]=1; shapes.push(t); } } }); if(!shapes.length) return null;
+    var body=shapes.slice(0,6).map(function(t){ var cols=normCols(t);
+      return E("div",{class:"shape"}, E("div",{class:"kv"}, E("span",{class:"pchip "+chipCls("type")}, icoEl("type"), t.label), E("span",{style:"color:var(--muted);font-size:12px;margin-left:6px"}, cols.length?(cols.length+" field(s)"):"members not captured")), cols.length?colsTable(cols.slice(0,8), []):null); });
+    if(shapes.length>6) body.push(E("div",{style:"font-size:12px;color:var(--muted)"}, "+"+(shapes.length-6)+" more shape(s)"));
+    return E("div",{class:"sec"}, sechd("table","Shapes it handles", shapes.length), body); }
+  function feHookBuilder(n){ var det=n.det||{}; return [
+    usage(usageN(n), usageBreak(n)),
+    liveConns(n),
+    shapesSec(n),
+    feSec(n),
+    identSec(n), docSec(det), fileRowSec(n) ]; }
+  C.store=feDataBuilder; C.type=feDataBuilder; C.hook=feHookBuilder; C.component=feHookBuilder;
   ["component","hook","store","route","type","module"].forEach(function(k){ if(!C[k]) C[k]=feBuilder; });
   C.capsule=function(n){ var rows=[E("div",{class:"sec"}, sechd("layers","Capsule",(n.members||[]).length),
       E("div",{class:"doc"},"a folded AREA of "+(window.__uniEntLabel?__uniEntLabel(n.ent):n.ent)+" — "+(n.members||[]).length+" piece(s)"+((n.fixture||0)?(" · "+n.fixture+" showcase-data"):"")),
@@ -5621,6 +5647,24 @@ var KINDCARD=(function(){
   C.screen=C.web;
   function chipCls(k){ return ({endpoint:"endpoint",route:"froute","function":"function",model:"model",schema:"schema",component:"component",hook:"hook",store:"store",type:"type",screen:"web",web:"web",external:"external",entity:"entity"})[k]||"fn"; }
   var RELICO={ handler:"endpoint", touch:"model", resp:"schema", fk:"key", pk:"key", fetches:"down", renders:"component", mounts:"web", uses:"link", reads:"store", typed:"table" };
+  /* CARRIES (operator 2026-09-05): what a wire TRANSPORTS. A data wire carries a shape the graph already holds —
+     the table's columns, the store's fields, the type's members, the endpoint's request/response bodies; a control wire
+     (renders · calls · uses · imports) carries props/arguments the extractors do not capture — said so, never faked. */
+  function carriesSec(l){ var s=NIDS[lid(l.source)], t=NIDS[lid(l.target)], rel=l.rel; if(!s||!t) return null;
+    function note(txt){ return E("div",{class:"sec"}, sechd("table","Carries"), E("div",{style:"font-size:12px;color:var(--muted)"}, txt)); }
+    function table(node, label){ var cols=normCols(node); if(!cols.length) return note("— "+label+": shape not captured");
+      return E("div",{class:"sec"}, sechd("table","Carries · "+label, cols.length), colsTable(cols.slice(0,12), []), cols.length>12?E("div",{style:"font-size:12px;color:var(--muted)"},"+"+(cols.length-12)+" more"):null); }
+    if(rel==="bridge"||rel==="fetches"){ var ep=(t.kind==="endpoint")?t:(s.kind==="endpoint"?s:null); if(!ep) return note("— the endpoint is not drawn");
+      var shapes=[], seen={}; links.forEach(function(k){ if(lid(k.source)===ep.id){ var x=NIDS[lid(k.target)]; if(x && x.kind==="schema" && !seen[x.id]){ seen[x.id]=1; shapes.push({n:x, rel:k.rel}); } } });
+      if(!shapes.length) return note("— no request/response body is wired to this endpoint");
+      var body=shapes.slice(0,4).map(function(sh){ var cols=normCols(sh.n); return E("div",{class:"shape"}, E("div",{class:"kv"}, E("span",{class:"pchip "+chipCls("schema")}, icoEl("schema"), sh.n.label), E("span",{style:"color:var(--muted);font-size:12px;margin-left:6px"}, (sh.rel==="consumes"||sh.rel==="takes")?"in":"out")), cols.length?colsTable(cols.slice(0,8), []):E("div",{style:"font-size:12px;color:var(--muted)"},"— shape not captured")); });
+      return E("div",{class:"sec"}, sechd("table","Carries · the bodies", shapes.length), body); }
+    if(rel==="access"||rel==="fnwrites"||rel==="fnreads"||rel==="rollup"||rel==="reads_from"||rel==="writes_to"||rel==="touches"||rel==="touch"){ var md=(t.kind==="model")?t:(s.kind==="model"?s:null); return md?table(md,"the table's columns"):note("— no table on this wire"); }
+    if(rel==="reads"||rel==="uses-store"){ var st=(t.kind==="store")?t:(s.kind==="store"?s:null); return st?table(st,"the store's fields"):note("— no store on this wire"); }
+    if(rel==="typed"){ return (t.kind==="type")?table(t,"the shape"):note("— no type on this wire"); }
+    if(rel==="fk"||rel==="pk"||rel==="nests"){ return table(t,(rel==="nests")?"the nested shape":"the target table's columns"); }
+    if(rel==="consumes"||rel==="returns"||rel==="takes"||rel==="resp"||rel==="serializes"){ var sc=(t.kind==="schema")?t:(s.kind==="schema"?s:null); return sc?table(sc,"the body shape"):note("— no body on this wire"); }
+    return note("— a control wire: the props / arguments it carries are not captured (the data rides the wires around it)"); }
   C.__link=function(l){ var s=l.source, t=l.target, sl=(s&&s.label)||s, tl=(t&&t.label)||t, sk=(s&&s.kind)||"function", tk=(t&&t.kind)||"function";
     var _lchip=function(nd,k,lb){ var el=E("span",{class:"pchip "+chipCls(k)}, icoEl(k), lb);   // hover lights the node — same halo as the element card's chips
       var id=(nd&&nd.id)||((typeof nd==="string")?nd:null);
@@ -5647,7 +5691,8 @@ var KINDCARD=(function(){
       l.payload?E("div",{class:"sec"}, sechd("table","Payload"), E("div",{class:"sublbl"}, icoEl("table"), "carries "+l.payload+" field"+(l.payload>1?"s":"")+" — "+((tk==="schema"||tk==="model")?tl:"the target structure"))):null,
       E("div",{class:"sec"}, (function(){ var _ch=sechd("truck","Cargo"); try{ if(window.__uniAssetThumb) _ch.append(window.__uniAssetThumb(function(){ return window.__uniAssets.cargo(); }, "cargo shuttle \u2014 the graph asset")); }catch(_e){} return _ch; })(), (function(){ var _x=(typeof linkCross==="function"&&linkCross(l)); return _x   ? E("div",{class:"flagrow ok"}, icoEl("test"), E("span",{class:"flbl"}, l.payload? ("present \u00b7 carries "+l.payload+" data field"+(l.payload>1?"s":"")) : "present \u00b7 empty (no payload)"))   : E("div",{class:"flagrow"}, icoEl("skip"), E("span",{class:"flbl"}, "no cargo \u00b7 same-entity wire (no transit)")); })()),E("div",{class:"sec"}, (function(){ var _tc=sechd("test","Test chip"); try{ if(window.__uniAssetThumb) _tc.append(window.__uniAssetThumb(function(){ return window.__uniAssets.testchip(); }, "test chip \u2014 the graph asset")); }catch(_e){} return _tc; })(), (function(){ var _x=(typeof linkCross==="function"&&linkCross(l)); return _x   ? E("div",{class:"flagrow ok"}, icoEl("test"), E("span",{class:"flbl"}, l.proven? "present \u00b7 test-proven route" : "present \u00b7 route not test-proven"))   : E("div",{class:"flagrow"}, icoEl("skip"), E("span",{class:"flbl"}, "no test chip \u00b7 same-entity wire (no transit)")); })()),
       E("div",{class:"sec"}, sechd("info","Trust"), kv(null,"kind", ({fk:"structural · foreign-key join", touches:"structural · archmap touch", bridge:"inferred · web-bridge floor (method+path)", calls:"inferred · graft call floor", imports:"inferred · import floor"}[l.rel]) || (l.proven?"structural join":"inferred floor"))),
-      E("div",{class:"sec"}, sechd("role","Direction"), kv(null,"flow", sl+" → "+tl))
+      E("div",{class:"sec"}, sechd("role","Direction"), kv(null,"flow", sl+" → "+tl)),
+      carriesSec(l)
     ]; };
   return C;
 })();
@@ -5785,6 +5830,12 @@ var LEGEND={
     {t:"ln",k:"bridge",l:"bridge <i>a frontend fetch reaching an API</i>"},
     {t:"ln",k:"rollup",l:"rollup <i>endpoint→model — the call-tree ROLLUP (reaches the table via its functions)</i>"},
     {t:"ln",k:"access",l:"access <i>function→model — THE WRITE: the accessor actually reads/writes the table (red)</i>"},
+    {t:"grp",l:"frontend · piece ↔ piece · <i>compiler-proven wires</i>"},
+    {t:"ln",k:"renders",l:"renders <i>a component draws another (or a route mounts its view)</i>"},
+    {t:"ln",k:"uses",l:"uses <i>a component or hook calls a hook</i>"},
+    {t:"ln",k:"reads",l:"reads <i>a component or hook reads a store</i>"},
+    {t:"ln",k:"typed",l:"typed <i>a piece handles a shape — the type it takes or returns</i>"},
+    {t:"ln",k:"fecall",l:"fecall <i>a piece calls a plain function in a module (inferred)</i>"},
     {t:"d2wtog"},
     {t:"fed2wtog"},
     {t:"writeringtog"},
@@ -5857,7 +5908,7 @@ function buildLegend(){ var el=document.getElementById("elegend"), tabs=Object.k
     return nm+' <span class="tipico info lgtip">'+_INFOSVG+'<span class="tip">'+ds+(extra?((ds?'<br>':'')+extra):'')+'</span></span>'; }
   function vis(it){ var c=hx(it.c||0xffffff);
     switch(it.t){
-      case "ln": var lw=it.k?CONN[it.k]:{color:it.c,style:it.s}, lc=hx(lw.color!=null?lw.color:0xffffff),
+      case "ln": var lw=it.k?(CONN[it.k]||CONN[(typeof REL2KIND!=="undefined"&&REL2KIND[it.k])||"calls"]||{color:it.c,style:it.s}):{color:it.c,style:it.s}, lc=hx(lw.color!=null?lw.color:0xffffff),   /* a REL row (renders · uses · typed …) paints with its connector KIND's style */
         ld=DASHMAP[lw.style]; if(ld===undefined) ld="6 3";
         return '<svg class="lgln" style="width:30px;height:8px" viewBox="0 0 30 8"><path d="M1 4 H29" fill="none" stroke="'+lc+'" stroke-width="2.5"'+(ld?' stroke-dasharray="'+ld+'"':'')+'/></svg>';
       case "aura": return '<div style="width:15px;height:15px;border-radius:50%;background:'+c+'66;box-shadow:0 0 7px 3px '+c+'99"></div>';
