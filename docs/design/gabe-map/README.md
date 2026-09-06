@@ -1,5 +1,6 @@
 # gabe-map — the suite's reliability surface (Path C) — design record
 
+> **Wave 3 (2026-09-06, repo-study Part B):** `trace` · `gates` + the P0–P2 / F1–F17 projection-and-join pass — fifteen → seventeen tools, `tests/gabe-map` 89 → 160+ asserts; plan `docs/design/repo-study/legend-and-tools-plan.md` Part B, decisions D1/D2/D5.
 > **Status (2026-09-02): BUILT — v1 + wave 2 landed** (`skills/gabe-map/` fifteen tools, `tests/gabe-map` 89 asserts · 7-mutant-proven,
 > twin dry-run on a local CLONE of gustify, harness e2e; sibling `skills/gabe-kdbp/` seven tools, `tests/gabe-kdbp` 38 asserts · 2-mutant-proven). §3 v2-amendments list below records which §12 findings the code applies. Registration
 > stays ask-first (`./install.sh --register-mcp`). Earlier status: DESIGNED + REVIEWED (partial).** Successor of

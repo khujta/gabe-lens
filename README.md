@@ -60,7 +60,7 @@ covers the full KDBP lifecycle from project init through ship:
 | `/gabe-kdbp` | The .kdbp lifecycle state as 7 read-only MCP tools (kdbp_snapshot · phase_context · review_target · next_beat · verify_commands · pending_row_preview · ledger_row_preview); status / register / probe |
 | `/gabe-init` | Project setup — creates `.kdbp/`, installs hooks, selects project type + maturity |
 | `/gabe-lens` | Cognitive translation — analogies, constraint boxes, Gabe Blocks |
-| `/gabe-map` | The codebase map as 15 MCP tools (who_calls · touches · owner_of · cases_for · entity_context · entity_shape · map_status · find · outline · center_overview · blast_radius · map_census · map_diff · center_status · review_drift); status / register / probe |
+| `/gabe-map` | The codebase map as 17 MCP tools (who_calls · touches · owner_of · cases_for · entity_context · entity_shape · map_status · find · outline · center_overview · blast_radius · map_census · map_diff · center_status · review_drift · trace · gates); status / register / probe |
 | `/gabe-meme` | Oblique-meme generation — persona-matched visual metaphors via memegen.link, verified PNGs, punch-up only; + surface-wit mode for rendered HTML surfaces (absorbed gabe-quip) |
 | `/gabe-mockup` | Mockup/UX workflow — legacy static mockups plus React-first Storybook and `design-ref` |
 | `/gabe-myopic` | Short-sighted-user walkthrough — panel of 3 planning horizons flags foresight traps, overwhelm, recall demands, no-undo dead-ends |

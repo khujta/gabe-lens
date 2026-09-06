@@ -142,6 +142,8 @@ class Center:
         self.root = project_root_of(center)
         self._idx_key = None
         self._idx: dict = {}
+        self._fnidx_key = None      # P0 (2026-09-06): the levels.json fn_edges index — built only when a tool asks
+        self._fnidx: dict = {}
 
     @property
     def config(self) -> dict: return _load_json(self.dir / "center.config.json")
@@ -151,6 +153,8 @@ class Center:
     def c4(self) -> dict: return _load_json(self.dir / "c4-graph.json")
     @property
     def adoption(self) -> dict: return _load_json(self.dir / "adoption.json")
+    @property
+    def levels(self) -> dict: return _load_json(self.dir / "levels.json")   # P0: lazy — trace · blast_radius · touches(task) read it; map_status never does
 
     def entities(self) -> dict:
         return (self.archmap.get("entities") or {})
@@ -167,7 +171,8 @@ class Center:
         mi = a.get("model_insight") or {}
         idx = {"fn_by_bare": {}, "fn_by_file": {}, "cls": {}, "table2model": {}, "model_fns": {},
                "file_owners": {}, "defines": {}, "c4_nodes": {}, "edges_in": {}, "edges_out": {},
-               "web_by_stem": {}, "mapped_files": set(), "handler_of": {}}
+               "web_by_stem": {}, "mapped_files": set(), "handler_of": {},
+               "task_by_name": {}, "task_by_fn": {}}   # P1: TASK roots by REGISTERED name and by fn name → {root, nid, slug, fnkey}
         for k, rec in fi.items():
             if "::" not in k:
                 continue
@@ -214,8 +219,81 @@ class Center:
         for p in (c.get("fe") or {}).get("pieces") or []:
             if isinstance(p, dict) and p.get("file"):
                 idx["mapped_files"].add(p["file"])
+        # P1 (2026-09-06): a worker task is addressable by the name it is REGISTERED under (task_roots[].path, e.g.
+        # cleanup_idle_sandboxes) and by its function (task_roots[].fn, cleanup_idle_sandboxes_task); the c4 node is
+        # endpoint:TASK <name>, the levels.json edge key is file#fn.
+        nid_slug = {nid: slug for (slug, nid) in idx["c4_nodes"]}
+        for root in (a.get("task_roots") or []):
+            name, fn, f = root.get("path"), root.get("fn"), root.get("file")
+            if not name:
+                continue
+            nid = "endpoint:TASK %s" % name
+            rec = {"root": root, "nid": nid, "slug": nid_slug.get(nid), "fnkey": ("%s#%s" % (f, fn)) if (f and fn) else None}
+            idx["task_by_name"][name] = rec
+            if fn:
+                idx["task_by_fn"].setdefault(fn, rec)
         self._idx, self._idx_key = idx, key
         return idx
+
+    def fn_index(self) -> dict:
+        """P0 — levels.json `fn_edges` as out/in adjacency keyed on `file#fn` (rel + conf carried per edge).
+        Built once per Center on first use, rebuilt when the file changes; `present` False when there is no levels.json."""
+        lv = self.levels
+        key = _CACHE.get(str(self.dir / "levels.json"), ((),))[0]
+        if self._fnidx_key == key and self._fnidx:
+            return self._fnidx
+        out = {"present": bool(lv), "edges": 0, "fn_out": {}, "fn_in": {}, "by_rel": {}}
+        for e in (lv.get("fn_edges") or []) if isinstance(lv, dict) else []:
+            s_, t_ = e.get("s"), e.get("t")
+            if not (s_ and t_):
+                continue
+            rel, conf = e.get("rel") or "?", e.get("conf") or "?"
+            out["fn_out"].setdefault(s_, []).append((t_, rel, conf))
+            out["fn_in"].setdefault(t_, []).append((s_, rel, conf))
+            out["by_rel"][rel] = out["by_rel"].get(rel, 0) + 1
+            out["edges"] += 1
+        self._fnidx, self._fnidx_key = out, key
+        return out
+
+
+HEALTH_STATES = ("present = the pass ran and found something · clean = the pass ran (the repo-study sentinel route_mounts is on the map) "
+                 "and found nothing · not_emitted = an older map that never ran the pass — regen to know")
+
+
+def health_key(a: dict, key: str) -> tuple:
+    """P2 — absence semantics for the omitted-when-empty archmap keys (unparseable · fn_similarity · route_mounts · tasks …):
+    (value, state) with state ∈ present | clean | not_emitted. The sentinel: `route_mounts` is written by every map the
+    repo-study generators produced (2026-09-06), so its presence proves the pass ran; without it absence means an older map."""
+    if key in a and a.get(key) not in (None, {}, []):
+        return a[key], "present"
+    return None, ("clean" if "route_mounts" in a else "not_emitted")
+
+
+def map_health(a: dict, c: dict) -> dict:
+    """Where the map is PARTIAL, in one object — read by map_status (one line), map_census (sections) and center_overview.
+    Every fact already on the archmap/c4; nothing scanned. Each block carries its P2 state word."""
+    rm, rm_s = health_key(a, "route_mounts")
+    up, up_s = health_key(a, "unparseable")
+    fs, fs_s = health_key(a, "fn_similarity")
+    tk, tk_s = health_key(a, "tasks")
+    st = c.get("stats") or {}
+    web = st.get("web") or {}
+    ents = a.get("entities") or {}
+    n_ep = sum(len(e.get("endpoints") or []) for e in ents.values())
+    n_sch = sum(len(e.get("schemas") or []) for e in ents.values())
+    out = {"route_mounts": ({"state": rm_s, "mounted": rm.get("mounted"), "routers": rm.get("routers"), "unresolved": len(rm.get("unresolved") or [])}
+                            if rm else {"state": rm_s}),
+           "unparseable": {"state": up_s, "count": len(up) if up else 0},
+           "fn_similarity": ({"state": fs_s, "mode": fs.get("mode"), "sizable": fs.get("sizable"), "budget": fs.get("budget"), "pairs": fs.get("pairs")}
+                             if fs else {"state": fs_s, "mode": "exact" if fs_s == "clean" else None}),
+           "tasks_unresolved": (list(((tk or {}).get("stats") or {}).get("unresolved") or []) if tk else []),
+           "tasks_state": tk_s,
+           "web": ({"extractor": web.get("extractor"), "other_roots": list(web.get("other_roots") or []), "unhomed": web.get("unhomed") or 0,
+                    "unmatched": (len(web["unmatched"]) if isinstance(web.get("unmatched"), list) else (web.get("unmatched") or 0))}
+                   if web.get("present") else {"present": False, "reason": web.get("reason") or "no web arm on this map"}),
+           "schemas_zero": ("the schema arm extracted nothing across %d endpoint(s) — an EMPTY arm, not a clean one" % n_ep) if (n_ep and not n_sch) else False,
+           "states": HEALTH_STATES}
+    return out
 
 
 def open_center(root: str) -> tuple[Center | None, str]:

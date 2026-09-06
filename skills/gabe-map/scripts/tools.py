@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mapquery as mq  # noqa: E402
 
 HTTP = re.compile(r"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(/\S*)$", re.I)
+TASK = re.compile(r"^TASK\s+(\S+)$", re.I)   # P1 (2026-09-06): a worker task root, addressed the way the map names it (endpoint:TASK <name>); kind says `task`, never `endpoint`
 CID = re.compile(r"^C\d{1,6}$")
 NO_MAP_HINT = "this project has no codebase map; Grep/Glob are the source of truth here. Build one: /gabe-cc-init."
 
@@ -57,15 +58,23 @@ def t_map_status(args: dict, roots) -> dict:
     fi = a.get("function_insight") or {}
     out = _base(center, root, source)
     out["entities"] = sorted(ents)
+    sch_rows = sum(len(e.get("schemas") or []) for e in ents.values())
+    sch_distinct = len({(s_.get("cls"), s_.get("file")) for e in ents.values() for s_ in (e.get("schemas") or [])})
     out["counts"] = {
         "entities": len(ents),
         "endpoints": sum(len(e.get("endpoints") or []) for e in ents.values()),
         "models": sum(len(e.get("models") or []) for e in ents.values()),
-        "schemas": sum(len(e.get("schemas") or []) for e in ents.values()),
+        "schemas": sch_distinct,                       # F5: distinct (cls, file) — a schema several entities consume is ONE schema
+        **({"schemas_rows": sch_rows} if sch_rows != sch_distinct else {}),
         "files_mapped": len(center.idx()["mapped_files"]),
         "functions_py": len(fi),
         "fe_pieces": len((c.get("fe") or {}).get("pieces") or []),
+        "tasks": len(a.get("task_roots") or []),
+        "streams": sum(1 for e in ents.values() for ep in (e.get("endpoints") or []) if ep.get("stream")),
+        "providers": ((c.get("stats") or {}).get("providers") or {}).get("count") or 0,
+        "app_middleware": len(a.get("app_middleware") or []),
     }
+    out["map_health"] = mq.map_health(a, c)         # F5: where the map is PARTIAL — one helper, three homes (map_census · center_overview read the same object)
     census = a.get("file_census") or {}
     out["file_census"] = {"claimed": census.get("claimed"), "unclaimed": len(census.get("unclaimed") or [])} if census else {"reason": "no file_census block"}
     wiring = Path(root) / "graft" / ".graph" / "wiring.json"
@@ -97,9 +106,31 @@ def t_map_status(args: dict, roots) -> dict:
 
 
 # ── entity_context ─────────────────────────────────────────────────────────────
+def _config_only(center: mq.Center) -> bool:
+    """F7/F8 (2026-09-06): no adoption.json AND the c4 l1 nodes say status config-only → bootstrap_center.sh built this map
+    from center.config.json alone; the entities are the registry, out loud (nothing is 'unregistered')."""
+    if center.adoption:
+        return False
+    return any(isinstance(n, dict) and n.get("status") == "config-only" for n in ((center.c4.get("l1") or {}).get("nodes") or []))
+
+
+CONFIG_ONLY = "config-only (bootstrap_center.sh — no adoption.json; /gabe-cc-init to adopt)"
+
+
+def _app_mw(a: dict) -> tuple[list, str]:
+    """F1: the ASGI-scope middleware — applies to EVERY request before the route's Depends; a list + its note."""
+    rows = [{k: m.get(k) for k in ("cls", "file", "line", "order", "scope")} for m in (a.get("app_middleware") or []) if isinstance(m, dict)]
+    if rows:
+        return rows, "ASGI-scope — applies to EVERY request before the route's Depends"
+    _, state = mq.health_key(a, "app_middleware")                  # P2 decides: the pass ran (sentinel) vs an older map
+    return rows, ("none recorded — the app declares no ASGI middleware (the pass ran: route_mounts is on this map)" if state == "clean"
+                  else "none recorded — this map never ran the app-middleware pass; regen to know")
+
+
 def _entity_list(center: mq.Center) -> list[dict]:
     mapped = set(center.entities())
     rows, seen = [], set()
+    cfg_only = _config_only(center)
     for s in (center.adoption.get("sections") or []):
         slug = s.get("entity")
         if not slug:
@@ -108,8 +139,15 @@ def _entity_list(center: mq.Center) -> list[dict]:
         rows.append({"slug": slug, "display_name": s.get("display_name") or s.get("label") or slug,
                      "rank": s.get("rank"), "status": s.get("status"), "mapped": slug in mapped})
     for slug in sorted(mapped - seen):
-        rows.append({"slug": slug, "display_name": slug, "rank": None, "status": None, "mapped": True, "note": "in archmap, not in adoption.json"})
+        rows.append({"slug": slug, "display_name": slug, "rank": None, "status": "config-only" if cfg_only else None, "mapped": True,
+                     "note": "config-only registry" if cfg_only else "in archmap, not in adoption.json"})
     return rows
+
+
+def _counts_with_streams(code: dict) -> dict:
+    counts = dict(code.get("counts") or {})
+    counts["streams"] = sum(1 for e in (code.get("endpoints") or []) if isinstance(e, dict) and e.get("stream"))
+    return counts
 
 
 def _project_pack(pack: dict, detail: str) -> dict:
@@ -138,8 +176,8 @@ def _project_pack(pack: dict, detail: str) -> dict:
         if rel:
             out["relations"] = {"related_entities": rel.get("related_entities"), "unresolved_tables": rel.get("unresolved_tables"),
                                 "fk_out": len(rel.get("fk_out") or [])}
-        eps, note_e = mq.cap_list(["%s %s" % (e.get("method"), e.get("path")) for e in code.get("endpoints") or []])
-        out["code"] = {"counts": code.get("counts"),
+        eps, note_e = mq.cap_list(["%s %s%s" % (e.get("method"), e.get("path"), " ⚡" if e.get("stream") else "") for e in code.get("endpoints") or []])
+        out["code"] = {"counts": _counts_with_streams(code),
                        "endpoints": eps, "endpoints_note": note_e,
                        "models": [m.get("cls") for m in code.get("models") or []][:mq.CAP],
                        "schemas": [s.get("cls") for s in code.get("schemas") or []][:mq.CAP],
@@ -147,7 +185,8 @@ def _project_pack(pack: dict, detail: str) -> dict:
         return out
     # full
     eps = [{"method": e.get("method"), "path": e.get("path"), "fn": e.get("fn"), "file": e.get("file"),
-            "status": e.get("status"), "resp": e.get("resp")} for e in code.get("endpoints") or []]
+            "status": e.get("status"), "resp": e.get("resp"), "stream": bool(e.get("stream")),
+            "gates": [m.get("name") for m in (e.get("middleware") or []) if isinstance(m, dict) and m.get("gate")]} for e in code.get("endpoints") or []]
     models = [{"cls": m.get("cls"), "table": m.get("table"), "file": m.get("file"), "cols": len(m.get("cols") or []),
                "cols_head": [c[0] for c in (m.get("cols") or [])[:10]], "fks": m.get("fks"), "doc": (m.get("doc") or "")[:160]}
               for m in code.get("models") or []]
@@ -162,7 +201,7 @@ def _project_pack(pack: dict, detail: str) -> dict:
         lst, note = mq.cap_list([n.rstrip("()") for n in names])
         defines[path] = lst + ([note] if note else [])
     e_l, e_n = mq.cap_list(eps); m_l, m_n = mq.cap_list(models); s_l, s_n = mq.cap_list(schemas)
-    out["code"] = {"counts": code.get("counts"), "endpoints": e_l, "endpoints_note": e_n, "models": m_l, "models_note": m_n,
+    out["code"] = {"counts": _counts_with_streams(code), "endpoints": e_l, "endpoints_note": e_n, "models": m_l, "models_note": m_n,
                    "schemas": s_l, "schemas_note": s_n, "files_by_layer": fbl, "defines": dict(list(defines.items())[:mq.CAP])}
     return out
 
@@ -178,6 +217,8 @@ def t_entity_context(args: dict, roots) -> dict:
     out = _base(center, root, source)
     if not slug or slug == "list":
         out["entities"] = _entity_list(center)
+        if _config_only(center):
+            out["registry"] = CONFIG_ONLY
         return out
     mod = mq.entity_context_module()
     pack = mod.build_pack(slug, center.dir, center.config, center.archmap, center.adoption)
@@ -188,13 +229,26 @@ def t_entity_context(args: dict, roots) -> dict:
         l1 = [e for e in ((c.get("l1") or {}).get("edges") or []) if e.get("source") == slug or e.get("target") == slug]
         out["c4"] = {"l1_edges": [{"source": e.get("source"), "target": e.get("target"), "weight": e.get("weight"), "kinds": e.get("kinds")} for e in l1][:mq.CAP],
                      "l1_note": "calls/imports are graft FLOORS (inferred cross-file); fk is exact",
-                     "l2_node_kinds": {}}
+                     "l2_node_kinds": {}, "providers": []}
         for n in ((c.get("l2") or {}).get(slug) or {}).get("nodes") or []:
             k = n.get("kind") or "?"
+            if k == "endpoint" and str(n.get("id") or "").startswith("endpoint:TASK "):
+                k = "task"                                   # F3: a worker task root is not an HTTP endpoint — counted apart
+            if k == "provider":
+                out["c4"]["providers"].append(n.get("label") or str(n.get("id") or "").split(":", 1)[-1])
             out["c4"]["l2_node_kinds"][k] = out["c4"]["l2_node_kinds"].get(k, 0) + 1
+        out["c4"]["providers"] = sorted(set(out["c4"]["providers"]))
         homes = (c.get("fe") or {}).get("homes") or []
         fe_home = next((h for h in homes if isinstance(h, dict) and h.get("id") == "fe·%s" % slug), None)
+        if fe_home:
+            fe_home = dict(fe_home)
+            fe_home["homing"] = ((c.get("stats") or {}).get("fe") or {}).get("homing")   # layout | config — which witness homed the pieces
         out["c4"]["fe_home"] = fe_home if fe_home else {"reason": "no fe·%s home in GABE_C4.fe" % slug}
+        ent_code = (out.get("entity") or {}).get("code")
+        if isinstance(ent_code, dict) and isinstance(ent_code.get("counts"), dict):
+            ent_code["counts"]["tasks"] = out["c4"]["l2_node_kinds"].get("task", 0)
+        if _config_only(center):
+            out["registry"] = CONFIG_ONLY
         cov = (center.archmap.get("coverage") or {}).get(slug)
         out["coverage"] = cov if cov else {"reason": "no coverage row for %s" % slug}
     return out
@@ -218,6 +272,9 @@ def detect_kind(target: str, center: mq.Center) -> tuple[str, object]:
     m = HTTP.match(t)
     if m:
         return "endpoint", (m.group(1).upper(), m.group(2))
+    m = TASK.match(t)
+    if m:
+        return "task", m.group(1)
     if "::" in t or "#" in t:
         return "function", t.replace("#", "::", 1)
     if "/" in t or t.endswith(mq.SRC_EXT):
@@ -228,8 +285,12 @@ def detect_kind(target: str, center: mq.Center) -> tuple[str, object]:
         return "entity", t
     if t in idx["cls"]:
         return idx["cls"][t][1] or "model", t
+    if t in idx["task_by_name"] and t not in idx["fn_by_bare"]:    # P1: the REGISTERED task name — only when function_insight never saw it (review 2026-09-06: 36 of 46 onyx names collide)
+        return "task", t
     if t in idx["defines"] and t not in idx["fn_by_bare"]:
         return "define", t
+    if t in idx["task_by_fn"] and t not in idx["fn_by_bare"]:      # the task fn when function_insight never saw it
+        return "task", idx["task_by_fn"][t]["root"].get("path")
     return "function_bare", t
 
 
@@ -239,24 +300,29 @@ def _fn_record(center: mq.Center, key: str) -> dict:
     if not rec:
         return {"key": key, "reason": "not in function_insight"}
     ti = a.get("test_insight") or {}
-    bare = key.split("::", 1)[1].split(".")[-1]
+    qual = key.split("::", 1)[1]        # F2 (2026-09-06): join on the QUALIFIED name — a bare `search` must never bridge Svc.search to Other.search
     reaching, unverifiable = [], 0
     for (slug, nid), n in idx["c4_nodes"].items():
         if n.get("kind") != "endpoint":
             continue
         b = n.get("behind") or {}
-        if bare in (b.get("names") or []):
+        if qual in (b.get("names") or []):
             reaching.append(nid)
         elif b.get("names_more") or b.get("truncated"):
             unverifiable += 1
     cases, files = _cases_split((ti.get("by_function") or {}).get(key))
+    gated = sum(1 for ent in center.entities().values() for ep in (ent.get("endpoints") or []) for m in (ep.get("middleware") or [])
+                if isinstance(m, dict) and m.get("gate") and m.get("fn") == key)
+    troot = next((name for name, r in idx["task_by_name"].items() if r.get("fnkey") == key.replace("::", "#", 1)), None)
     return {"key": key, "entity": rec.get("entity"), "layer": rec.get("layer"), "handler": rec.get("handler"),
+            **({"gated_endpoints": {"count": gated, "see": "mcp__gabe-map__gates (by callee · fn key · argument string)"}} if gated else {}),
+            **({"task_root": {"name": troot, "see": "touches 'TASK %s' — dispatchers, behind, the worker note" % troot}} if troot else {}),
             "handler_of": idx["handler_of"].get(key), "async": rec.get("async"), "lines": rec.get("lines"),
             "returns": rec.get("returns"), "doc": (rec.get("doc") or "")[:160], "usage": rec.get("usage"),
             "access_ops": (rec.get("access") or {}).get("ops"),
             "tests": {"cases": cases[:mq.CAP], "test_files": files[:mq.CAP]},
             "endpoints_reaching": {"found": reaching[:mq.CAP], "unverifiable": unverifiable,
-                                   "floor": "behind.names is capped at 12 per endpoint and joins on the bare name — a FLOOR, never an absence proof"}}
+                                   "floor": "behind.names is capped at 12 per endpoint and joins on the qualified name (Class.method) — a FLOOR, never an absence proof"}}
 
 
 def t_touches(args: dict, roots) -> dict:
@@ -265,7 +331,7 @@ def t_touches(args: dict, roots) -> dict:
         return _absent(root, source, reason)
     target = (args.get("target") or "").strip()
     if not target:
-        raise mq.MapStop("target is required: a file path, model/schema/class name, function (bare or file::fn), entity slug, endpoint 'METHOD /path', or case id")
+        raise mq.MapStop("target is required: a file path, model/schema/class name, function (bare or file::fn), entity slug, endpoint 'METHOD /path', task root 'TASK <name>', or case id")
     a, idx = center.archmap, center.idx()
     ti = a.get("test_insight") or {}
     kind, key = detect_kind(target, center)
@@ -291,9 +357,11 @@ def t_touches(args: dict, roots) -> dict:
         nid = "endpoint:%s %s" % (method, ep.get("path"))
         node = idx["c4_nodes"].get((slug, nid)) or {}
         cases, files = _cases_split((ti.get("by_endpoint") or {}).get(fkey))
+        mw_rows, mw_note = _app_mw(a)
         out.update({"matched": True, "entity": slug, "endpoint": {"method": method, "path": ep.get("path"), "handler": fkey,
-                    "status": ep.get("status"), "resp": ep.get("resp"), "doc": (ep.get("doc") or "")[:160],
+                    "status": ep.get("status"), "resp": ep.get("resp"), "doc": (ep.get("doc") or "")[:160], "stream": bool(ep.get("stream")),
                     "middleware": ep.get("middleware"), "touches_own": ep.get("touches")},
+                    "app_middleware": mw_rows, "app_middleware_note": mw_note,
                     "behind": node.get("behind") or {"reason": "no behind block (graft arm absent at regen)"},
                     "access": node.get("access") or {"reason": "no access block"},
                     "edges_out": [{"target": t, "kind": k} for t, k, _ in idx["edges_out"].get(nid, [])][:mq.CAP],
@@ -301,7 +369,33 @@ def t_touches(args: dict, roots) -> dict:
                     "tests": {"cases": cases[:mq.CAP], "covered_by_test_files": files[:mq.CAP]}})
         web = ((center.c4.get("stats") or {}).get("web") or {})
         unm = web.get("unmatched") if isinstance(web.get("unmatched"), list) else []
-        out["web_unmatched_fetches"] = [u for u in unm if isinstance(u, dict) and norm_path(str(u.get("path", ""))) == want and str(u.get("method", "")).upper() == method][:mq.CAP] or None
+        out["web_unmatched_fetches"] = [u for u in unm if isinstance(u, dict) and norm_path(str(u.get("p") or u.get("path") or "")) == want
+                                        and str(u.get("m") or u.get("method") or "").upper() == method][:mq.CAP] or None   # the emitter writes m/p (review 2026-09-06)
+        return out
+    if kind == "task":                                             # F3: a worker task root, by its registered name
+        rec = idx["task_by_name"].get(key)
+        if not rec:
+            out.update({"matched": False, "reason": "no task root named %r — task_roots lists %d registered task(s); a task registered under a "
+                        "computed name is not on the map (tasks.stats.unresolved names those kinds)" % (key, len(idx["task_by_name"]))})
+            return out
+        root_, nid, slug = rec["root"], rec["nid"], rec["slug"]
+        node = (idx["c4_nodes"].get((slug, nid)) or {}) if slug else {}
+        fx = center.fn_index()
+        disp = ([{"from": s_, "conf": cf} for s_, rel, cf in fx["fn_in"].get(rec["fnkey"] or "", []) if rel == "dispatches"][:mq.CAP]
+                if fx["present"] else {"reason": "no levels.json — dispatch edges unread"})
+        hkey = "%s::%s" % (root_.get("file"), root_.get("fn"))
+        cases, files = _cases_split((ti.get("by_endpoint") or {}).get(hkey))
+        out.update({"matched": True, "entity": slug,
+                    "task": {"name": key, "fn": root_.get("fn"), "file": root_.get("file"), "handler": hkey, "doc": (root_.get("doc") or "")[:160]},
+                    "dispatched_by": disp, "stream": False,
+                    "app_middleware": [], "app_middleware_note": "ASGI middleware wraps HTTP requests — a worker task runs outside it",
+                    "behind": node.get("behind") or {"reason": "no behind block (graft arm absent at regen, or the task is not on the c4 graph)"},
+                    "access": node.get("access") or {"reason": "no access block"},
+                    "edges_out": [{"target": t, "kind": k} for t, k, _ in idx["edges_out"].get(nid, [])][:mq.CAP],
+                    "tests": {"cases": cases[:mq.CAP], "covered_by_test_files": files[:mq.CAP]},
+                    "unresolved_dispatch_kinds": list(((a.get("tasks") or {}).get("stats") or {}).get("unresolved") or []),
+                    "note": "a TASK root is a worker entrypoint dispatched by name (Celery / ARQ / Taskiq), never an HTTP endpoint; "
+                            "tasks registered under a computed name are NOT on this list — grep the broker for the rest"})
         return out
     if kind == "function":
         out["function"] = _fn_record(center, key)
@@ -309,7 +403,10 @@ def t_touches(args: dict, roots) -> dict:
     if kind == "function_bare":
         keys = idx["fn_by_bare"].get(key) or []
         if not keys:
-            out.update({"found": False, "reason": "no function, class, entity, file or endpoint named %r in the map — a map miss or a new name; grep is the floor" % key})
+            trec = idx["task_by_fn"].get(key) or idx["task_by_name"].get(key)
+            if trec:
+                return t_touches({"target": "TASK %s" % trec["root"].get("path"), "root": root}, roots)
+            out.update({"found": False, "reason": "no function, class, entity, file, endpoint or task root named %r in the map — a map miss or a new name; grep is the floor" % key})
             return out
         if len(keys) > 1:
             out.update({"ambiguous": [{"key": k, "entity": (a.get("function_insight") or {}).get(k, {}).get("entity")} for k in keys][:mq.CAP],
@@ -324,7 +421,8 @@ def t_touches(args: dict, roots) -> dict:
         defined = [c for c, r in mi.items() if r.get("file") == p]
         referenced = sorted({c for c, r in mi.items() for ref in (r.get("internal_refs") or []) if ref.get("file") == p})
         is_test = "/tests/" in p or "/test_" in p or ".test." in p or ".spec." in p or "/__tests__/" in p
-        fe_pieces = [x.get("name") or x.get("id") for x in ((center.c4.get("fe") or {}).get("pieces") or []) if isinstance(x, dict) and x.get("file") == p]
+        pieces_here = [x for x in ((center.c4.get("fe") or {}).get("pieces") or []) if isinstance(x, dict) and x.get("file") == p]
+        fe_pieces = [x.get("name") or x.get("id") for x in pieces_here]
         stem = re.sub(r"\.[a-z]+$", "", p)
         web = idx["web_by_stem"].get(stem)
         guard = (a.get("guard_insight") or {}).get("files", {}).get(p)
@@ -339,6 +437,12 @@ def t_touches(args: dict, roots) -> dict:
                     "guard": {"share": guard.get("share"), "unguarded": guard.get("unguarded"), "proven": guard.get("proven")} if guard else {"reason": "no guard row"},
                     "fe_pieces": fe_pieces[:mq.CAP],
                     "web_node": {"entity": web[0], "id": web[1].get("id")} if web else None})
+        if pieces_here or web:                                     # F9 (2026-09-06): the screen→endpoint leg as FIELDS, not a tool
+            _FEK = ("name", "kind", "hrole", "feClass", "fed2w", "channel", "cache", "sites", "wsites", "homed_by", "span")
+            calls = [{"endpoint": t, "kind": k} for t, k, _ in idx["edges_out"].get(web[1].get("id"), [])] if web else []
+            out["fe"] = {"pieces": [{k2: x.get(k2) for k2 in _FEK if x.get(k2) is not None} for x in pieces_here][:mq.CAP],
+                         "pieces_more": max(0, len(pieces_here) - mq.CAP),
+                         "calls": calls[:mq.CAP], "calls_note": "bridge = a fetch site in this file matched to the endpoint it names (the web arm, a FLOOR)"}
         if is_test:
             ex = (ti.get("exercises") or {}).get(p)
             out["exercises"] = ex if ex else {"reason": "test file not in test_insight.exercises"}
@@ -365,6 +469,11 @@ def t_touches(args: dict, roots) -> dict:
 
 
 def _census_entry(a: dict, path: str):
+    for row in (a.get("unparseable") or []):                       # F10: a file the scanners could not parse is BLIND by construction — and says why
+        f, why = (row[0], str(row[1])) if isinstance(row, (list, tuple)) and len(row) > 1 else (row, "unparseable")
+        if f == path:
+            return {"claimed": False, "reason": why if why.startswith("unparseable") else "unparseable: %s" % why,
+                    "note": "definitions here are absent because the scanner skipped the file, not because it is empty"}
     for row in (a.get("file_census") or {}).get("unclaimed") or []:
         if row.get("file") == path:
             return {"claimed": False, "reason": row.get("reason"), "fns": row.get("fns"), "routes": row.get("routes")}
@@ -488,6 +597,10 @@ def t_entity_shape(args: dict, roots) -> dict:
     out = _base(center, root, source)
     out["shape"] = shape
     out["one_line"] = es.one_line(shape) or "no finding — every URL domain is owned by exactly the entities the model expects"
+    n_unres = len(((center.archmap.get("route_mounts") or {}).get("unresolved")) or [])
+    out["mounts_unresolved"] = n_unres                              # F13: an unresolved include_router prefix = routes the domain table cannot see
+    if n_unres:
+        out["one_line"] += " · %d route mount(s) unresolved — the domain table is partial (map_census kind=mounts names them)" % n_unres
     domain = (args.get("domain") or "").strip().strip("/")
     if domain:
         owners: dict[str, int] = {}
@@ -521,7 +634,7 @@ def t_cases_for(args: dict, roots) -> dict:
         return _absent(root, source, reason)
     target = (args.get("target") or "").strip()
     if not target:
-        raise mq.MapStop("target is required: function (bare or file::fn), model, endpoint 'METHOD /path' or file::fn handler, file, or case id")
+        raise mq.MapStop("target is required: function (bare or file::fn), model, endpoint 'METHOD /path' or file::fn handler, task 'TASK <name>', file, or case id")
     a = center.archmap
     ti = a.get("test_insight") or {}
     idx = center.idx()
@@ -547,6 +660,12 @@ def t_cases_for(args: dict, roots) -> dict:
             for ep in ent.get("endpoints") or []:
                 if str(ep.get("method", "")).upper() == method and norm_path(ep.get("path", "")) == want:
                     rows = (ti.get("by_endpoint") or {}).get("%s::%s" % (ep.get("file"), ep.get("fn"))); via = "by_endpoint"
+    elif kind == "task":                                            # F3: routed through P1; honest-empty by name
+        rec = idx["task_by_name"].get(key)
+        if rec:
+            rows = (ti.get("by_endpoint") or {}).get("%s::%s" % (rec["root"].get("file"), rec["root"].get("fn"))); via = "by_endpoint"
+        else:
+            out["reason"] = "no task root named %r on the map" % key
     elif kind == "file":
         bf = (ti.get("by_file") or {}).get(key)
         out["test_files_reaching"] = (bf or {}).get("reach", [])[:mq.CAP]
@@ -560,8 +679,9 @@ def t_cases_for(args: dict, roots) -> dict:
     cases, files = _cases_split(rows) if isinstance(rows, dict) else ([], [])
     out.update({"kind": kind, "via": via, "cases": cases[:mq.CAP], "covered_by_test_files": files[:mq.CAP],
                 "census_note": "absence here = no census row in the map (a floor), not proof of no test"})
-    if rows is None and kind not in ("file", "case"):
-        out["reason"] = "no %s row for %s in the committed map" % (via or "test_insight", target)
+    if rows is None and kind not in ("file", "case") and "reason" not in out:
+        out["reason"] = (("no by_endpoint row for TASK %s — task roots are not entity endpoints in test_insight; grep the task fn name in the tests" % key)
+                         if kind == "task" else "no %s row for %s in the committed map" % (via or "test_insight", target))
     maxmap = 0
     for cid in (ti.get("case_home") or {}):
         m = _CID_TOKEN.search(cid)
@@ -569,13 +689,16 @@ def t_cases_for(args: dict, roots) -> dict:
             maxmap = max(maxmap, int(m.group(1)))
     out["max_cid_in_map"] = maxmap or None
     rc, grep, _ = mq.sh(["git", "-C", root, "grep", "-ohIE", "(^|[^A-Za-z0-9])C[0-9]{1,5}(v[0-9]+)?([^0-9]|$)", "--",
-                         ":(glob)**/*test*", ":(glob)**/*spec*", ":(glob)**/*Test*", ":(glob)**/tests/**"], timeout=60)
+                         ":(glob)**/*test*", ":(glob)**/*spec*", ":(glob)**/*Test*", ":(glob)**/tests/**",
+                         ":(exclude,glob)docs/site/center/**", ":(exclude,glob)**/scripts/_a3_*.py", ":(exclude,glob)**/generators/**"], timeout=60)   # F11: the suite's own installs are not this repo's corpus
     if rc in (0, 1):
         found = [int(m.group(1)) for m in _CID_TOKEN.finditer(grep)]
         mx = max(found) if found else 0
-        out["corpus"] = {"searched": "git grep -ohIE '(^|[^A-Za-z0-9])C[0-9]{1,5}(v[0-9]+)?([^0-9]|$)' -- '**/*test*' '**/*spec*' '**/tests/**'",
+        out["corpus"] = {"searched": "git grep -ohIE '(^|[^A-Za-z0-9])C[0-9]{1,5}(v[0-9]+)?([^0-9]|$)' -- '**/*test*' '**/*spec*' '**/tests/**' — excluding docs/site/center/** · scripts/_a3_*.py · **/generators/**",
                          "max_cid_seen": mx or None, "next_cid_floor": (mx + 1) if mx else None,
                          "note": "the corpus is the registry; the map may lag — re-grep before minting"}
+        if not os.path.isdir(os.path.join(root, ".kdbp")):
+            out["corpus"]["note"] = "no .kdbp/ — this repo mints no C-ids; the floor is a corpus artefact, not a registry"
     else:
         out["corpus"] = {"reason": "git grep unavailable (rc %d)" % rc}
     return out
@@ -633,15 +756,15 @@ RO = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "o
 
 TOOLS = [
     {"name": "map_status", "fn": t_map_status, "annotations": RO,
-     "description": "Is there a codebase map here, and how fresh is it? Entities, counts, freshness vs git, graft index state, regen command. Call first when unsure the project has a map.",
+     "description": "Is there a codebase map here, how fresh, and where is it PARTIAL (map_health: mounts · unparseable · twin pass · web roots)? Entities, counts, graft state, regen command. Call first.",
      "inputSchema": _schema({**ROOT_PROP})},
     {"name": "entity_context", "fn": t_entity_context, "annotations": RO,
-     "description": "One entity's slice from the map: endpoints, models, schemas, files by layer, FK relations, coverage. Omit slug to list entities. detail brief|full|raw.",
+     "description": "One entity's slice: endpoints (⚡ stream; full adds gates), models, schemas, files by layer, FK relations, coverage, providers, tasks. Omit slug → the registered (or config-only) list. brief|full|raw.",
      "inputSchema": _schema({"slug": {"type": "string", "description": "Entity slug, or omit / 'list' for the registered entities."},
                              "detail": {"type": "string", "enum": ["brief", "full", "raw"], "description": "brief (default, ~300 tokens) · full (capped) · raw (uncapped pack)."}, **ROOT_PROP})},
     {"name": "touches", "fn": t_touches, "annotations": RO,
-     "description": "What touches X in the map: for a file, model/schema, function (bare or file::fn), entity, endpoint 'METHOD /path' or case id — owners, r/w functions, endpoints, tests, edges.",
-     "inputSchema": _schema({"target": {"type": "string", "description": "File path · Model/Schema/Class · function · file::fn · entity slug · 'GET /path' · C123"}, **ROOT_PROP}, ["target"])},
+     "description": "What touches X in the map: a file, model/schema, function (bare or file::fn), entity, endpoint 'METHOD /path', task 'TASK <name>' or case id — owners, r/w functions, endpoints, gates, tests, edges.",
+     "inputSchema": _schema({"target": {"type": "string", "description": "File path · Model/Schema/Class · function · file::fn · entity slug · 'GET /path' · 'TASK <name>' · C123"}, **ROOT_PROP}, ["target"])},
     {"name": "who_calls", "fn": t_who_calls, "annotations": {**RO, "readOnlyHint": False},
      "description": "Who calls / where is symbol X used (or what it calls: direction=out, depth=N|all): graft callers ∪ word-boundary git grep, hits code vs prose, misses emitted as deltas. Returns the Reach line.",
      "inputSchema": _schema({"symbol": {"type": "string", "description": "An identifier (function, class, hook name)."},
@@ -649,14 +772,14 @@ TOOLS = [
                              "depth": {"type": "string", "description": "1 (default), N hops, or 'all' — transitive blast radius via graft; only direction=in depth=1 emits deltas."},
                              "emit": {"type": "boolean", "description": "Append map-delta lines for code hits the map missed (default true; gated)."}, **ROOT_PROP}, ["symbol"])},
     {"name": "entity_shape", "fn": t_entity_shape, "annotations": RO,
-     "description": "Which entity owns URL domain /x; orphan URL domains and aspect entities, computed fresh from the map. Optional diff=<base> classifies routes a diff adds.",
+     "description": "Which entity owns URL domain /x; detached URL domains and aspect entities, computed fresh from the map (caveated when route mounts are unresolved). Optional diff=<base> classifies routes a diff adds.",
      "inputSchema": _schema({"domain": {"type": "string", "description": "A URL domain segment to look up, e.g. 'settings'."},
                              "diff": {"type": "string", "description": "A git base (sha/branch) — classify routes added since it."}, **ROOT_PROP})},
     {"name": "cases_for", "fn": t_cases_for, "annotations": RO,
-     "description": "Which test cases (C-ids) cover X — function, model, endpoint, file or case id — plus the corpus's max C-id and next-id floor. REUSE before NEW.",
-     "inputSchema": _schema({"target": {"type": "string", "description": "function · file::fn · Model · 'GET /path' · file path · C123"}, **ROOT_PROP}, ["target"])},
+     "description": "Which test cases (C-ids) cover X — function, model, endpoint, task, file or case id — plus the corpus's max C-id and next-id floor (suite installs excluded). REUSE before NEW.",
+     "inputSchema": _schema({"target": {"type": "string", "description": "function · file::fn · Model · 'GET /path' · 'TASK <name>' · file path · C123"}, **ROOT_PROP}, ["target"])},
     {"name": "owner_of", "fn": t_owner_of, "annotations": RO,
-     "description": "Which entity owns these file paths (or a directory): map owners, center.config globs, and whether the census says the map is blind there.",
+     "description": "Which entity owns these file paths (or a directory): map owners, center.config globs, and whether the census says the map is blind there — and why (unparseable files named).",
      "inputSchema": _schema({"path": {"type": "string", "description": "One repo-relative path or directory."},
                              "paths": {"type": "array", "items": {"type": "string"}, "description": "Several paths."}, **ROOT_PROP})},
 ]
@@ -669,13 +792,17 @@ When a project has a command center (docs/site/center/), ask the map BEFORE grep
 - which entity owns this path or directory → mcp__gabe-map__owner_of
 - which test cases cover X, next free C-id → mcp__gabe-map__cases_for
 - one entity's endpoints/models/files → mcp__gabe-map__entity_context (omit slug to list entities)
-- who owns URL domain /x, orphan domains → mcp__gabe-map__entity_shape
+- who owns URL domain /x, detached domains → mcp__gabe-map__entity_shape
 - is there a map here, how stale → mcp__gabe-map__map_status (call first when unsure)
 - find X by name (entity/endpoint/model/function/screen) → mcp__gabe-map__find · a file's definitions + signatures → mcp__gabe-map__outline
 - orient in the codebase → mcp__gabe-map__center_overview · what does this change touch → mcp__gabe-map__blast_radius
 - where is the map blind → mcp__gabe-map__map_census · how did the map change between refs → mcp__gabe-map__map_diff
 - the center's actionable list → mcp__gabe-map__center_status · a review's drift subjects vs a base → mcp__gabe-map__review_drift
-The map is a FLOOR, never a scope: absence in an answer is not proof of absence — grep -rn remains the absence proof. Every answer stamps map@<head> · freshness. No center → the tools say so and point to Grep/Glob."""
+- which endpoints a gate / Permission.X guards; what ASGI middleware applies to every request → mcp__gabe-map__gates
+- the ordered path from an endpoint or TASK to the models and providers it reaches (conf per hop) → mcp__gabe-map__trace
+- a celery/background TASK root, a streaming endpoint, a provider (litellm · redis · …) → find / touches take "TASK <name>", stream=true, kind=provider
+- where the map is PARTIAL (unparseable files · unresolved mounts · blocked twin pass · unscanned frontend roots) → mcp__gabe-map__map_census (map_status carries the one-line map_health)
+The map is a FLOOR, never a scope: absence in an answer is not proof of absence — grep -rn remains the absence proof. A trace hop marked `inferred` is graft's guess, not a proof. Every answer stamps map@<head> · freshness. No center → the tools say so and point to Grep/Glob."""
 
 
 def call(name: str, args: dict, roots: list[str] | None) -> tuple[dict, bool]:
@@ -693,3 +820,7 @@ def call(name: str, args: dict, roots: list[str] | None) -> tuple[dict, bool]:
 import tools_wave2 as _w2  # noqa: E402
 TOOLS.extend(_w2.TOOLS)
 BY_NAME.update({t["name"]: t for t in _w2.TOOLS})
+# ── wave 3 (2026-09-06, the repo-study tool pass): trace (the ordered path over levels.json) + gates (the inverse of middleware) ──
+import tools_wave3 as _w3  # noqa: E402
+TOOLS.extend(_w3.TOOLS)
+BY_NAME.update({t["name"]: t for t in _w3.TOOLS})

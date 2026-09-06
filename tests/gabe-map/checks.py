@@ -84,16 +84,25 @@ def make_repo(T: str, seed_ignore: bool = True) -> str:
 def center(root: str, head: str):
     ents = {
         "thing": {
-            "defines": {"apps/api/services/thing.py": ["thing()"], "apps/api/other.py": ["Caller", "Helper"]},
+            "defines": {"apps/api/services/thing.py": ["thing()"], "apps/api/other.py": ["Caller", "Helper"],
+                        "apps/web/client/types.gen.ts": ["loginLoginAccessTokenData"], "apps/web/src/login.ts": ["loginBanner"]},
             "endpoints": [{"method": "GET", "path": "/things/{item_id}", "fn": "get_thing", "file": "apps/api/api/things.py",
-                           "status": "200", "resp": "ThingOut", "doc": "One thing", "touches": ["Thing"], "touches_x": ["Annotated"],
-                           "middleware": [{"name": "auth", "gate": True, "via": "param-dep"}]}],
+                           "status": "200", "resp": "ThingOut", "doc": "One thing", "touches": ["Thing"], "touches_x": ["Annotated"], "stream": True,
+                           "middleware": [{"name": "auth(Scope.READ)", "callee": "auth", "fn": "apps/api/deps.py::auth", "gate": True, "via": "param-dep"},
+                                          {"name": "require_auth_scope(Scope.WRITE)", "callee": "require_auth_scope", "fn": "apps/api/deps.py::require_auth_scope", "gate": True, "via": "param-dep"},
+                                          {"name": "get_db", "callee": "get_db", "gate": False, "via": "param-dep"}]},
+                          {"method": "DELETE", "path": "/things/{item_id}", "fn": "delete_thing", "file": "apps/api/api/things.py",
+                           "status": "204", "resp": "None", "doc": "Drop one thing", "touches": ["Thing"], "touches_x": [],
+                           "middleware": [{"name": "auth(Scope.READ, allow_anonymous=True)", "callee": "auth", "fn": "apps/api/deps.py::auth", "gate": True, "via": "param-dep"}]},
+                          {"method": "POST", "path": "/login/access-token", "fn": "login", "file": "apps/api/api/login.py",
+                           "status": "200", "resp": "Token", "doc": "Log in", "touches": [], "touches_x": []}],
             "files": [["services", "apps/api/services/thing.py", 5], ["api", "apps/api/api/things.py", 2],
                       ["services", "apps/api/services/shared.py", 1], ["services", "apps/api/other.py", 11],
                       ["models", "apps/api/models/thing.py", 2], ["services", "apps/api/services/downstream.py", 5]],
             "models": [{"cls": "Thing", "table": "things", "file": "apps/api/models/thing.py",
                         "cols": [["id", "int", ""], ["name", "str", ""]], "fks": {}, "doc": "A thing", "uqs": [], "rels": []}],
-            "schemas": [{"cls": "ThingOut", "file": "apps/api/schemas/thing.py", "fields": [["id", "int", ""]], "doc": ""}],
+            "schemas": [{"cls": "ThingOut", "file": "apps/api/schemas/thing.py", "fields": [["id", "int", ""]], "doc": ""},
+                        {"cls": "ThingOut", "file": "apps/api/schemas/thing.py", "fields": [["id", "int", ""]], "doc": ""}],   # the within-entity duplicate row (tier0 shape)
         },
         "other": {
             "defines": {"apps/api/models/widget.py": ["Widget"]},
@@ -101,7 +110,7 @@ def center(root: str, head: str):
             "files": [["services", "apps/api/services/shared.py", 1], ["models", "apps/api/models/widget.py", 2]],
             "models": [{"cls": "Widget", "table": "widgets", "file": "apps/api/models/widget.py",
                         "cols": [["id", "int", ""], ["thing_id", "int", ""]], "fks": {"thing_id": "things.id"}, "doc": "", "uqs": [], "rels": []}],
-            "schemas": [],
+            "schemas": [{"cls": "ThingOut", "file": "apps/api/schemas/thing.py", "fields": [["id", "int", ""]], "doc": ""}],   # the same schema consumed by a second entity
         },
     }
     fi = {
@@ -115,6 +124,14 @@ def center(root: str, head: str):
                                           "handler": False, "async": False, "lines": 2, "returns": "int", "doc": "—", "usage": 0, "access": {"commits": False, "ops": []}},
         "apps/api/other.py::Helper.run": {"name": "run", "fn": "Helper.run", "file": "apps/api/other.py", "entity": "thing", "layer": "services",
                                           "handler": False, "async": False, "lines": 2, "returns": "int", "doc": "—", "usage": 0, "access": {"commits": False, "ops": []}},
+        # F2: two METHODS sharing the bare name `search` — the qualified join must keep them apart
+        "apps/api/services/thing.py::Svc.search": {"name": "search", "fn": "Svc.search", "file": "apps/api/services/thing.py", "entity": "thing", "layer": "services",
+                                                   "handler": False, "async": False, "lines": 2, "returns": "list", "doc": "—", "usage": 1, "access": {"commits": False, "ops": []}},
+        "apps/api/services/other_svc.py::Other.search": {"name": "search", "fn": "Other.search", "file": "apps/api/services/other_svc.py", "entity": "thing", "layer": "services",
+                                            "handler": False, "async": False, "lines": 2, "returns": "list", "doc": "—", "usage": 0, "access": {"commits": False, "ops": []}},
+        # review 2026-09-06: the task FN is usually ALSO in function_insight (36 of 46 on onyx) — the function record must win the bare name and cross-link the task root
+        "apps/api/tasks.py::sweep_things_task": {"name": "sweep_things_task", "fn": "sweep_things_task", "file": "apps/api/tasks.py", "entity": "thing", "layer": "services",
+                                                 "handler": False, "async": False, "lines": 3, "returns": "None", "doc": "Sweep", "usage": 0, "access": {"commits": True, "ops": [{"model": "Thing", "table": "things", "rw": "w"}]}},
     }
     mi = {"Thing": {"kind": "model", "entity": "thing", "file": "apps/api/models/thing.py", "fk_in": 1, "internal": 1, "touches": 1, "usage": 1,
                     "internal_refs": [{"file": "apps/api/services/thing.py", "defs": ["thing"]}]},
@@ -133,14 +150,26 @@ def center(root: str, head: str):
                "file_census": {"claimed": 8, "scanned_dirs": ["apps/api"],
                                "unclaimed": [{"file": "apps/api/integrations/x.py", "fns": 2, "reason": "file not in any entity's code map", "routes": 0, "tables": 0}]},
                "coverage": {"thing": {"total": 2, "covered": 1, "unproven": ["x"], "golden_total": 1, "golden_covered": 0, "inferred": [], "malformed": 0, "unclassified": []}},
-               "model_census": {"claimed": 2, "scanned_dirs": 1, "unclaimed": []}, "schema_homing": {}}
+               "model_census": {"claimed": 2, "scanned_dirs": 1, "unclaimed": []}, "schema_homing": {},
+               # Part B (2026-09-06): the repo-study keys — task roots · route mounts · the blocked twin pass · an unparseable file · ASGI middleware
+               "task_roots": [{"method": "TASK", "path": "sweep_things", "fn": "sweep_things_task", "file": "apps/api/tasks.py", "doc": "Sweep", "resp": "—", "status": "—", "touches": [], "touches_x": []}],
+               "tasks": {"tasks": [{"name": "sweep_things", "fn": "sweep_things_task", "file": "apps/api/tasks.py", "line": 3, "doc": "Sweep"}],
+                         "stats": {"tasks": 1, "sites": 1, "edges": 1, "unresolved": []}},
+               "route_mounts": {"mounted": 1, "routers": 1, "scanned": 1, "unresolved": [{"file": "apps/api/app.py", "line": 3, "why": "non-literal prefix: settings.PREFIX"}]},
+               "fn_similarity": {"mode": "blocked", "pairs": 10, "budget": 5, "sizable": 9, "rare_df": 40},
+               "unparseable": [["apps/api/integrations/x.py", "unparseable: bad"]],
+               "app_middleware": [{"cls": "RateLimiterMiddleware", "file": "apps/api/app.py", "line": 12, "order": 0, "scope": "all"}]}
     ep_id = "endpoint:GET /things/{item_id}"
     c4 = {"version": 1, "head": head, "colors": {},
           "l1": {"nodes": [{"id": "thing", "kind": "entity", "slug": "thing"}, {"id": "other", "kind": "entity", "slug": "other"}],
                  "edges": [{"source": "other", "target": "thing", "weight": 1, "kinds": {"fk": 1}}]},
-          "l2": {"thing": {"nodes": [{"id": ep_id, "kind": "endpoint", "fn": "get_thing", "label": "GET /things/{item_id}",
-                                      "behind": {"fns": 2, "depth": 1, "names": ["thing", "AuthContext.require"]},
+          "l2": {"thing": {"nodes": [{"id": ep_id, "kind": "endpoint", "fn": "get_thing", "label": "GET /things/{item_id}", "stream": True,
+                                      "behind": {"fns": 2, "depth": 1, "names": ["thing", "AuthContext.require", "Svc.search"]},
                                       "access": {"commits": False, "ops": [{"model": "Thing", "rw": "r", "table": "things"}]}, "det": {"cases": []}},
+                                     {"id": "endpoint:POST /login/access-token", "kind": "endpoint", "fn": "login", "label": "POST /login/access-token"},
+                                     {"id": "endpoint:TASK sweep_things", "kind": "endpoint", "fn": "sweep_things_task", "label": "TASK sweep_things",
+                                      "behind": {"fns": 1, "depth": 1, "names": ["sweep_helper"]}},
+                                     {"id": "provider:litellm", "kind": "provider", "label": "litellm", "pclass": "llm"},
                                      {"id": "model:Thing", "kind": "model"}, {"id": "schema:ThingOut", "kind": "schema"},
                                      {"id": "web:apps/web/src/things", "kind": "web"}],
                            "edges": [{"kind": "reads_from", "source": ep_id, "target": "model:Thing"},
@@ -148,17 +177,65 @@ def center(root: str, head: str):
                  "other": {"nodes": [{"id": "model:Widget", "kind": "model"}], "edges": []}},
           "cross_edges": [{"from": "model:Widget", "to": "model:Thing", "via": "thing_id", "from_slug": "other", "to_slug": "thing"},
                           {"kind": "bridge", "from": "web:apps/web/src/things", "to": ep_id, "from_slug": "thing", "to_slug": "thing"}],
-          "fe": {"pieces": [{"id": "fe:apps/web/src/things.ts#Things", "file": "apps/web/src/things.ts", "name": "Things"}], "edges": [],
+          "fe": {"pieces": [{"id": "fe:apps/web/src/things.ts#Things", "file": "apps/web/src/things.ts", "name": "Things", "kind": "hook",
+                             "hrole": "fetcher", "homed_by": "config", "fed2w": 1, "channel": "read", "cache": False, "span": [1, 3]},
+                            {"id": "fe:apps/web/client/types.gen.ts#loginLoginAccessTokenData", "file": "apps/web/client/types.gen.ts",
+                             "name": "loginLoginAccessTokenData", "kind": "fe-type"}], "edges": [],
                  "homes": [{"id": "fe·thing", "kind": "fe", "pair": "thing", "pieces": 1, "areas": 1}]},
-          "stats": {"graft": {"present": True, "index_hash": "abc123abc123"}, "web": {"present": True, "unmatched": []}}, "layout": {}}
+          "stats": {"graft": {"present": True, "index_hash": "abc123abc123"},
+                    "web": {"present": True, "extractor": "fetch", "screens": 1, "fetch_sites": 3, "matched": 1, "dynamic": 0, "unhomed": 1,
+                            "other_roots": ["mobile/src"], "unmatched": [{"m": "GET", "p": "/x", "from": "web:apps/web/src/other"},
+                                                                          {"m": "GET", "p": "/api/v1/things/{id}", "from": "web:apps/web/src/other"}]},
+                    "providers": {"count": 1, "by_provider": {"litellm": 1}, "by_pclass": {"llm": 1}}, "gate_endpoints": 2,
+                    "fe": {"present": True, "homing": "config"}}, "layout": {}}
+    # P0: the levels.json edges the trace/blast tools read — direction matters (reverse s/t = the mutation that must fail the FIRE)
+    levels = {"fn_edges": [{"s": "apps/api/api/things.py#get_thing", "t": "apps/api/services/thing.py#thing", "rel": "calls", "conf": "extracted"},
+                           {"s": "apps/api/services/thing.py#thing", "t": "provider:redis", "rel": "reaches", "conf": "inferred"},
+                           {"s": "apps/api/api/things.py#get_thing", "t": "apps/api/tasks.py#sweep_things_task", "rel": "dispatches", "conf": "extracted"}]}
     cfg = {"entities": {"thing": {"test_rx": "test_", "proofs": [], "models": ["Thing"],
                                   "code": {"services": ["apps/api/services/*.py", "apps/api/other.py"], "api": ["apps/api/api/*.py"], "models": ["apps/api/models/thing.py"]}},
                         "other": {"test_rx": "test_", "proofs": [], "models": ["Widget"], "code": {"models": ["apps/api/models/widget.py"]}}},
            "url_domain_map": {}}
     adoption = {"sections": [{"entity": "thing", "display_name": "Thing", "rank": "critical", "status": "approved",
                               "checklist": {"a": True, "b": False}, "signals": {}, "notes": ""}]}
-    for name, data in (("archmap.json", archmap), ("c4-graph.json", c4), ("center.config.json", cfg), ("adoption.json", adoption)):
+    for name, data in (("archmap.json", archmap), ("c4-graph.json", c4), ("center.config.json", cfg), ("adoption.json", adoption), ("levels.json", levels)):
         write(root, "docs/site/center/" + name, json.dumps(data, indent=1, sort_keys=True))
+
+
+def variant(root, mutate):
+    """Rewrite the center on disk through `mutate(archmap, c4) -> (archmap, c4, drop_adoption)`; restore with `restore(root)`."""
+    cdir = os.path.join(root, "docs/site/center")
+    a = json.load(open(os.path.join(cdir, "archmap.json"))); c = json.load(open(os.path.join(cdir, "c4-graph.json")))
+    a, c, drop = mutate(a, c)
+    write(root, "docs/site/center/archmap.json", json.dumps(a, indent=1, sort_keys=True))
+    write(root, "docs/site/center/c4-graph.json", json.dumps(c, indent=1, sort_keys=True))
+    if drop and os.path.exists(os.path.join(cdir, "adoption.json")):
+        os.remove(os.path.join(cdir, "adoption.json"))
+
+
+def restore(root):
+    git(root, "checkout", "--", "docs/site/center")
+
+
+def older_map(a, c):
+    """V_OLD — a map from before the repo-study pass: no tasks/mounts-siblings, no provider/TASK nodes; route_mounts (the sentinel) kept."""
+    for k in ("app_middleware", "task_roots", "tasks", "fn_similarity", "unparseable"):
+        a.pop(k, None)
+    c["l2"]["thing"]["nodes"] = [n for n in c["l2"]["thing"]["nodes"] if n.get("kind") != "provider" and not n["id"].startswith("endpoint:TASK ")]
+    c["stats"].pop("providers", None)
+    return a, c, False
+
+
+def config_only(a, c):
+    """V_CFGONLY — bootstrap_center.sh's map: no adoption.json, l1 says config-only, no file_census, no schemas, no web arm, mounts clean."""
+    a.pop("file_census", None)
+    for ent in a["entities"].values():
+        ent["schemas"] = []
+    a["route_mounts"] = {"mounted": 1, "routers": 1, "scanned": 1, "unresolved": []}
+    for n in c["l1"]["nodes"]:
+        n["status"] = "config-only"
+    c["stats"]["web"] = {"present": False, "reason": "no frontend"}
+    return a, c, True
 
 
 def fake_graft(T: str) -> str:
@@ -203,6 +280,7 @@ def main() -> int:
     T = tempfile.mkdtemp(prefix="gabe-map-")
     try:
         run(T)
+        part_b_tail(os.path.join(T, "proj"), T, os.path.join(T, "bin"))
     finally:
         shutil.rmtree(T, ignore_errors=True)
     print("gabe-map battery: %d passed, %d failed" % (PASS, FAIL))
@@ -235,7 +313,11 @@ def run(T):
     names = sorted(t["name"] for t in tools)
     V1 = {"map_status", "entity_context", "touches", "who_calls", "entity_shape", "cases_for", "owner_of"}
     W2 = {"find", "outline", "center_overview", "blast_radius", "map_census", "map_diff", "center_status", "review_drift"}
-    ok(set(names) == V1 | W2 and len(names) == 15, "v1 seven + wave-2 eight tools listed (15)", names)
+    W3 = {"trace", "gates"}
+    ok(set(names) == V1 | W2 | W3 and len(names) == 17, "v1 seven + wave-2 eight + wave-3 two tools listed (17)", names)
+    ins = res.get("instructions") or ""
+    ok(all(x in ins for x in ("mcp__gabe-map__gates", "mcp__gabe-map__trace", '"TASK <name>", stream=true, kind=provider', "where the map is PARTIAL", "A trace hop marked `inferred` is graft's guess")) and "orphan" not in ins,
+       "F17: the instructions route gates · trace · TASK/stream/provider · map PARTIAL, the floor law names the inferred hop, and no line says orphan (R10)", ins[-600:])
     ok(all(t["inputSchema"].get("type") == "object" for t in tools), "every inputSchema is an object schema")
     ok(all("annotations" in t and "readOnlyHint" in t["annotations"] for t in tools), "every tool carries annotations")
     ok(next(t for t in tools if t["name"] == "who_calls")["annotations"]["readOnlyHint"] is False, "who_calls is not readOnly (the emit)")
@@ -266,7 +348,13 @@ def run(T):
     d, is_err, text, _ = call_json(c, "map_status", {})
     ok(d and d.get("present") is True and d.get("root") == root and d.get("root_source") == "CLAUDE_PROJECT_DIR",
        "CLAUDE_PROJECT_DIR (a subdir) resolves to the git toplevel, cwd ignored", {k: d.get(k) for k in ("present", "root", "root_source")} if d else text)
-    ok(d and d["counts"]["endpoints"] == 1 and d["counts"]["models"] == 2 and d["counts"]["fe_pieces"] == 1, "map_status counts", d and d.get("counts"))
+    ok(d and d["counts"]["endpoints"] == 3 and d["counts"]["models"] == 2 and d["counts"]["fe_pieces"] == 2 and d["counts"]["tasks"] == 1 and d["counts"]["streams"] == 1
+       and d["counts"]["providers"] == 1 and d["counts"]["app_middleware"] == 1 and d["counts"]["schemas"] == 1 and d["counts"]["schemas_rows"] == 3,
+       "map_status counts (F5 FIRE: tasks · streams · providers · app_middleware · DISTINCT schemas 1 beside 3 rows)", d and d.get("counts"))
+    h = d and d.get("map_health")
+    ok(h and h["route_mounts"] == {"state": "present", "mounted": 1, "routers": 1, "unresolved": 1} and h["fn_similarity"]["mode"] == "blocked" and h["fn_similarity"]["sizable"] == 9
+       and h["web"]["other_roots"] == ["mobile/src"] and h["web"]["unmatched"] == 2 and h["unparseable"] == {"state": "present", "count": 1} and h["schemas_zero"] is False,
+       "F5 FIRE: map_health names the unresolved mount, the blocked twin pass (sizable over budget), the unscanned root, the unparseable file", h)
     ok(d and d["freshness"]["freshness"] == "fresh" and d["freshness"]["commits_since"] == 2, "docs-only commits after the regen read FRESH (base = regen commit)", d and d.get("freshness"))
     ok(d and d["graft"]["index_present"] and d["graft"]["match"] is False and "note" in d["graft"], "graft index hash mismatch is explained, never called stale", d and d.get("graft"))
     ok(d and d["file_census"] == {"claimed": 8, "unclaimed": 1}, "file_census summarized", d and d.get("file_census"))
@@ -309,7 +397,13 @@ def run(T):
     d, _, _, _ = call_json(c, "entity_context", {})
     ok(d and len(d.get("entities", [])) == 2 and any(e["slug"] == "other" and e.get("note") for e in d["entities"]), "entity list = adoption ∪ archmap, unregistered flagged", d and d.get("entities"))
     d, _, _, _ = call_json(c, "entity_context", {"slug": "thing"})
-    ok(d and d["entity"]["code"]["counts"]["endpoints"] == 1 and d["entity"]["code"]["endpoints"] == ["GET /things/{item_id}"], "brief carries counts + endpoint names", d and d.get("entity", {}).get("code"))
+    ok(d and d["entity"]["code"]["counts"]["endpoints"] == 3 and d["entity"]["code"]["endpoints"] == ["GET /things/{item_id} ⚡", "DELETE /things/{item_id}", "POST /login/access-token"]
+       and d["entity"]["code"]["counts"]["streams"] == 1 and d["entity"]["code"]["counts"]["tasks"] == 1, "brief carries counts + endpoint names (⚡ marks the stream; F8 streams/tasks counts)", d and d.get("entity", {}).get("code"))
+    ok(d and d["c4"]["l2_node_kinds"] == {"endpoint": 2, "task": 1, "provider": 1, "model": 1, "schema": 1, "web": 1} and d["c4"]["providers"] == ["litellm"] and d["c4"]["fe_home"]["homing"] == "config",
+       "F3/F8: the l2 histogram splits task from endpoint, providers are NAMED, the fe home says which witness homed it", d and d.get("c4"))
+    df, _, _, _ = call_json(c, "entity_context", {"slug": "thing", "detail": "full"})
+    ok(df and df["entity"]["code"]["endpoints"][0]["stream"] is True and df["entity"]["code"]["endpoints"][0]["gates"] == ["auth(Scope.READ)", "require_auth_scope(Scope.WRITE)"] and df["entity"]["code"]["endpoints"][2]["gates"] == [],
+       "F8 FIRE/SILENT: full detail carries stream + the gate names per endpoint (get_db is not a gate)", df and df["entity"]["code"].get("endpoints"))
     ok(d and d["c4"]["l1_edges"] and d["c4"]["fe_home"]["id"] == "fe·thing" and d["coverage"]["total"] == 2, "brief adds c4 l1 edges, fe home, coverage", d and d.get("c4"))
     ok(d and d["entity"]["relations"] == {"related_entities": [], "unresolved_tables": [], "fk_out": 0}, "brief collapses relations to counts", d and d["entity"].get("relations"))
     d, _, _, _ = call_json(c, "entity_context", {"slug": "thing", "detail": "raw"})
@@ -323,7 +417,7 @@ def run(T):
     # touches: model with fk_in + r/w fns + cross-entity edge + cases split
     d, _, _, _ = call_json(c, "touches", {"target": "Thing"})
     ok(d and d["kind"] == "model" and d["fk_in_models"] == [{"model": "Widget", "col": "thing_id", "entity": "other"}], "model: fk_in computed from every model's fks", d and d.get("fk_in_models"))
-    ok(d and {f["fn"] for f in d["functions_rw"]} == {"apps/api/services/thing.py::thing", "apps/api/api/things.py::get_thing"}, "model: functions r/w from access.ops", d and d.get("functions_rw"))
+    ok(d and {(f["fn"], f["rw"]) for f in d["functions_rw"]} == {("apps/api/services/thing.py::thing", "r"), ("apps/api/api/things.py::get_thing", "r"), ("apps/api/tasks.py::sweep_things_task", "w")}, "model: functions r/w from access.ops (the task fn writes)", d and d.get("functions_rw"))
     ok(d and "reads_from" in d["endpoint_edges"] and "fk" in d["endpoint_edges"], "model: l2 edges ∪ cross_edges (kind-less FK row → fk)", d and d.get("endpoint_edges"))
     ok(d and d["tests"]["cases"][0]["cid"] == "C8", "model: cases from by_model", d and d.get("tests"))
     # touches: endpoint normalization + file-state rows split
@@ -331,6 +425,12 @@ def run(T):
     ok(d and d["matched"] and d["entity"] == "thing" and d["endpoint"]["handler"] == "apps/api/api/things.py::get_thing", "endpoint matched through normalization (/api/vN, ${x})", d)
     ok(d and d["behind"]["fns"] == 2 and d["screens_in"] and d["tests"]["cases"] == [{"cid": "C8", "name": "test_get_thing_C8", "state": "pass", "corpus": "api", "tfile": "apps/api/tests/test_things_api.py"}]
        and d["tests"]["covered_by_test_files"][0]["tfile"] == "apps/web/e2e/things.spec.ts", "endpoint: behind, bridge in-edge, state=file rows split off", d and d.get("tests"))
+    ok(d and d["endpoint"]["stream"] is True and d["app_middleware"][0]["cls"] == "RateLimiterMiddleware" and "EVERY request" in d["app_middleware_note"],
+       "F1 FIRE: the endpoint answer carries stream + the ASGI middleware that also applies", d and {k: d.get(k) for k in ("app_middleware", "app_middleware_note")})
+    ok(d and d["web_unmatched_fetches"] == [{"m": "GET", "p": "/api/v1/things/{id}", "from": "web:apps/web/src/other"}],
+       "the unmatched-fetch join reads the m/p keys the emitter writes (was path/method — never matched on a real map)", d and d.get("web_unmatched_fetches"))
+    d, _, _, _ = call_json(c, "touches", {"target": "POST /login/access-token"})
+    ok(d and d["matched"] and d["endpoint"]["stream"] is False, "F1 SILENT: an endpoint without the key reads stream False", d and d.get("endpoint"))
     ok(d and "touches_x" not in json.dumps(d), "touches_x is never surfaced")
     d, _, _, _ = call_json(c, "touches", {"target": "POST /things/1"})
     ok(d and d.get("matched") is False and "normalization" in d.get("reason", ""), "unmatched endpoint is named, not empty", d)
@@ -338,7 +438,7 @@ def run(T):
     d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/shared.py"})
     ok(d and {o["entity"] for o in d["owners"]} == {"thing", "other"}, "file: BOTH owners returned", d and d.get("owners"))
     d, _, _, _ = call_json(c, "touches", {"target": "apps/api/integrations/x.py"})
-    ok(d and d["owned"] is False and d["census"]["claimed"] is False, "file: unclaimed census row surfaces", d and d.get("census"))
+    ok(d and d["owned"] is False and d["census"]["claimed"] is False and d["census"]["reason"].startswith("unparseable:"), "file: unclaimed census row surfaces — F10: the unparseable reason wins", d and d.get("census"))
     # touches: bare function ambiguous / unique / qualified / define / case / entity
     d, _, _, _ = call_json(c, "touches", {"target": "run"})
     ok(d and len(d.get("ambiguous", [])) == 2, "bare name with 2 keys → ambiguous, never a silent pick", d)
@@ -349,6 +449,36 @@ def run(T):
        and "floor" in d["function"]["endpoints_reaching"], "qualified fn via #: access ops + endpoints reaching with the FLOOR label", d and d.get("function"))
     d, _, _, _ = call_json(c, "touches", {"target": "Caller"})
     ok(d and d["kind"] == "define" and d["methods"] == ["apps/api/other.py::Caller.run"], "define branch: a non-model class → methods", d)
+    # F2: the qualified join — Svc.search reaches the endpoint (behind.names carries "Svc.search"); Other.search must NOT through the bare `search`
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/thing.py::Svc.search"})
+    ok(d and d["function"]["endpoints_reaching"]["found"] == ["endpoint:GET /things/{item_id}"] and "qualified" in d["function"]["endpoints_reaching"]["floor"],
+       "F2 FIRE: a method joins behind.names on Class.method", d and d.get("function", {}).get("endpoints_reaching"))
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/other_svc.py::Other.search"})
+    ok(d and d["function"]["endpoints_reaching"]["found"] == [], "F2 SILENT: the bare `search` no longer bridges Other.search to Svc.search's endpoint", d and d.get("function", {}).get("endpoints_reaching"))
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/deps.py::auth"})
+    ok(d and d["function"].get("reason") == "not in function_insight", "a gate fn outside function_insight still answers honestly", d and d.get("function"))
+    # F3: TASK roots addressable — by 'TASK <name>', by the registered name, by the fn name; honest-empty by name
+    d, _, _, _ = call_json(c, "touches", {"target": "TASK sweep_things"})
+    ok(d and d["kind"] == "task" and d["matched"] and d["entity"] == "thing" and d["task"]["fn"] == "sweep_things_task" and d["dispatched_by"] == [{"from": "apps/api/api/things.py#get_thing", "conf": "extracted"}]
+       and d["behind"]["fns"] == 1 and d["stream"] is False and "worker task" in d["app_middleware_note"],
+       "F3 FIRE: touches('TASK <name>') → the task, its dispatchers (levels.json), behind, the no-HTTP-gates note", d and {k: d.get(k) for k in ("task", "dispatched_by", "behind")})
+    d, _, _, _ = call_json(c, "touches", {"target": "sweep_things"})
+    ok(d and d["kind"] == "task" and d["matched"], "F3: the REGISTERED name resolves to the task (P1 detect_kind)", d and d.get("kind"))
+    d, _, _, _ = call_json(c, "touches", {"target": "sweep_things_task"})
+    ok(d and d["kind"] == "function_bare" and d["function"]["access_ops"][0]["rw"] == "w" and d["function"]["task_root"]["name"] == "sweep_things" and "TASK sweep_things" in d["function"]["task_root"]["see"],
+       "review F1: a bare task-fn name that function_insight KNOWS answers as the function (access ops kept) and cross-links its task root", d and {k: (d.get("function") or {}).get(k) for k in ("key", "task_root")})
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/tasks.py::sweep_things_task"})
+    ok(d and d["kind"] == "function" and d["function"]["task_root"]["name"] == "sweep_things", "review F1: the qualified task fn carries the same cross-link", d and (d.get("function") or {}).get("task_root"))
+    d, _, _, _ = call_json(c, "touches", {"target": "TASK nope"})
+    ok(d and d["kind"] == "task" and d["matched"] is False and "task_roots" in d["reason"], "F3 SILENT: an unknown task names task_roots, never a crash", d)
+    d, _, _, _ = call_json(c, "cases_for", {"target": "TASK sweep_things"})
+    ok(d and d["kind"] == "task" and d["cases"] == [] and "task roots are not entity endpoints" in d.get("reason", ""), "F3: cases_for('TASK x') is honest-empty by name", d and d.get("reason"))
+    # F9: a screen/hook file → its pieces (hrole · homing) and the endpoints it fetches
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/web/src/things.ts"})
+    ok(d and d["fe"]["calls"] == [{"endpoint": "endpoint:GET /things/{item_id}", "kind": "bridge"}] and d["fe"]["pieces"][0]["hrole"] == "fetcher" and d["fe"]["pieces"][0]["homed_by"] == "config",
+       "F9 FIRE: the file branch carries the screen→endpoint leg + the piece's role and homing", d and d.get("fe"))
+    d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/thing.py"})
+    ok(d and "fe" not in d, "F9 SILENT: a backend file carries no fe block", d and sorted(d.keys()))
     d, _, _, _ = call_json(c, "touches", {"target": "C7"})
     ok(d and d["kind"] == "case" and d["home"] == "apps/api/tests/test_thing.py", "case id → home test file", d)
     d, _, _, _ = call_json(c, "touches", {"target": "nothing_here"})
@@ -363,17 +493,33 @@ def run(T):
     d, _, _, _ = call_json(c, "owner_of", {"paths": ["apps/api/services/shared.py", "apps/api/integrations/x.py", "apps/api/"]})
     r0, r1, r2 = d["results"]
     ok({o["entity"] for o in r0["owners"]} == {"thing", "other"} and set(r0["config_glob_owners"]) == {"thing"}, "owner_of: map owners (2) + config-glob owners", r0)
-    ok(r1["owned"] is False and r1["census"]["claimed"] is False and r1["note"], "owner_of: unowned file names the blind spot", r1)
+    ok(r1["owned"] is False and r1["census"]["claimed"] is False and r1["census"]["reason"].startswith("unparseable:") and r1["note"], "owner_of: unowned file names the blind spot — F10 FIRE: and WHY (unparseable)", r1)
+    ok(r0["census"] == {"claimed": True}, "F10 SILENT: a mapped, parseable file's census is unchanged", r0["census"])
     ok(r2["kind"] == "dir" and r2["owners"].get("thing") and r2["unclaimed_in_census"] == ["apps/api/integrations/x.py"], "owner_of: directory aggregate", r2)
     # entity_shape
     d, _, _, _ = call_json(c, "entity_shape", {"domain": "things"})
-    ok(d and d.get("one_line") and d["domain"]["owners"] == {"thing": 1}, "entity_shape: domain owner lookup", d and d.get("domain"))
+    ok(d and d.get("one_line") and d["domain"]["owners"] == {"thing": 2}, "entity_shape: domain owner lookup", d and d.get("domain"))
+    ok(d and d["mounts_unresolved"] == 1 and "route mount(s) unresolved" in d["one_line"], "F13 FIRE: the mounts caveat rides one_line", d and d.get("one_line"))
 
     # ── wave 2: the graft equivalents + map lifecycle ─────────────────────────
     d, _, _, _ = call_json(c, "find", {"query": "thing"})
     ok(d and d["hits"] and d["hits"][0]["kind"] == "entity" and d["hits"][0]["name"] == "thing" and d["total"] >= 4, "find: exact entity ranks first, total counts every kind", d and {k: d.get(k) for k in ("total",)} | {"top": (d or {}).get("hits", [])[:3]})
     d, _, _, _ = call_json(c, "find", {"query": "thing", "kind": "model", "limit": 1})
     ok(d and [h["kind"] for h in d["hits"]] == ["model"] and d["hits"][0]["name"] == "Thing", "find: kind filter + limit", d and d.get("hits"))
+    # F4: ranking · dedupe · generated-client noise · providers · tasks · stream filter
+    d, _, _, _ = call_json(c, "find", {"query": "login"})
+    ok(d and [h["name"] for h in d["hits"]][:3] == ["POST /login/access-token", "loginBanner", "loginLoginAccessTokenData"] and [h for h in d["hits"] if h["name"] == "loginLoginAccessTokenData"] == [{"kind": "fe", "name": "loginLoginAccessTokenData", "entity": None, "file": "apps/web/client/types.gen.ts", "piece_kind": "fe-type"}],
+       "F4 FIRE: the +25 kind bonus alone puts the endpoint (substring) over a plain prefix define; the −30 alone puts the generated twin below it; the define twin folds into ONE fe hit", d and d.get("hits"))
+    d, _, _, _ = call_json(c, "find", {"query": "ThingOut", "kind": "schema"})
+    ok(d and d["total"] == 1 and d["hits"][0]["entities"] == ["other", "thing"], "F4 FIRE: a schema two entities consume (and one lists twice) is ONE hit naming both, deduped + sorted", d and d.get("hits"))
+    d, _, _, _ = call_json(c, "find", {"query": "litellm"})
+    ok(d and d["hits"][0]["kind"] == "provider" and d["hits"][0]["pclass"] == "llm" and d["hits"][0]["entity"] == "thing", "F4 FIRE: a provider is findable (c4 provider node, once per name)", d and d.get("hits"))
+    d, _, _, _ = call_json(c, "find", {"query": "sweep"})
+    ok(d and d["hits"][0]["kind"] == "task" and d["hits"][0]["name"] == "sweep_things" and d["hits"][0]["id"] == "endpoint:TASK sweep_things", "F3 FIRE: a task is findable by its registered name", d and d.get("hits"))
+    d, _, _, _ = call_json(c, "find", {"query": "t /", "kind": "endpoint", "stream": True})
+    ok(d and d["total"] == 1 and d["hits"][0]["stream"] is True and "stream=true" in d["filter"], "F4 FIRE: stream=true keeps only the streaming endpoints (and every endpoint hit carries stream)", d and d.get("hits"))
+    d, _, _, _ = call_json(c, "find", {"query": "t /", "kind": "endpoint"})
+    ok(d and d["total"] == 2, "F4 SILENT: without the filter both endpoints hit", d and d.get("total"))
     d, is_err, _, _ = call_json(c, "find", {"query": "x"})
     ok(is_err and "2 characters" in (d or {}).get("stop", ""), "find: a 1-char query is a stop", d)
     d, _, _, _ = call_json(c, "outline", {"file": "apps/api/other.py"})
@@ -383,14 +529,141 @@ def run(T):
     ok(d and d["signatures"].startswith("graft index") and d["definitions"][0]["signature"] == "def run(self) -> int" and d["definitions"][0]["span"] == "L5-L6", "outline with a graft index: span + signature from wiring.json", d and d.get("definitions"))
     d, _, _, _ = call_json(c, "center_overview", {})
     ok(d and len(d["entities"]) == 2 and d["entities"][1]["entity"] == "thing" and d["entities"][1]["coverage"] == "1/2" and d["census_gaps"]["files_unclaimed"] == 1 and d["unregistered"] == ["other"], "center_overview: entities with coverage, census gaps, unregistered", d and {k: d.get(k) for k in ("census_gaps", "unregistered")})
+    ok(d and d["web"]["extractor"] == "fetch" and d["web"]["unmatched"] == 2 and d["web"]["other_roots"] == ["mobile/src"] and d["arms"]["providers"] == ["litellm"] and d["arms"]["fe"] == {"present": True, "homing": "config"}
+       and d["arms"]["app_middleware"] == 1 and d["arms"]["gate_endpoints"] == 2 and d["arms"]["tasks"] == 1 and d["map_health"]["route_mounts"]["unresolved"] == 1 and d["census_gaps"]["routes_unclaimed"] is None and "route_census" in d["census_absent"],
+       "F7 FIRE: the web arm (a LIST unmatched counts), named providers, fe homing, middleware/gates/tasks, map_health; an absent census block is None + named", d and {k: d.get(k) for k in ("web", "arms", "census_absent")})
     d, _, _, _ = call_json(c, "blast_radius", {"files": ["apps/api/services/thing.py"]})
     ok(d and d["touched_entities"] == {"thing": 1} and "endpoint:GET /things/{item_id}" in d["endpoints_reached"] and d["reading"] == "contained" and "floor" in d, "blast_radius: owners + endpoints via behind.names (floor) + reading", d and {k: d.get(k) for k in ("touched_entities", "endpoints_reached", "reading")})
+    ok(d and d["tasks_dispatched"] == [] and d["tasks_defined"] == [], "F15 SILENT: a change that dispatches nothing lists no task", d and {k: d.get(k) for k in ("tasks_dispatched", "tasks_defined")})
+    d, _, _, _ = call_json(c, "blast_radius", {"files": ["apps/api/api/things.py"]})
+    ok(d and d["tasks_dispatched"] == [{"task": "endpoint:TASK sweep_things", "from": "apps/api/api/things.py#get_thing", "conf": "extracted"}] and d["reading"] == "cross-process",
+       "F15 FIRE: the dispatch arm — a changed handler that enqueues a task lists it (levels.json, conf) and the reading says cross-process", d and {k: d.get(k) for k in ("tasks_dispatched", "reading")})
+    d, _, _, _ = call_json(c, "blast_radius", {"files": ["apps/api/tasks.py"]})
+    ok(d and d["tasks_defined"] == ["endpoint:TASK sweep_things"] and d["reading"] == "cross-process", "F15 FIRE: a changed file that DEFINES a task root lists it as an entry point", d and d.get("tasks_defined"))
     d, _, _, _ = call_json(c, "blast_radius", {"files": ["apps/api/integrations/x.py"]})
     ok(d and d["reading"] == "unmapped" and d["unowned_files"] == ["apps/api/integrations/x.py"], "blast_radius: unmapped files are named, reading = unmapped", d)
     d, _, _, _ = call_json(c, "map_census", {})
     ok(d and d["census"]["file"]["unclaimed"][0]["file"] == "apps/api/integrations/x.py" and "reason" in d["census"]["route"], "map_census: unclaimed file listed, absent route census named", d and d.get("census"))
+    cs = d and d["census"]
+    ok(cs and cs["mounts"]["unresolved"][0]["why"].startswith("non-literal prefix") and cs["mounts"]["state"] == "present" and cs["twins"]["mode"] == "blocked" and "9 sizable function(s) over the 5 budget" in cs["twins"]["text"]
+       and cs["web"]["other_roots"] == ["mobile/src"] and cs["web"]["unmatched"] == 2 and cs["web"]["unmatched_named"] == ["GET /x", "GET /api/v1/things/{id}"] and cs["unparseable"]["count"] == 1 and cs["unparseable"]["rows"][0]["why"] == "unparseable: bad"
+       and cs["schema"]["empty_arm"] is False,
+       "F6 FIRE: the four new sections — mounts · twins (sizable over budget, never 'pairs over a budget') · web roots + unmatched named · unparseable rows", cs and {k: cs.get(k) for k in ("mounts", "twins", "web", "unparseable")})
+    d, _, _, _ = call_json(c, "map_census", {"kind": "twins"})
+    ok(d and list(d["census"].keys()) == ["twins"] and d["census"]["twins"]["state"] == "present", "F6: one section only", d and d.get("census"))
     d, is_err, _, _ = call_json(c, "map_census", {"kind": "bogus"})
     ok(is_err, "map_census: bad kind is a stop")
+    # ── wave 3: trace + gates (N1/N2) ──
+    d, _, _, _ = call_json(c, "trace", {"start": "GET /things/{item_id}"})
+    tos = d and [h["to"] for h in d["hops"]]
+    ok(d and d["from"]["kind"] == "endpoint" and d["from"]["gates"] == ["auth(Scope.READ)", "require_auth_scope(Scope.WRITE)"] and d["from"]["stream"] is True and "provider:redis" in tos and "apps/api/tasks.py#sweep_things_task" in tos
+       and [h for h in d["hops"] if h["rel"] == "dispatches"][0]["conf"] == "extracted" and [h for h in d["hops"] if h["rel"] == "dispatches"][0]["task"] == "endpoint:TASK sweep_things"
+       and [h for h in d["hops"] if h["rel"] == "calls"][0]["models"] == ["Thing r"] and d["summary"].startswith("hops 3 of 3 reachable") and d["app_middleware"] == ["RateLimiterMiddleware"] and d["behind_contrast"]["fns"] == 2
+       and any(l.startswith("  calls (extracted)  apps/api/services/thing.py#thing") for l in d["tree"]) and any(l.startswith("    reaches (inferred)  provider:redis") for l in d["tree"]),
+       "N1 FIRE: trace from an endpoint — gates + stream in the header, the call hop with its models, the provider hop, the dispatch hop → TASK, the FLOOR summary, the indented tree", d and {k: d.get(k) for k in ("from", "summary", "tree")})
+    d, _, _, _ = call_json(c, "trace", {"start": "TASK sweep_things"})
+    ok(d and d["from"]["kind"] == "task" and d["from"]["label"] == "TASK sweep_things" and d["tree"][0].startswith("apps/api/tasks.py#sweep_things_task") and d.get("reason", "").startswith("no calls/depends/dispatches/reaches edge(s) leave")
+       and d["app_middleware"] == [] and "worker task runs outside it" in d["app_middleware_note"],
+       "N1: a trace can start at a TASK root; zero out-edges is named, never empty; no ASGI list on a worker (review)", d and {k: d.get(k) for k in ("from", "reason", "app_middleware")})
+    d, _, _, _ = call_json(c, "trace", {"start": "GET /things/{item_id}", "depth": 1})
+    ok(d and "provider:redis" not in [h["to"] for h in d["hops"]] and d["summary"].startswith("hops 2 of 3 reachable"), "N1: depth=1 stops before the reaches hop and the summary names what it did not walk", d and d.get("summary"))
+    d, _, _, _ = call_json(c, "trace", {"start": "apps/api/services/thing.py#thing", "rels": ["calls"]})
+    ok(d and d["hops"] == [] and d["reason"].startswith("no calls edge(s) leave apps/api/services/thing.py#thing"), "N1 SILENT: rels=[calls] on a function with only a reaches edge names the absence", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "trace", {"start": "search"})
+    ok(d and "ambiguous" in d and "pass file::name" in d["reason"], "N1: an ambiguous bare start lists the keys", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "gates", {"gate": "auth"})
+    ok(d and [e["endpoint"] for e in d["endpoints"]] == ["GET /things/{item_id}", "DELETE /things/{item_id}"] and d["by_argument"] == {"Scope.READ": 2} and [e["arg"] for e in d["endpoints"]] == ["Scope.READ", "Scope.READ, allow_anonymous=True"]
+       and d["fn"] == ["apps/api/deps.py::auth"] and d["app_middleware"][0]["cls"] == "RateLimiterMiddleware" and d["endpoints_total"] == 3 and d["endpoints_matched"] == 2 and d["gated_total"] == 2
+       and d["ungated"] == {"count": 1, "sample": ["POST /login/access-token"]} and d["cross_check"] == "stats say 2 gated endpoint(s), this walk counts 2" and d["non_gate_deps"] == []
+       and all(e["how"] == "callee" for e in d["endpoints"]) and d["also_named_in"] == {"require_auth_scope": 1} and "ambiguous_gate" not in d,
+       "N2 FIRE: gates(auth) — an EXACT callee hit is the gate (2 endpoints, by_argument keyed on the head: Scope.READ ×2 with the full arg per row), total vs matched apart, the substring twin require_auth_scope only NAMED", d and {k: d.get(k) for k in ("endpoints", "by_argument", "also_named_in", "endpoints_total", "endpoints_matched")})
+    d, _, _, _ = call_json(c, "gates", {"gate": "Scope.READ"})
+    ok(d and [e["endpoint"] for e in d["endpoints"]] == ["GET /things/{item_id}", "DELETE /things/{item_id}"] and all(e["how"] == "argument" for e in d["endpoints"]) and "ambiguous_gate" not in d,
+       "N2: a gate is found by its ARGUMENT string (one callee → not ambiguous)", d and d.get("endpoints"))
+    d, _, _, _ = call_json(c, "gates", {"gate": "Scope"})
+    ok(d and d["callees"] == ["auth", "require_auth_scope"] and d["ambiguous_gate"].startswith("'Scope' matched 2 distinct dependencies (auth · require_auth_scope)") and d["endpoints_matched"] == 3,
+       "N2 FIRE (review): a substring that lands on two callees says ambiguous_gate and names them", d and {k: d.get(k) for k in ("callees", "ambiguous_gate")})
+    d, _, _, _ = call_json(c, "gates", {"gate": "get_db"})
+    ok(d and d["endpoints"] == [] and d["non_gate_deps"][0]["endpoint"] == "GET /things/{item_id}" and "non-gate dependency" in d["reason"], "N2 SILENT: a dep that is not a gate is listed apart, never reported as one", d and {k: d.get(k) for k in ("non_gate_deps", "reason")})
+    d, _, _, _ = call_json(c, "gates", {"gate": "nope"})
+    ok(d and d["endpoints"] == [] and "no endpoint names 'nope'" in d["reason"] and d["app_middleware"][0]["cls"] == "RateLimiterMiddleware", "N2 SILENT: an unknown gate names the reason and still prints the app-scope list", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "gates", {})
+    ok(d and d["gates"] == [{"callee": "auth", "fn": "apps/api/deps.py::auth", "endpoints": 2, "via": ["param-dep"], "args": 2},
+                            {"callee": "require_auth_scope", "fn": "apps/api/deps.py::require_auth_scope", "endpoints": 1, "via": ["param-dep"], "args": 1}]
+       and d["gated_total"] == 2 and d["endpoints_total"] == 3 and "1 task root(s) run outside" in d["tasks"],
+       "N2: the census — every gate callee with its endpoint count (endpoints_total keeps the map's count); tasks named as outside the gates", d and {k: d.get(k) for k in ("gates", "tasks", "endpoints_total")})
+    # ── the OLDER-MAP variant: absence semantics (P2), honest-empty for the new kinds ──
+    variant(root, older_map)
+    d, _, _, _ = call_json(c, "map_status", {})
+    h = d and d.get("map_health")
+    ok(h and h["fn_similarity"] == {"state": "clean", "mode": "exact"} and h["unparseable"] == {"state": "clean", "count": 0} and h["tasks_state"] == "clean" and d["counts"]["tasks"] == 0 and d["counts"]["providers"] == 0,
+       "P2 SILENT: with the sentinel present, absent keys read CLEAN (the pass ran and found nothing)", h)
+    d, _, _, _ = call_json(c, "touches", {"target": "GET /things/{item_id}"})
+    ok(d and d["app_middleware"] == [] and "the app declares no ASGI middleware (the pass ran" in d["app_middleware_note"], "F1 SILENT: no app_middleware block with the sentinel → [] and the CLEAN wording (P2 decides, never a hedge)", d and d.get("app_middleware_note"))
+    d, _, _, _ = call_json(c, "touches", {"target": "TASK sweep_things"})
+    ok(d and d["matched"] is False and "0 registered task(s)" in d["reason"], "F3 SILENT: an older map has no task roster — said by name", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "find", {"query": "sweep", "kind": "task"})
+    ok(d and d["total"] == 0 and "no task_roots block" in d["note"], "F3/F4 SILENT: find(kind=task) on an older map → 0 + the note", d and d.get("note"))
+    d, _, _, _ = call_json(c, "find", {"query": "litellm", "kind": "provider"})
+    ok(d and d["total"] == 0 and "no provider nodes" in d["note"], "F4 SILENT: find(kind=provider) with no provider nodes → 0 + the note", d and d.get("note"))
+    d, _, _, _ = call_json(c, "entity_context", {"slug": "thing"})
+    ok(d and d["c4"]["providers"] == [] and "task" not in d["c4"]["l2_node_kinds"], "F8 SILENT: no provider nodes → [], no TASK nodes → no task key", d and d.get("c4"))
+    d, _, _, _ = call_json(c, "map_census", {"kind": "twins"})
+    ok(d and d["census"]["twins"] == {"state": "clean", "text": "the structural-twin pass ran exactly"}, "F6 SILENT: the twin section reads clean through the sentinel", d and d.get("census"))
+    a2 = json.load(open(os.path.join(root, "docs/site/center/archmap.json"))); a2.pop("route_mounts", None)
+    write(root, "docs/site/center/archmap.json", json.dumps(a2, indent=1, sort_keys=True))
+    d, _, _, _ = call_json(c, "map_status", {})
+    h = d and d.get("map_health")
+    ok(h and h["route_mounts"] == {"state": "not_emitted"} and h["fn_similarity"]["state"] == "not_emitted" and "regen to know" in h["states"], "P2: without the sentinel an absent key reads NOT_EMITTED — regen to know", h)
+    d, _, _, _ = call_json(c, "touches", {"target": "GET /things/{item_id}"})
+    ok(d and "regen to know" in d["app_middleware_note"], "F1: without the sentinel the app_middleware note says regen to know", d and d.get("app_middleware_note"))
+    d, _, _, _ = call_json(c, "map_census", {"kind": "twins"})
+    ok(d and d["census"]["twins"]["state"] == "not_emitted" and "regen to know" in d["census"]["twins"]["text"], "F6: the twin section says regen to know on an older map", d and d.get("census"))
+    restore(root)
+    # ── the CONFIG-ONLY variant (bootstrap_center.sh): the registry is the config, census absence ≠ 0, the empty schema arm, mounts clean, no web arm ──
+    variant(root, config_only)
+    d, _, _, _ = call_json(c, "center_overview", {})
+    ok(d and d["registry"].startswith("config-only") and "unregistered" not in d and d["entities"][0]["status"] == "config-only" and d["census_gaps"]["files_unclaimed"] is None and "file_census" in d["census_absent"]
+       and d["web"] == {"present": False, "reason": "no frontend"} and d["map_health"]["schemas_zero"].startswith("the schema arm extracted nothing"),
+       "F7 FIRE: config-only registry (no 'unregistered'), absent census → None, the web arm's absence verbatim, the empty schema arm", d and {k: d.get(k) for k in ("registry", "census_gaps", "web")})
+    d, _, _, _ = call_json(c, "entity_context", {})
+    ok(d and d["registry"].startswith("config-only") and all(e["status"] == "config-only" and e["note"] == "config-only registry" for e in d["entities"]), "F8 FIRE: the entity list says config-only once and per row", d and d.get("entities"))
+    d, _, _, _ = call_json(c, "map_census", {"kind": "schema"})
+    ok(d and d["census"]["schema"]["empty_arm"].startswith("the schema arm extracted nothing across 3 endpoint(s)"), "F6 FIRE: 0 schemas across N endpoints = an EMPTY arm, said", d and d.get("census"))
+    d, _, _, _ = call_json(c, "map_status", {})
+    ok(d and d["counts"]["schemas"] == 0 and "schemas_rows" not in d["counts"], "F5 SILENT: no duplicate rows → schemas_rows is absent", d and d.get("counts"))
+    d, _, _, _ = call_json(c, "map_census", {"kind": "mounts"})
+    ok(d and d["census"]["mounts"]["unresolved"] == [] and d["census"]["mounts"]["state"] == "present" and "reason" not in d["census"]["mounts"], "F6 SILENT: mounts with nothing unresolved → [] and no reason", d and d.get("census"))
+    d, _, _, _ = call_json(c, "entity_shape", {})
+    ok(d and d["mounts_unresolved"] == 0 and "unresolved" not in d["one_line"], "F13 SILENT: no unresolved mount → one_line unchanged", d and d.get("one_line"))
+    restore(root)
+    d, _, _, _ = call_json(c, "center_overview", {})
+    ok(d and d["unregistered"] == ["other"] and "registry" not in d, "F7 SILENT: with adoption.json the unregistered contract holds", d and d.get("unregistered"))
+    # F15/N1 SILENT: no levels.json → the reason, never a crash
+    os.rename(os.path.join(root, "docs/site/center/levels.json"), os.path.join(root, "docs/site/center/levels.json.off"))
+    d, _, _, _ = call_json(c, "blast_radius", {"files": ["apps/api/api/things.py"]})
+    ok(d and d["tasks_dispatched"] == {"reason": "no levels.json — dispatch edges unread"}, "F15 SILENT: no levels.json → the dispatch arm names its absence", d and d.get("tasks_dispatched"))
+    d, _, _, _ = call_json(c, "trace", {"start": "GET /things/{item_id}"})
+    ok(d and "hops" not in d and d["reason"].startswith("no levels.json in this center"), "N1 SILENT: no levels.json → the named reason, no stack", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "touches", {"target": "TASK sweep_things"})
+    ok(d and d["dispatched_by"] == {"reason": "no levels.json — dispatch edges unread"}, "F3 SILENT: touches(task) names the missing dispatch source", d and d.get("dispatched_by"))
+    os.rename(os.path.join(root, "docs/site/center/levels.json.off"), os.path.join(root, "docs/site/center/levels.json"))
+    # F11: the corpus grep skips the suite's own installs; says so without .kdbp/
+    write(root, "apps/api/tests/x_test.py", "def test_seven_C7():\n    pass\n"); git(root, "add", "apps/api/tests/x_test.py")
+    d, _, _, _ = call_json(c, "cases_for", {"target": "apps/api/api/things.py::get_thing"})
+    ok(d and d["corpus"]["max_cid_seen"] == 7 and d["corpus"]["next_cid_floor"] == 8, "F11 FIRE: a real test's C7 sets the corpus floor", d and d.get("corpus"))
+    write(root, "scripts/_a3_tests.py", "# the C4 L2 elements — C99 is prose here\n"); write(root, "docs/site/center/generators/x_test.py", "C88\n")
+    git(root, "add", "scripts/_a3_tests.py", "docs/site/center/generators/x_test.py")
+    d, _, _, _ = call_json(c, "cases_for", {"target": "apps/api/api/things.py::get_thing"})
+    ok(d and d["corpus"]["max_cid_seen"] == 7, "F11 SILENT: C99 in scripts/_a3_tests.py and C88 under docs/site/center/ never move the floor", d and d.get("corpus"))
+    git(root, "rm", "-q", "--cached", "apps/api/tests/x_test.py", "scripts/_a3_tests.py", "docs/site/center/generators/x_test.py")
+    for f in ("apps/api/tests/x_test.py", "scripts/_a3_tests.py", "docs/site/center/generators/x_test.py"):
+        os.remove(os.path.join(root, f))
+    shutil.rmtree(os.path.join(root, "docs/site/center/generators"), ignore_errors=True)
+    kd = os.path.join(root, ".kdbp"); os.rename(kd, kd + ".off")
+    d, _, _, _ = call_json(c, "cases_for", {"target": "apps/api/api/things.py::get_thing"})
+    ok(d and d["corpus"]["note"].startswith("no .kdbp/"), "F11: without .kdbp/ the corpus floor is named a corpus artefact", d and d.get("corpus"))
+    os.rename(kd + ".off", kd)
     d, _, _, _ = call_json(c, "map_diff", {"base": "HEAD"})
     ok(d and d["regenerated"] is False and "not regenerated" in d["note"], "map_diff: same head → regenerated:false, named", d)
     d, _, _, _ = call_json(c, "map_diff", {"base": "HEAD~2"})
@@ -505,6 +778,28 @@ def run(T):
         called = '"name":"mcp__gabe-map__map_status"' in r.stdout.replace(" ", "")
         ok(r.returncode == 0 and called, "harness e2e: the model called mcp__gabe-map__map_status through the real client", r.stdout[-400:] + r.stderr[-300:])
 
+
+
+
+def part_b_tail(root, T, gdir):
+    """F12 (review_drift ignores the suite's own install hunks) + F14 (map_diff: task roots + the health delta) — they add commits, so they run last."""
+    c = spawn(root, T, graft_dir=gdir)
+    c.initialize()
+    write(root, "docs/site/center/x.html", "<script>apiFetch('/x')</script>\n")            # the suite's own template prose (the study-repo phantom)
+    write(root, "apps/web/hooks/useY.ts", "export const useY = () => apiFetch('/y');\n")     # a real project fetch (the detector's idiom)
+    git(root, "add", "-A"); git(root, "commit", "-q", "-m", "center install + a real hook")
+    d, _, _, _ = call_json(c, "review_drift", {"base": "HEAD~1", "subjects": ["web_bridge"]})
+    wb = d and d["subjects"]["web_bridge"]
+    ok(wb and wb.get("ran") and [list(x)[:2] for x in wb["new_fetches"]] == [["GET", "/y"]], "F12 FIRE/SILENT: the center's own fetch('/x') is not a project fetch; the real hook's fetch('/y') still is", wb)
+    a = json.load(open(os.path.join(root, "docs/site/center/archmap.json")))
+    a0 = dict(a); a0.pop("task_roots"); a0.pop("unparseable"); a0["head"] = "0000beef"
+    a0["route_mounts"] = dict(a["route_mounts"], unresolved=[])
+    write(root, "docs/site/center/archmap.json", json.dumps(a0, indent=1, sort_keys=True)); git(root, "add", "-A"); git(root, "commit", "-q", "-m", "regen without the task")
+    write(root, "docs/site/center/archmap.json", json.dumps(a, indent=1, sort_keys=True)); git(root, "add", "-A"); git(root, "commit", "-q", "-m", "regen with the task")
+    d, _, _, _ = call_json(c, "map_diff", {"base": "HEAD~1"})
+    ok(d and d["regenerated"] and d["tasks"] == {"added": ["sweep_things"], "removed": [], "base": 0, "head": 1} and d["health_delta"]["mounts_unresolved"] == [0, 1] and d["health_delta"]["unparseable"] == [0, 1],
+       "F14 FIRE: map_diff names the task root that appeared and the health delta (mounts · unparseable)", d and {k: d.get(k) for k in ("tasks", "health_delta")})
+    c.close()
 
 if __name__ == "__main__":
     sys.exit(main())

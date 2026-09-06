@@ -54,6 +54,10 @@ def _score(q: str, name: str, doc: str = "") -> int:
     return 0
 
 
+_KIND_BONUS = {"entity": 25, "endpoint": 25, "task": 25, "model": 25, "provider": 25, "schema": 10, "function": 10}   # F4: a thing the map DECLARES outranks a generated define's prefix hit
+_GEN_RX = re.compile(r"\.gen\.|/client/|/generated/")
+
+
 def t_find(args: dict, roots) -> dict:
     center, root, source, reason = T._ctx(args, roots)
     if not center:
@@ -64,17 +68,24 @@ def t_find(args: dict, roots) -> dict:
     kinds = args.get("kind")
     kinds = {kinds} if isinstance(kinds, str) and kinds else None
     limit = max(1, min(int(args.get("limit") or 20), mq.CAP))
+    stream_only = bool(args.get("stream"))
     a, c, idx = center.archmap, center.c4, center.idx()
     hits = []
 
     def add(kind, name, entity, file, extra=None, doc=""):
         s = _score(q, name, doc)
-        if s and (kinds is None or kind in kinds):
-            hits.append((s, {"kind": kind, "name": name, "entity": entity, "file": file, **(extra or {})}))
+        if not s or (kinds is not None and kind not in kinds):
+            return
+        s += _KIND_BONUS.get(kind, 0)
+        if file and _GEN_RX.search(file):
+            s -= 30                                                    # a generated client (.gen. · /client/ · /generated/) is noise, not a definition
+        hits.append((s, {"kind": kind, "name": name, "entity": entity, "file": file, **(extra or {})}))
     for slug, ent in center.entities().items():
         add("entity", slug, slug, None)
         for ep in ent.get("endpoints") or []:
-            add("endpoint", "%s %s" % (ep.get("method"), ep.get("path")), slug, ep.get("file"), {"fn": ep.get("fn")}, ep.get("doc") or "")
+            if stream_only and not ep.get("stream"):
+                continue
+            add("endpoint", "%s %s" % (ep.get("method"), ep.get("path")), slug, ep.get("file"), {"fn": ep.get("fn"), "stream": bool(ep.get("stream"))}, ep.get("doc") or "")
         for m in ent.get("models") or []:
             add("model", m.get("cls") or "", slug, m.get("file"), {"table": m.get("table")}, m.get("doc") or "")
         for s_ in ent.get("schemas") or []:
@@ -91,12 +102,47 @@ def t_find(args: dict, roots) -> dict:
             add("fe", p.get("name") or p.get("id") or "", p.get("home"), p.get("file"), {"piece_kind": p.get("kind")})
     for stem, (slug, node) in idx["web_by_stem"].items():
         add("screen", stem, slug, None)
+    for name, rec in idx["task_by_name"].items():                       # F3: a task by its REGISTERED name or its fn name
+        r_ = rec["root"]
+        add("task", name, rec["slug"], r_.get("file"), {"fn": r_.get("fn"), "id": rec["nid"]}, r_.get("doc") or "")
+        if r_.get("fn") and r_.get("fn") != name and _score(q, r_.get("fn")) > _score(q, name):
+            add("task", r_.get("fn"), rec["slug"], r_.get("file"), {"registered_as": name, "id": rec["nid"]}, r_.get("doc") or "")
+    provs: dict[str, dict] = {}
+    for (slug, nid), n in idx["c4_nodes"].items():                      # F4: providers — every c4 provider node, once per name
+        if n.get("kind") == "provider":
+            pv = provs.setdefault(n.get("label") or nid.split(":", 1)[-1], {"slugs": set(), "pclass": n.get("pclass")})
+            pv["slugs"].add(slug)
+    for name, pv in provs.items():
+        add("provider", name, ", ".join(sorted(s_ for s_ in pv["slugs"] if s_)), None, {"pclass": pv["pclass"], "id": "provider:%s" % name})
+    # dedupe: a define twin of an fe piece (same name + file) folds into the fe hit; a schema/model several entities share (same cls + file) is ONE hit
+    fe_keys = {(h["name"], h["file"]) for _, h in hits if h["kind"] == "fe"}
+    hits = [(s_, h) for s_, h in hits if not (h["kind"] == "define" and (h["name"], h["file"]) in fe_keys)]
+    merged, seen_sm = [], {}
+    for s_, h in hits:
+        if h["kind"] in ("schema", "model"):
+            k = (h["kind"], h["name"], h["file"])
+            if k in seen_sm:
+                seen_sm[k].setdefault("entities", [seen_sm[k]["entity"]]).append(h["entity"])
+                continue
+            seen_sm[k] = h
+        merged.append((s_, h))
+    hits = merged
+    for _s, h in hits:
+        if h.get("entities"):
+            h["entities"] = sorted({e for e in h["entities"] if e})   # a claim about ownership: one name per entity, sorted
     hits.sort(key=lambda h: (-h[0], h[1]["kind"], h[1]["name"]))
     out = T._base(center, root, source)
     out.update({"query": q, "hits": [h[1] for h in hits[:limit]], "total": len(hits),
                 "note": ("+%d more (limit %d)" % (len(hits) - limit, limit)) if len(hits) > limit else None,
-                "ranking": "exact 100 · qualified-tail 90 · prefix 70 · substring 50 · in-doc 20",
+                "ranking": "exact 100 · qualified-tail 90 · prefix 70 · substring 50 · in-doc 20 · +25 entity/endpoint/task/model/provider · +10 schema/function "
+                           "· −30 generated client (.gen. · /client/ · /generated/) · a define twin folds into its fe piece · a shared schema/model is one hit (entities: [...])",
                 "floor": "searches the map's names and docs, not the source — a name the map lacks is a Grep question"})
+    if stream_only:
+        out["filter"] = "stream=true — only endpoints whose handler returns a streaming response (SSE / chunked)"
+    if kinds and "task" in kinds and not idx["task_by_name"]:
+        out["note"] = out["note"] or "no task_roots block on this map — no worker tasks found, or an older map (regen to know)"
+    if kinds and "provider" in kinds and not provs:
+        out["note"] = out["note"] or "no provider nodes in c4 — no SDK root reached, or an older map (regen to know)"
     return out
 
 
@@ -161,19 +207,35 @@ def t_center_overview(args: dict, roots) -> dict:
                      "coverage": ("%s/%s" % (cv.get("covered"), cv.get("total"))) if cv else None,
                      "fe_pieces": fe_home.get("pieces")})
     st = c.get("stats") or {}
-    sh_ = a.get("schema_homing") or {}
+    web = st.get("web") or {}
+    cfg_only = T._config_only(center)
+    if cfg_only:
+        for r in rows:
+            r["status"] = "config-only"
+
+    def gap(block, key="unclaimed"):                                   # F7: absent block → None (not emitted), never 0
+        b = a.get(block)
+        return len(b.get(key) or []) if isinstance(b, dict) and b else None
     out = T._base(center, root, source)
     out.update({"entities": rows,
-                "arms": {"graft": (st.get("graft") or {}).get("present"), "web": (st.get("web") or {}).get("present"),
-                         "fe": bool((c.get("fe") or {}).get("pieces"))},
-                "census_gaps": {"files_unclaimed": len((a.get("file_census") or {}).get("unclaimed") or []),
-                                "models_unclaimed": len((a.get("model_census") or {}).get("unclaimed") or []),
-                                "routes_unclaimed": len((a.get("route_census") or {}).get("unclaimed") or []) if a.get("route_census") else None,
-                                "schemas_unwired": len(sh_.get("unwired") or []), "schemas_ambiguous": len(sh_.get("ambiguous") or [])},
-                "web": {k: (st.get("web") or {}).get(k) for k in ("screens", "fetch_sites", "matched", "unmatched") if (st.get("web") or {}).get(k) is not None}
-                if isinstance((st.get("web") or {}).get("unmatched"), int) else {"unmatched": len((st.get("web") or {}).get("unmatched") or [])},
-                "unregistered": sorted(set(center.entities()) - set(ad)),
+                "arms": {"graft": (st.get("graft") or {}).get("present"), "web": web.get("present"), "web_extractor": web.get("extractor"),
+                         "fe": {"present": bool((c.get("fe") or {}).get("pieces")), "homing": (st.get("fe") or {}).get("homing")},
+                         "providers": sorted(((st.get("providers") or {}).get("by_provider") or {}).keys()),
+                         "app_middleware": len(a.get("app_middleware") or []), "gate_endpoints": st.get("gate_endpoints"),
+                         "tasks": len(a.get("task_roots") or [])},
+                "census_gaps": {"files_unclaimed": gap("file_census"), "models_unclaimed": gap("model_census"), "routes_unclaimed": gap("route_census"),
+                                "schemas_unwired": gap("schema_homing", "unwired"), "schemas_ambiguous": gap("schema_homing", "ambiguous")},
+                "census_absent": [k for k in ("file_census", "model_census", "route_census", "schema_homing") if not (isinstance(a.get(k), dict) and a.get(k))],
+                "census_note": "None = the census block is absent on this map (not emitted), never 0",
+                "web": (({k: web.get(k) for k in ("extractor", "screens", "fetch_sites", "matched", "dynamic", "unhomed", "other_roots", "sse", "sdk_methods") if web.get(k) is not None}
+                         | {"present": True, "unmatched": (len(web["unmatched"]) if isinstance(web.get("unmatched"), list) else (web.get("unmatched") or 0))})
+                        if web.get("present") else {"present": False, "reason": web.get("reason")}),
+                "map_health": mq.map_health(a, c),
                 "stations": "codebase-graph.html · gabe-universe.html · architecture.html · board.html (docs/site/center/)"})
+    if cfg_only:
+        out["registry"] = T.CONFIG_ONLY                                # no adoption.json: nothing is "unregistered" — the config IS the registry
+    else:
+        out["unregistered"] = sorted(set(center.entities()) - set(ad))
     return out
 
 
@@ -217,7 +279,7 @@ def t_blast_radius(args: dict, roots) -> dict:
         models.update(cls for cls, r in mi.items() if r.get("file") == f)
         tests.update(((ti.get("by_file") or {}).get(f) or {}).get("reach", []))
         fe += [p.get("name") for p in ((center.c4.get("fe") or {}).get("pieces") or []) if isinstance(p, dict) and p.get("file") == f]
-    bare = {k.split("::", 1)[1].split(".")[-1] for k in fns}
+    quals = {k.split("::", 1)[1] for k in fns}                          # F2: the QUALIFIED name (a plain function's qual is its bare name)
     for (slug, nid), n in idx["c4_nodes"].items():
         if n.get("kind") != "endpoint":
             continue
@@ -226,8 +288,23 @@ def t_blast_radius(args: dict, roots) -> dict:
             if ep_key.split("::", 1)[0] in files and nid == "endpoint:%s %s" % (m, p):
                 hkey = ep_key
         names = set((n.get("behind") or {}).get("names") or [])
-        if hkey or (names & bare):
+        if hkey or (names & quals):
             endpoints[nid] = {"entity": slug, "via": "handler in changed file" if hkey else "behind.names (floor, cap 12)"}
+    # F15 (2026-09-06): the dispatch arm — task roots DEFINED in the changed files are entry points; tasks DISPATCHED from the changed
+    # functions ride levels.json's dispatches edges (conf per edge); either makes the reading cross-process
+    tasks_defined = [rec["nid"] for name, rec in idx["task_by_name"].items() if rec["root"].get("file") in files]
+    fx = center.fn_index()
+    if fx["present"]:
+        fk2t = {r["fnkey"]: r["nid"] for r in idx["task_by_name"].values() if r.get("fnkey")}
+        tasks_dispatched = []
+        for k in fns:
+            fk = k.replace("::", "#", 1)
+            for t_, rel, cf in fx["fn_out"].get(fk, []):
+                if rel == "dispatches":
+                    tasks_dispatched.append({"task": fk2t.get(t_, t_), "from": fk, "conf": cf})
+        tasks_dispatched = tasks_dispatched[:mq.CAP]
+    else:
+        tasks_dispatched = {"reason": "no levels.json — dispatch edges unread"}
     fk_neighbors = set()
     for cls in models:
         for row in T._model_touches(center, cls, "model", {}).get("fk_in_models") or []:
@@ -237,15 +314,19 @@ def t_blast_radius(args: dict, roots) -> dict:
     reading = "contained" if n_ent <= 1 and not (fk_neighbors - set(touched)) else ("local" if n_ent <= 1 else "cross-cutting")
     if unowned and not touched:
         reading = "unmapped"
+    if (isinstance(tasks_dispatched, list) and tasks_dispatched) or tasks_defined:
+        reading = "cross-process"                                      # a task may run hours later on another worker — the honest word
     out = T._base(center, root, source)
     out.update({"files": files[:mq.CAP], "files_source": src, "files_more": max(0, len(files) - mq.CAP),
                 "touched_entities": touched, "unowned_files": unowned[:mq.CAP],
                 "functions": sorted(fns)[:mq.CAP], "models_defined": sorted(models)[:mq.CAP],
                 "fk_neighbor_entities": sorted(fk_neighbors - set(touched)),
                 "endpoints_reached": dict(list(endpoints.items())[:mq.CAP]),
+                "tasks_defined": tasks_defined[:mq.CAP], "tasks_dispatched": tasks_dispatched,
                 "tests_reaching": sorted(tests)[:mq.CAP], "fe_pieces": fe[:mq.CAP],
                 "reading": reading,
-                "floor": "map joins only (owners · handler files · behind.names capped 12 · by_file.reach); the sim's FK blast is exact, everything else is a floor — run who_calls on the changed symbols before trusting 'contained'"})
+                "floor": "map joins only (owners · handler files · behind.names capped 12, joined on the qualified name · by_file.reach · levels.json dispatches with conf per edge); "
+                         "the sim's FK blast is exact, everything else is a floor — run who_calls on the changed symbols before trusting 'contained'"})
     return out
 
 
@@ -254,7 +335,7 @@ def t_map_census(args: dict, roots) -> dict:
     center, root, source, reason = T._ctx(args, roots)
     if not center:
         return T._absent(root, source, reason)
-    a = center.archmap
+    a, c = center.archmap, center.c4
     want = (args.get("kind") or "").strip()
     out = T._base(center, root, source)
     def block(name):
@@ -264,16 +345,44 @@ def t_map_census(args: dict, roots) -> dict:
         uncl, note = mq.cap_list(b.get("unclaimed") or [])
         return {"claimed": b.get("claimed"), "scanned_dirs": b.get("scanned_dirs"), "unclaimed": uncl, "unclaimed_note": note}
     sh_ = a.get("schema_homing") or {}
-    sections = {"file": block("file_census"), "model": block("model_census"), "route": block("route_census"),
-                "schema": ({"unwired": mq.cap_list(sh_.get("unwired") or [])[0], "ambiguous": mq.cap_list(sh_.get("ambiguous") or [])[0],
-                            "moved": len(sh_.get("moved") or []), "fn_wires": len(sh_.get("fn_wires") or [])} if sh_ else {"reason": "no schema_homing block"})}
+    h = mq.map_health(a, c)
+    rm, rm_s = mq.health_key(a, "route_mounts")
+    up, up_s = mq.health_key(a, "unparseable")
+    fs, fs_s = mq.health_key(a, "fn_similarity")
+    tk = a.get("tasks") or {}
+    web = (c.get("stats") or {}).get("web") or {}
+    schema = ({"unwired": mq.cap_list(sh_.get("unwired") or [])[0], "ambiguous": mq.cap_list(sh_.get("ambiguous") or [])[0],
+               "moved": len(sh_.get("moved") or []), "fn_wires": len(sh_.get("fn_wires") or [])} if sh_ else {"reason": "no schema_homing block"})
+    schema["empty_arm"] = h["schemas_zero"]                            # 0 schemas across N endpoints = the arm produced NOTHING, not a clean estate
+    unm = web.get("unmatched") if isinstance(web.get("unmatched"), list) else []
+    sections = {"file": block("file_census"), "model": block("model_census"), "route": block("route_census"), "schema": schema,
+                # the four sections the repo-study pass added (2026-09-06) — each with its P2 state word
+                "unparseable": ({"state": up_s, "count": len(up), "rows": [{"file": r[0], "why": r[1]} for r in up if isinstance(r, (list, tuple)) and len(r) > 1][:mq.CAP],
+                                 "text": "every mapped .py the AST scanners skipped — whatever those files define is missing from the map"} if up else {"state": up_s}),
+                "mounts": ({"state": rm_s, "mounted": rm.get("mounted"), "routers": rm.get("routers"), "scanned": rm.get("scanned"),
+                            "unresolved": [{"file": u.get("file"), "line": u.get("line"), "why": u.get("why")} for u in (rm.get("unresolved") or []) if isinstance(u, dict)][:mq.CAP],
+                            "text": "an unresolved include_router() prefix = routes whose URL the map could not compute (labels may be missing their mount)"} if rm else {"state": rm_s})
+                          | {"tasks_unresolved_kinds": list(((tk.get("stats") or {}).get("unresolved") or [])),
+                             "tasks_note": "dispatch sites whose task name is computed (f-string / variable) — those tasks are NOT on task_roots"},
+                "twins": ({"state": fs_s, "mode": fs.get("mode"), "sizable": fs.get("sizable"), "budget": fs.get("budget"), "pairs": fs.get("pairs"),
+                           "text": "a pass that did not run exactly: %s sizable function(s) over the %s budget — twins were looked for only among functions sharing a rare identifier (%s candidate pairs); an approximation"
+                                   % (fs.get("sizable"), fs.get("budget"), fs.get("pairs"))} if fs else
+                          {"state": fs_s, "text": "the structural-twin pass ran exactly" if fs_s == "clean" else "regen to know — an older map never recorded the twin pass"}),
+                "web": ({"extractor": web.get("extractor"), "other_roots": list(web.get("other_roots") or []),
+                         "other_roots_note": "second frontends the ONE-root rule never scanned — nothing from them is on the map",
+                         "unhomed": web.get("unhomed") or 0, "unmatched": len(unm) if unm or isinstance(web.get("unmatched"), list) else (web.get("unmatched") or 0),
+                         "unmatched_named": ["%s %s" % (u.get("m") or u.get("method"), u.get("p") or u.get("path")) for u in unm if isinstance(u, dict)][:12],
+                         "unmatched_note": ("first 12 of %d named" % len(unm)) if len(unm) > 12 else None}
+                        if web.get("present") else {"present": False, "reason": web.get("reason") or "no web arm on this map"})}
     if want:
         if want not in sections:
-            raise mq.MapStop("kind must be one of file | model | route | schema")
+            raise mq.MapStop("kind must be one of file | model | route | schema | unparseable | mounts | twins | web")
         out["census"] = {want: sections[want]}
     else:
         out["census"] = sections
-    out["note"] = "unclaimed = the map is BLIND there (pulse S11/S13 nag these); 'full coverage' holds only for archmap version ≥ 2"
+    out["note"] = ("unclaimed = the map is BLIND there (pulse S11/S13 nag these); 'full coverage' holds only for archmap version ≥ 2 · "
+                   "absent block = not emitted (older map) unless the study-pass sentinel route_mounts is present → clean")
+    out["states"] = mq.HEALTH_STATES
     return out
 
 
@@ -300,6 +409,19 @@ def _ent_sets(m: dict) -> dict:
                      "schemas": {x.get("cls") for x in ent.get("schemas") or []},
                      "files": {r[1] for r in ent.get("files") or [] if len(r) > 1}}
     return out
+
+
+def _task_set(m: dict) -> set:
+    return {r.get("path") for r in (m.get("task_roots") or []) if isinstance(r, dict) and r.get("path")}
+
+
+def _health_n(m: dict, key: str) -> int | None:
+    v, state = mq.health_key(m, key)
+    if state == "not_emitted":
+        return None
+    if key == "route_mounts":
+        return len((v or {}).get("unresolved") or [])
+    return len(v or [])
 
 
 def t_map_diff(args: dict, roots) -> dict:
@@ -334,9 +456,14 @@ def t_map_diff(args: dict, roots) -> dict:
         if d:
             per[slug] = d
     def cnt(m, k): return len((m.get(k) or {}).get("unclaimed") or []) if m.get(k) else None
+    ta, tb = _task_set(A), _task_set(B)
     out.update({"base": a_src, "head": b_src, "regenerated": True, "map_heads": {"base": A.get("head"), "head": B.get("head")},
                 "entities": per or {"note": "no entity-level change"},
+                "tasks": {"added": sorted(tb - ta)[:20], "removed": sorted(ta - tb)[:20], "base": len(ta), "head": len(tb)},   # F14: task roots are a first-class delta
                 "census_delta": {k: {"base": cnt(A, k), "head": cnt(B, k)} for k in ("file_census", "model_census", "route_census")},
+                "health_delta": {"mounts_unresolved": [_health_n(A, "route_mounts"), _health_n(B, "route_mounts")],
+                                 "unparseable": [_health_n(A, "unparseable"), _health_n(B, "unparseable")],
+                                 "note": "[base, head]; None = not emitted on that map"},
                 "functions": {"base": len(A.get("function_insight") or {}), "head": len(B.get("function_insight") or {})}})
     return out
 
@@ -394,6 +521,21 @@ def t_center_status(args: dict, roots) -> dict:
 
 # ── review_drift ───────────────────────────────────────────────────────────────
 _REACH_RE = re.compile(r"- \*\*Reach:\*\* (.+?) \((graft|grep-only)@([0-9a-f]+)\)")
+_DIFF_FILE_RX = re.compile(r"^diff --git a/(.+?) b/")
+
+
+def _strip_center_hunks(diff: str) -> str:
+    """F12 (2026-09-06): hunks under docs/site/center/ or a generators/ dir are the suite's own install — its template prose
+    carries fetch('/x') literals that are not this project's fetches (both study repos showed the phantom). The comment/docstring
+    guard proper belongs to gabe-pulse's fetch_bridge.py (backlog)."""
+    keep = []
+    for part in re.split(r"(?m)^(?=diff --git )", diff):
+        m = _DIFF_FILE_RX.match(part)
+        f = m.group(1) if m else ""
+        if f.startswith("docs/site/center/") or "/generators/" in f or f.startswith("generators/"):
+            continue
+        keep.append(part)
+    return "".join(keep)
 
 
 def _phase_reach(root: str, phase_id: str | None) -> tuple[list[str], str | None, str | None]:
@@ -456,7 +598,7 @@ def t_review_drift(args: dict, roots) -> dict:
         try:
             fb = mq.pulse_module("fetch_bridge")
             keys = fb.load_endpoint_keys(Path(center.root))
-            new_f = fb.diff_new_fetches(diff)
+            new_f = fb.diff_new_fetches(_strip_center_hunks(diff))
             present, unmatched, why = fb.load_unmatched(Path(center.root))
             cls = fb.classify_new_fetches(new_f, keys) if new_f else {}
             subj["web_bridge"] = {"ran": True, "new_fetches": new_f[:mq.CAP], "classified": cls, "standing_unmatched": len(unmatched), "web_arm": present or why}
@@ -523,24 +665,25 @@ def t_review_drift(args: dict, roots) -> dict:
 RO = T.RO
 TOOLS = [
     {"name": "find", "fn": t_find, "annotations": RO,
-     "description": "Find X in the map by name or doc text: entities, endpoints, models, schemas, functions, screens, FE pieces — each hit with owner entity and file. Capped; graft_find_code's equivalent.",
+     "description": "Find X by name/doc: entities, endpoints (stream filter), tasks (TASK <name>), models, schemas (deduped), functions, providers, screens, FE pieces; generated clients de-ranked (graft_find_code).",
      "inputSchema": T._schema({"query": {"type": "string", "description": "A name or fragment (≥ 2 chars)."},
-                               "kind": {"type": "string", "enum": ["entity", "endpoint", "model", "schema", "function", "define", "fe", "screen"], "description": "Restrict to one kind."},
+                               "kind": {"type": "string", "enum": ["entity", "endpoint", "task", "model", "schema", "function", "define", "fe", "screen", "provider"], "description": "Restrict to one kind."},
+                               "stream": {"type": "boolean", "description": "true → only endpoints whose handler returns a streaming response."},
                                "limit": {"type": "integer", "description": "Max hits (default 20, cap 40)."}, **T.ROOT_PROP}, ["query"])},
     {"name": "outline", "fn": t_outline, "annotations": RO,
      "description": "A file's outline without reading it: definitions with span, kind, signature (graft index), returns, r/w access; owner entity, models defined/referenced, tests reaching. graft_file_api's equivalent.",
      "inputSchema": T._schema({"file": {"type": "string", "description": "Repo-relative file path."}, **T.ROOT_PROP}, ["file"])},
     {"name": "center_overview", "fn": t_center_overview, "annotations": RO,
-     "description": "Orientation by entity, not directory: rank, status, counts, coverage, FE pieces per entity; arms present; census gaps. graft_repo_map's equivalent, ≤ 600 tokens.",
+     "description": "Orientation by entity: rank, status, counts, coverage, FE pieces; arms (graft · web extractor · fe homing · providers · app middleware); census gaps (absent ≠ 0); registry mode; map_health.",
      "inputSchema": T._schema({**T.ROOT_PROP})},
     {"name": "blast_radius", "fn": t_blast_radius, "annotations": RO,
-     "description": "What a change touches: worktree diff (or given files) → owning entities, functions, models, endpoints reached, tests reaching, FE pieces, a contained/local/cross-cutting reading (a FLOOR).",
+     "description": "What a change touches: worktree diff (or given files) → entities, functions, models, endpoints reached, tasks dispatched (levels.json, conf per edge), tests, FE pieces, a reading (a FLOOR).",
      "inputSchema": T._schema({"files": {"type": "array", "items": {"type": "string"}, "description": "Changed files; default = worktree vs HEAD + untracked."}, **T.ROOT_PROP})},
     {"name": "map_census", "fn": t_map_census, "annotations": RO,
-     "description": "Where the map is blind: unclaimed files, models and routes, unwired/ambiguous schemas — the S11/S12/S13 census blocks in one read.",
-     "inputSchema": T._schema({"kind": {"type": "string", "enum": ["file", "model", "route", "schema"], "description": "One census only."}, **T.ROOT_PROP})},
+     "description": "Where the map is blind: unclaimed files/models/routes, unwired schemas, unparseable files, unresolved route mounts, the blocked twin pass, unscanned frontend roots + unhomed fetches.",
+     "inputSchema": T._schema({"kind": {"type": "string", "enum": ["file", "model", "route", "schema", "unparseable", "mounts", "twins", "web"], "description": "One section only."}, **T.ROOT_PROP})},
     {"name": "map_diff", "fn": t_map_diff, "annotations": RO,
-     "description": "How the committed map changed between two refs: per entity, endpoints/models/schemas/files added or removed; census and function deltas; says so when the map was not regenerated.",
+     "description": "How the committed map changed between two refs: per entity, endpoints/models/schemas/files added or removed; task roots; census, health and function deltas; says so when not regenerated.",
      "inputSchema": T._schema({"base": {"type": "string", "description": "A sha/branch/tag."}, "head": {"type": "string", "description": "Default: the worktree's archmap."}, **T.ROOT_PROP}, ["base"])},
     {"name": "center_status", "fn": t_center_status, "annotations": RO,
      "description": "The command center's actionable list (scripts/center_status.py, relayed verbatim with its links and → next steps); never triggers a regen.",

@@ -7,7 +7,8 @@ Register once, user scope (ask-first — `./install.sh --register-mcp`):
 The wire framework lives in `mcpwire.py` (shared with gabe-kdbp); the tool bodies in `tools.py`
 (v1: map_status · entity_context · touches · who_calls · entity_shape · cases_for · owner_of) and
 `tools_wave2.py` (the graft equivalents + map lifecycle: find · outline · center_overview ·
-blast_radius · map_census · map_diff · center_status · review_drift). Binding contract:
+blast_radius · map_census · map_diff · center_status · review_drift) and `tools_wave3.py` (the repo-study pair
+2026-09-06: trace — the ordered path over levels.json · gates — the inverse of middleware). Binding contract:
 references/map-spec.md; design record docs/design/gabe-map/README.md.
 """
 import os

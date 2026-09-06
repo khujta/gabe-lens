@@ -6,8 +6,8 @@
 ## 1 · What it is, and is not
 
 `gabe-map` is a stdio MCP server (Python stdlib only) registered once at **user scope**. In every project it serves
-that project's OWN committed codebase map — `docs/site/center/{center.config,archmap,c4-graph,adoption}.json` — as
-fifteen tools. It is the suite's **reliability surface** for questions an agent asks mid-reasoning; it is **not a rail**
+that project's OWN committed codebase map — `docs/site/center/{center.config,archmap,c4-graph,adoption}.json` (+ `levels.json`, read LAZILY and only by
+`trace` · `blast_radius` · `touches` on a task — `map_status` never loads it) — as seventeen tools. It is the suite's **reliability surface** for questions an agent asks mid-reasoning; it is **not a rail**
 (lifecycle moments stay on hooks and gates), **not a mutation channel** (no `.kdbp`, center or source writes), **not a
 data dump** (every list capped, every cap named), and **not graft** (graft builds the structural index the map is
 generated from; the tools sit on top and add entities · ownership · cases · coverage · drift · deltas — ruling
@@ -32,7 +32,7 @@ generated from; the tools sit on top and add entities · ownership · cases · c
   (the harness hides the text block when it is present). `text` = header `gabe-map · <tool> · map@<head> · <freshness>`
   (or `· no map`) + the JSON result (`indent=1`). Every human-facing string lives INSIDE that JSON.
 - **Deferral.** The harness defers every MCP tool's schema (verified: names only in context, loaded on demand). The
-  discovery surface is therefore the fifteen NAMES plus the `instructions` block — both must route the question to the
+  discovery surface is therefore the seventeen NAMES plus the `instructions` block — both must route the question to the
   tool. Descriptions are read only after a tool is loaded.
 - **Laziness.** Nothing heavy before `initialize` is answered; the map loads on the first call and is cached per
   `(path, mtime, size)`; indexes rebuild when archmap/c4 change on disk.
@@ -61,7 +61,8 @@ generated from; the tools sit on top and add entities · ownership · cases · c
 
 Injected in full every session even when every schema is deferred. Routes one line per tool (grouped two per line for
 wave 2), states the floor law once, names `map_status` as the first call when unsure. Text: `tools.INSTRUCTIONS`
-(≤ ~1,600 chars with the fifteen tools). Any change to a tool name changes this block in the same commit.
+(≈ 2,150 chars with the seventeen tools — the four repo-study lines route gates · trace · TASK/stream/provider · map PARTIAL, and the floor law
+names the `inferred` trace hop). Any change to a tool name changes this block in the same commit.
 
 ## 5 · Tools — inputs · process · output · caps
 
@@ -97,6 +98,13 @@ Per kind: **file** → `owners[]` (a LIST — files can have two), `census` (cla
 (`behind.names` is capped at 12 and joins on the bare name — a FLOOR). **endpoint** → `entity`, `endpoint{handler, status,
 resp, doc, middleware, touches_own}`, `behind`, `access`, `edges_out`, `screens_in` (bridges), `tests` (rows with
 `state:"file"` become `covered_by_test_files`, never cases); `touches_x` is NEVER surfaced.
+
+- **task** (`TASK <name>`, the registered name, or the fn name when function_insight never saw it — P1 2026-09-06): `task{name, fn, file,
+  handler, doc}`, `dispatched_by[{from, conf}]` from levels.json (`{reason}` without it), `behind`/`access` off the `endpoint:TASK <name>` c4
+  node, `stream: false`, `app_middleware: []` with the worker-task note, `unresolved_dispatch_kinds`; unknown name → `matched: false` naming
+  `task_roots`. **endpoint** answers also carry `stream` and the ASGI `app_middleware[{cls,file,line,order,scope}]` + its note. **function**
+  answers join `behind.names` on the QUALIFIED name (`Class.method`), and a gate fn carries `gated_endpoints{count, see: gates}`. **file**
+  answers on a screen/hook file carry `fe{pieces[{name,kind,hrole,feClass,fed2w,channel,cache,sites,wsites,homed_by,span}], calls[{endpoint,kind}]}`.
 
 ### 5.4 `who_calls(symbol, emit?=true, root?)` — read + the ONE write
 `symbol` must match `^[A-Za-z_][A-Za-z0-9_]*$`. Arm A: `graft callers <sym> . --json --no-refresh` when `<root>/graft/`
@@ -147,7 +155,9 @@ Per file: `owners[]` from `entities[].files` (a list), `config_glob_owners` via 
   `models_referenced`, `tests_reaching`, `census`.
 - **`center_overview()`** — graft_repo_map's equivalent by ENTITY: per entity rank · status · endpoints · models · schemas ·
   files · coverage `covered/total` · fe_pieces; `arms{graft, web, fe}`; `census_gaps`; `web.unmatched`; `unregistered`
-  (archmap slugs missing from adoption.json). ≤ 600 tokens.
+  (archmap slugs missing from adoption.json) — or `registry: config-only` in its place when there is no adoption.json and the c4 l1 says
+  `status: config-only` (bootstrap_center.sh); `web{extractor, screens, matched, unmatched (a count), other_roots…}`; `arms` also names providers ·
+  fe homing · app_middleware · gate_endpoints · tasks; `census_gaps.* = None` when a block is absent (`census_absent` names them); `map_health`. ≤ 600 tokens.
 - **`blast_radius(files?)`** — files default to the worktree diff vs HEAD + untracked (source extensions, noise-filtered):
   `touched_entities{slug: n}`, `unowned_files`, `functions`, `models_defined`, `fk_neighbor_entities`, `endpoints_reached`
   (`via: handler in changed file | behind.names (floor, cap 12)`), `tests_reaching` (by_file.reach), `fe_pieces`, `reading:
@@ -175,6 +185,32 @@ Per file: `owners[]` from `entities[].files` (a list), `config_glob_owners` via 
   carries `map_confidence{active_missed_edges, edges_total, note}` from the S14 tally ledger (fresh tier, nothing stored).
 - **`touches` ENDPOINT** adds `web_unmatched_fetches` (the c4 `stats.web.unmatched` rows naming this method+path).
 
+### 5.9 Wave 3 — the repo-study pair (`tools_wave3.py`, plan Part B 2026-09-06, D1/D2) — read-only, no subprocess
+
+- **`trace(start, depth?=4, fanout?=8, rels?=[calls,dispatches,depends,reaches])`** — `start` = `METHOD /path` · `TASK <name>` ·
+  `file::fn` · `file#fn` (resolved through `detect_kind`; an ambiguous bare name lists its keys). Walks `levels.json` `fn_edges`
+  (P0 index `fn_out`, built once per Center on first use) breadth-first: `depth` ≤ 8, `fanout` ≤ 20 per node (extracted edges first),
+  `rels` filtered. Output: `from{kind, entity, label, stream, gates, behind}`, `app_middleware[cls]`, `hops[{depth, from, rel, conf, to,
+  kind: function|provider|task, models?, task?}]` (cap 120, `hops_more`), `tree[]` (indented lines), `start_models`, `summary`
+  (`hops N of M reachable within 8 (fanout F · depth D named · K edge(s) beyond the fanout) · extracted E / inferred I — a FLOOR …`),
+  `behind_contrast{fns, depth}` when the start is an endpoint. Honest-empty: no `levels.json` → `reason` (regen); zero out-edges →
+  `reason` naming the rels and the behind mass. A `provider:*` or task target ends the walk (never expanded).
+- **`gates(gate?)`** — `gate` = a callee (`require_permission`), a `file::fn` key, or an argument substring (`Permission.MANAGE_LLMS`);
+  matches only middleware rows with `gate: true`. Output: `fn[]`, `endpoints[{endpoint, entity, dep, via, arg}]` (cap 40 named),
+  `endpoints_matched` (`endpoints_total` stays the map's count), each row `how` = callee · fn · argument · name-substring — an exact
+  callee/fn hit IS the gate and substring hits on OTHER deps ride `also_named_in`, a pure substring/argument query that lands on several
+  callees says `ambiguous_gate`; `by_argument{arg: n}` (≤ 30, keyed on the FIRST positional argument — `Permission.X, allow_scope=True`
+  folds into `Permission.X`; each row's `arg` keeps the full call), `non_gate_deps[]` (a dep that is NOT a gate — listed apart, never reported as one),
+  `ungated{count, sample ≤12}`, `app_middleware[]` + note (in order), `tasks` (task roots run outside the gates), `cross_check`
+  (`stats say N gated endpoint(s), this walk counts M`). Omit `gate` → the census: `gates[{callee, fn, endpoints, via, args}]`. Unknown
+  gate → `endpoints: []` + `reason` (router-level `dependencies=[...]` and ASGI middleware are not per-endpoint records) with the
+  app-scope list still printed.
+- **Absence semantics (P2, D5):** `mq.health_key(archmap, key)` → `(value, state)`, state ∈ `present` · `clean` (absent AND the study-pass
+  sentinel `route_mounts` is on the map — the pass ran and found nothing) · `not_emitted` (absent, no sentinel — an older map: regen to
+  know). `mq.map_health(archmap, c4)` is the ONE object `map_status` (`map_health`), `map_census` (sections `unparseable` · `mounts` ·
+  `twins` · `web` + `schema.empty_arm`) and `center_overview` read. Owed to the emitter: an explicit `archmap.emitted: [keys]` list, at
+  which point the sentinel collapses to one line.
+
 ## 6 · Registration · status · doctor
 
 - Register (ask-first, once per machine): `claude mcp add -s user gabe-map -- python3 "$HOME/.claude/skills/gabe-map/scripts/server.py"`.
@@ -188,10 +224,10 @@ Per file: `owners[]` from `entities[].files` (a list), `config_glob_owners` via 
 
 ## 7 · Battery (tests/gabe-map/run.sh)
 
-Hermetic: a synthetic center (archmap · c4 · config · adoption) in a temp git repo with commits past the map head, a
+Hermetic: a synthetic center (archmap · c4 · config · adoption · levels) in a temp git repo with commits past the map head, a
 fake `graft` on `PATH` returning canned JSON, real `git grep`, read deadlines in `client.py` and `timeout` around every
 invocation. Pins: handshake (echo · fallback · pre-init `server/discover` → `-32601` with the string id · `ping` ·
-`instructions` non-empty · `roots/list` requested + consumed) · `tools/list` (15 names — the v1 seven ∪ the wave-2 eight — object schemas, annotations, descriptions ≤ 200 chars) ·
+`instructions` non-empty · `roots/list` requested + consumed) · `tools/list` (17 names — the v1 seven ∪ the wave-2 eight ∪ the wave-3 two — object schemas, annotations, descriptions ≤ 200 chars) ·
 unknown method/tool · garbage line survives · `CLAUDE_PROJECT_DIR` law (cwd elsewhere) · no-center + suite-center texts ·
 freshness (stale after a mapped edit; fresh after a mapped-file-free commit; unknown head) · every `touches` kind
 (two owners · fk_in · r/w fns · ambiguous · endpoint normalization · case) · `entity_context` raw byte-parity with
