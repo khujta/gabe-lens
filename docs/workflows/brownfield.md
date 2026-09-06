@@ -123,6 +123,42 @@ test angles + evidence), with honest tiers for history: `full` for recent work,
 features then join the per-phase rhythm (`… /gabe-review → /gabe-cc-update <phase> →
 /gabe-commit …`) so the center never falls behind again.
 
+## Adopt a repo you don't own (a study install)
+
+A codebase you are reading, not shipping — a study curriculum, a due-diligence pass, a first look at an
+inherited service — gets the center too, without the back-catalog flow. The install is the config-only
+half of `/gabe-cc-init init`, as a script (2026-09-06, from the repo-study program):
+
+```
+git -C <repo> checkout -b gabe-center          # a LOCAL branch: app source untouched, never pushed
+bash ~/.claude/templates/gabe/center/generators/bootstrap_center.sh <repo> --name <slug> --display "<name>"
+```
+
+It lands the generators in `scripts/`, the station skeletons in `templates/center/shell/`, a
+`docs/site/center/center.config.json` skeleton with `entities: {}`, and the `.gitignore` seeds. Never a tracker,
+never over an existing config, re-runnable. Then:
+
+1. **Fill `entities`** — one block per entity: `code.api` / `code.models` / `code.schemas` / `code.services` /
+   `code.web` (literal paths **or globs, `**` recursive**) + `test_rx`. Derive them from the route census
+   (`backend/**/routes.py`, `api/v1/*.py`) and the packages; a repo that keeps every table in one file gets a
+   `data` entity that owns it, so every foreign key reads as a cross-entity wire.
+2. **A frontend needs `typescript`.** Run the project's own install (`bun install`, `npm ci`) so the extractor
+   resolves it from the tree — or `export GABE_TS_DIR=<a dir whose node_modules/typescript exists>`; the arm SAYS
+   when it borrowed one.
+3. `bash scripts/refresh_center.sh regen` — the archmap, the C4 graph, every station page, the chrome harness.
+   With no `adoption.json` the build takes the config's entities as the registry, out loud.
+4. **Journeys = your missions.** Write `docs/site/center/workflows.js` (`{ name, level, note, steps: ["METHOD /path", …] }`,
+   labels exactly as the station prints them) and open `docs/site/center/gabe-universe.html?journey=<name>` — one
+   trace per session. `?ent=<slug>` opens one entity.
+
+What the graph says instead of guessing: `route_mounts.unresolved` (a non-literal include prefix), `unparseable`
+(a file the suite's Python could not parse — newer syntax gets a shim), `stats.web.other_roots` (a second frontend
+not scanned), `stats.web.unhomed` (fetching files no entity claims), `fn_similarity` (the twin pass ran blocked
+above its budget), and above 1,600 nodes the station boots FOLDED (capsules on, tier 0 — a Sources row says so).
+
+What never happens here: no test suite runs (`regen` never runs one), no source file is edited, nothing is pushed.
+`/gabe-cc-init init · rank · section <entity>` records the adoption later, on the same files.
+
 ## Brownfield AP Watchlist
 
 | AP | Watch for |

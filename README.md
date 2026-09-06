@@ -116,6 +116,7 @@ For complex plans, `/gabe-plan` may also create a self-contained HTML review art
 | Start a new project | `/gabe-init [name]` |
 | Start from a fresh idea | `/gabe-assess "idea"` then `/gabe-init`, `/gabe-scope`, `/gabe-plan` |
 | Adopt an existing codebase | read [docs/workflows/brownfield.md](docs/workflows/brownfield.md), then use `/gabe-init` or `/gabe-init update` |
+| Point the graph at a repo you don't own | a study, a due-diligence read, a first look: `bootstrap_center.sh <repo>` on a local branch, fill the entities, `refresh_center.sh regen` — see [docs/workflows/brownfield.md](docs/workflows/brownfield.md#adopt-a-repo-you-dont-own-a-study-install) and the [repo-study design record](docs/design/repo-study/README.md) |
 | Scope a new project (SCOPE.md, incl. its `## Phases` section) | `/gabe-scope` |
 | Change project scope | `/gabe-scope-change "description of change"` |
 | Check values alignment (boundary check) | `/gabe-assess` |

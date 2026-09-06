@@ -68,6 +68,19 @@ rm "$T/shell/assets/a3-lightbox.js"
 [ "$(run_h "$T/shell/example")" != 0 ] \
   && ok || bad "fire: a missing referenced asset must fail the harness"
 
+# --- slots are measured against the SKELETON (review 2026-09-06, onyx prompt placeholders in docstrings) ---
+mkshell
+SKPAGE=$(cd "$T/shell/example" && for f in *.html; do [ -f "$T/shell/$f" ] && echo "$f" && break; done)
+[ -n "$SKPAGE" ] || bad "fixture: no example page with a skeleton of the same name"
+SKTOK=$(grep -o '{{[A-Z0-9_]*}}' "$T/shell/$SKPAGE" | head -1)
+[ -n "$SKTOK" ] || bad "fixture: the skeleton $SKPAGE carries no {{TOKEN}} slot to test with"
+sed -i 's#</body>#<table><tr><td>Replace `{{CURRENT_DATETIME}}` placeholders in the prompt</td></tr></table></body>#' "$T/shell/example/$SKPAGE"
+[ "$(run_h "$T/shell/example/$SKPAGE")" = 0 ] && grep -q "content tokens, not slots" "$T/out" \
+  && ok || { bad "silent: a {{TOKEN}} that is CONTENT (absent from the skeleton) must not read as an unfilled slot"; grep "TOKEN\|content" "$T/out"; }
+sed -i "s#</body>#<div>$SKTOK</div></body>#" "$T/shell/example/$SKPAGE"
+[ "$(run_h "$T/shell/example/$SKPAGE")" != 0 ] && grep -q "no unfilled {{TOKEN}} slots on a generated page ($SKTOK" "$T/out" \
+  && ok || { bad "fire: a skeleton slot left in the page must fail and be NAMED"; grep "TOKEN" "$T/out"; }
+
 # --- vacuous run refused ----------------------------------------------------
 mkdir -p "$T/empty"
 [ "$(run_h "$T/empty")" = 2 ] \

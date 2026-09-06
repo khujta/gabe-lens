@@ -4,7 +4,7 @@ description: "Brownfield command-center adoption — archive-never-delete init, 
 when_to_use: "An existing codebase needs a Testing Command Center, or /gabe-cc-update stopped you with its bootstrap pointer. NOT for a freshly shipped phase (/gabe-cc-update) or doc pages (/gabe-docsite)."
 disable-model-invocation: true
 metadata:
-  version: 1.3.1
+  version: 1.3.2
 ---
 
 # Gabe Adopt — the back-catalog, at human speed

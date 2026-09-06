@@ -67,7 +67,7 @@ Small, append-only in spirit: rows change status, never vanish.
    dir: why archived, what replaced it (the center), how to reference (links keep working in git
    history; nothing was deleted). One commit, path-scoped. Same policy as suite skills:
    **archived, never deleted**.
-4. **Bootstrap the center shell** from the installed suite `templates/center/`:
+4. **Bootstrap the center shell** from the installed suite `templates/center/`. **The deterministic half of this step is a script (2026-09-06): `templates/center/generators/bootstrap_center.sh <repo> --name <slug>` lands the generators, the shell (minus `example/`), a `center.config.json` skeleton and the `.gitignore` seeds, never a tracker and never over an existing config — run it, then continue with the archive and the tracker below.**
    `center.config.json` skeleton (project name, corpora bindings, results globs from
    `.kdbp/BEHAVIOR.md` `results_out` when present), the generator scripts, assets/shell, empty
    section dirs.

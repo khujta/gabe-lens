@@ -481,14 +481,30 @@ function verifyPage(page, explicit) {
     check(page, facts.hasTopbar && facts.hasSide && facts.brandInSide,
       'settings mount points exist (.topbar, .side, .side .brand)');
 
-  // slots: a generated page carries no unfilled tokens. feature.html is the
-  // one KNOWN placeholder (the station template ships with its slots labeled
-  // until a generator claims it) — noted, not failed.
-  if (base === 'feature.html' && /\{\{[A-Z0-9_]+\}\}/.test(html)) {
+  // slots: a generated page carries no unfilled tokens — measured against the page's SKELETON. Review 2026-09-06
+  // (repo-study, onyx): rendered docstrings carry prompt placeholders (`{{CURRENT_DATETIME}}`) that are CONTENT,
+  // not slots; a token is unfilled only when the skeleton this page was filled from carries the same token. The
+  // skeleton is looked up at <repo>/templates/center/shell/<page> (a center under docs/site/center/) or beside the
+  // example estate; with no skeleton found the plain rule (any {{TOKEN}}) applies, as before. feature.html is the
+  // one KNOWN placeholder (the station template ships with its slots labeled until a generator claims it) — noted.
+  const tokRx = /\{\{[A-Z0-9_]+\}\}/g;
+  const pageToks = [...new Set(html.match(tokRx) || [])];
+  let skelToks = null;
+  // a DERIVED page is filled from its family's skeleton: arch-*.html ← architecture.html · feature-*.html ← feature.html · test-*.html ← tests.html
+  const family = /^arch-/.test(base) ? 'architecture.html' : /^feature-/.test(base) ? 'feature.html' : /^test-/.test(base) ? 'tests.html' : null;
+  const skelNames = family ? [base, family] : [base];
+  const skelCands = [];
+  for (const nm of skelNames) skelCands.push(path.join(dir, '..', '..', '..', 'templates', 'center', 'shell', nm), path.join(dir, '..', nm));
+  for (const cand of skelCands) {
+    try { if (fs.existsSync(cand) && path.resolve(cand) !== path.resolve(page)) { skelToks = new Set(fs.readFileSync(cand, 'utf8').match(tokRx) || []); break; } } catch {}
+  }
+  const unfilled = skelToks ? pageToks.filter(t => skelToks.has(t)) : pageToks;
+  if (base === 'feature.html' && pageToks.length) {
     info(page, 'known placeholder station — unfilled slots are its documented state');
   } else {
-    check(page, !/\{\{[A-Z0-9_]+\}\}/.test(html),
-      'no unfilled {{TOKEN}} slots on a generated page');
+    if (skelToks && pageToks.length && !unfilled.length) info(page, `content tokens, not slots (absent from the skeleton): ${pageToks.slice(0, 3).join(' ')}`);
+    check(page, unfilled.length === 0,
+      'no unfilled {{TOKEN}} slots on a generated page' + (unfilled.length ? ` (${unfilled.slice(0, 3).join(' ')})` : ''));
   }
 
   behavioral(page, facts, rowclickPath);
