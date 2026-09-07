@@ -1,0 +1,225 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Graph + game renderer labs — sweeps B and C</title>
+<style>
+html,body{margin:0;background:#0b0e13;color:#e6edf3;font:13px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:22px;font-weight:650;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:#7d8794;margin:0 0 26px}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#9aa5b1;margin:30px 0 10px;
+   border-bottom:1px solid #232a35;padding-bottom:6px}
+a{color:#7cb3ff}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+th{text-align:left;color:#7d8794;font-weight:500;padding:6px 8px;border-bottom:1px solid #232a35;white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid #171d26}
+td.n{text-align:right}
+tr:hover td{background:#11161d}
+.lab{font-weight:600}
+.win{color:#22c55e}.bad{color:#f97066}.mid{color:#f59e0b}
+.card{background:#0f141b;border:1px solid #232a35;border-radius:10px;padding:14px 16px;margin:10px 0}
+.card b{color:#fff}
+code{background:#161c26;padding:1px 5px;border-radius:4px;font-size:11.5px;color:#c9d3de}
+ul{margin:6px 0 0;padding-left:18px}
+li{margin:3px 0}
+.note{color:#7d8794;font-size:11.5px;margin-top:6px}
+</style>
+<div class="wrap">
+<h1>SWEEP B &amp; C — one lab per library, one feed</h1>
+<p class="sub">Every lab draws the <b>same committed example estate</b>
+(<code>example/codebase-graph-station/c4-graph.js</code> — gustify: 9 entities · 313 backend L2 pieces ·
+1,077 frontend pieces · 4,089 declared links) through one shared adapter,
+<code>feed.js</code>. Open any lab straight from <code>file://</code> — no server, no network.</p>
+
+<h2>The labs</h2>
+<table>
+  <tr><th>lab</th><th>library</th><th>bundle (min)</th><th>license</th><th>what it is here to prove</th></tr>
+  <tr><td class="lab"><a href="./lab-b1-3d-force-graph.html">B1</a></td><td>3d-force-graph 1.80 + three r185</td><td class="n">1.60 MB*</td><td>MIT</td><td>the CONTROL — what we ship today, unchanged</td></tr>
+  <tr><td class="lab"><a href="./lab-b2-three-raw.html">B2</a></td><td>raw three.js r185</td><td class="n">1.60 MB*</td><td>MIT</td><td>InstancedMesh + LineSegments + GPU picking + blob-worker layout</td></tr>
+  <tr><td class="lab"><a href="./lab-b3-babylon.html">B3</a></td><td>Babylon.js 9.25</td><td class="n">8.32 MB</td><td>Apache-2.0</td><td>thin instances, GPU picker, ArcRotateCamera — batteries included</td></tr>
+  <tr><td class="lab"><a href="./lab-b4-playcanvas.html">B4</a></td><td>PlayCanvas 2.22</td><td class="n">2.47 MB</td><td>MIT</td><td>a game engine as a graph host</td></tr>
+  <tr><td class="lab"><a href="./lab-b5-aframe.html">B5</a></td><td>A-Frame 1.8 (three r184)</td><td class="n">1.32 MB</td><td>MIT</td><td>the walkable/WebXR arm</td></tr>
+  <tr><td class="lab"><a href="./lab-b6-deckgl.html">B6</a></td><td>deck.gl 9.4 + luma.gl</td><td class="n">2.07 MB</td><td>MIT</td><td>binary attributes + free colour-id picking, OrbitView</td></tr>
+  <tr><td class="lab"><a href="./lab-b7-regl.html">B7</a></td><td>regl 2.1.1</td><td class="n">87 KB</td><td>MIT</td><td>the floor: two GL calls, everything hand-written</td></tr>
+</table>
+<p class="note">* B1 and B2 share the station's existing vendored <code>3d-bundle.js</code> so the labs
+compare renderers, not bundlers — raw three costs <b>zero extra bytes here</b> because three is already in
+that file. three.js r185 publishes no UMD build, so the esbuild&nbsp;&rarr;&nbsp;IIFE step is mandatory for
+<code>file://</code> either way. The bundle a raw-three station would actually SHIP is measured below:
+<b>880,513 B min / 229,851 B gz</b> vs the current <b>1,637,037 B / 447,385 B</b>.</p>
+
+<h2>Knobs (same in every lab)</h2>
+<div class="card">
+  <code>?scale=core</code> L1+L2 only — 316 nodes / 1,174 links ·
+  <code>?scale=full</code> + the frontend arm — 1,393 / 4,402 <i>(default)</i> ·
+  <code>?scale=x2 · x4 · x8 · x16 · x32</code> the feed cloned, up to ~45k nodes.<br>
+  B1 also takes <code>?webgpu=1</code> &mdash; kept only to RECORD that the option is accepted and
+  silently dropped (3d-force-graph 1.80 never forwards <code>useWebGPU</code>; see the corrected note
+  below). B2 takes <code>?worker=0</code> to move the force tick back onto the render thread.
+</div>
+
+<h2>Measured — headless chrome + swiftshader, 1400×860</h2>
+<table>
+  <tr><th>lab</th><th class="n">nodes</th><th class="n">links</th><th class="n">draw calls</th><th class="n">fps</th><th class="n">frame ms</th><th class="n">fps @x4</th><th class="n">frame @x4</th></tr>
+  <tr><td class="lab">B1 3d-force-graph</td><td class="n">1393</td><td class="n">4402</td><td class="n bad">5,574</td><td class="n">8</td><td class="n">123</td><td class="n bad">2</td><td class="n bad">420</td></tr>
+  <tr><td class="lab">B2 raw three</td><td class="n">1393</td><td class="n">4402</td><td class="n win">3</td><td class="n">10</td><td class="n">100</td><td class="n">6</td><td class="n">167</td></tr>
+  <tr><td class="lab">B3 Babylon</td><td class="n">1393</td><td class="n">4402</td><td class="n win">2</td><td class="n">6</td><td class="n">178</td><td class="n">4</td><td class="n">256</td></tr>
+  <tr><td class="lab">B4 PlayCanvas</td><td class="n">1393</td><td class="n">4402</td><td class="n win">2</td><td class="n">7</td><td class="n">148</td><td class="n">5</td><td class="n">196</td></tr>
+  <tr><td class="lab">B5 A-Frame</td><td class="n">1393</td><td class="n">4402</td><td class="n">29</td><td class="n">12</td><td class="n">82</td><td class="n">7</td><td class="n">140</td></tr>
+  <tr><td class="lab">B6 deck.gl</td><td class="n">1393</td><td class="n">4402</td><td class="n win">2</td><td class="n win">31</td><td class="n win">32</td><td class="n">5</td><td class="n">198</td></tr>
+  <tr><td class="lab">B7 regl</td><td class="n">1393</td><td class="n">4402</td><td class="n win">2</td><td class="n">26</td><td class="n">39</td><td class="n win">9</td><td class="n win">112</td></tr>
+</table>
+<p class="note"><b>Variance:</b> two clean sequential sweeps and one contended sweep (another agent's chrome
+running beside it) were recorded; the contended run halved B3/B4/B6. Numbers above are the first clean
+sequential sweep. Anything inside ±2× on this machine is noise — the <b>draw-call column is not</b>.</p>
+<p class="note"><b>Read these as ratios, not absolutes.</b> swiftshader rasterises on the CPU, so fill rate
+dominates and the draw-call gap is UNDER-stated — on a real GPU 5,574 draw calls per frame is the
+whole cost, and B1's 21,941 at <code>?scale=x4</code> is far past any sane budget. B6 and B7 draw
+<i>points</i>, not lit spheres, which is most of their fill advantage.</p>
+
+<h2>Constraints this sweep MEASURED on file:// (chrome, origin null)</h2>
+<div class="card">
+  <ul>
+    <li><b>ES modules are unusable</b> — hence every candidate must ship a UMD/IIFE build or be
+      esbuild'd. three.js r185 ships <b>no UMD</b>; Babylon, PlayCanvas, A-Frame, deck.gl and regl all do.</li>
+    <li><b>A classic <code>new Worker('./sim.js')</code> THROWS</b>
+      — <i>"Script at 'file:///…' cannot be accessed from origin 'null'"</i>.</li>
+    <li><b>A Blob-URL worker WORKS</b>, and it can <code>importScripts()</code> a <code>file://</code>
+      sibling. That is how B2 runs the force layout off the render thread with no server.</li>
+    <li><b>troika-three-text renders offline only with an inlined font.</b> With no <code>font</code> it
+      fetches <code>cdn.jsdelivr.net/gh/lojjic/unicode-font-resolver</code> and <code>sync()</code> never
+      fires; with <code>font:'./x.ttf'</code> the worker's own fetch is blocked; with the font as a
+      <code>data:</code> URI it renders. Its UMD also needs 5 peer globals.</li>
+    <li><b>d3-force-3d's UMD needs 5 peer d3 UMDs</b> (dispatch, timer, binarytree, quadtree, octree)
+      — the "12 KB" is 52 KB in practice.</li>
+    <li><b>WebGPU cannot be proven here.</b> Headless swiftshader exposes <code>navigator.gpu</code> but
+      <code>requestAdapter()</code> returns null — a WebGPU path can never be gated by these proofs.</li>
+  </ul>
+</div>
+
+<h2>What the shipped bundle already contains (probed, not assumed)</h2>
+<div class="card">
+  <code>window.THREE</code> = r185, 441 exports. Present: <b>InstancedMesh · BatchedMesh · LOD ·
+  Points · LineSegments</b>. Absent from the export surface: <b>WebGPURenderer</b>, TSL
+  (<code>THREE.Fn</code> undefined), and the fat-line trio (Line2 / LineMaterial / LineSegments2 &mdash; grep of the shipped file: 0 occurrences of either).<br>
+  The WebGPU <i>backend</i> code is nonetheless compiled into the 1.6 MB (three-render-objects imports
+  <code>three/webgpu</code>) — we pay for it and cannot reach it.
+  <b>CORRECTED 2026-09-07 (source-verified):</b> <code>three-render-objects@1.42</code> declares a
+  <code>useWebGPU</code> ConfigOption, but <code>3d-force-graph@1.80</code>'s <code>stateInit()</code>
+  destructures only <code>{controlType, rendererConfig, extraRenderers}</code> and forwards exactly those
+  three &mdash; <code>ForceGraph3D({useWebGPU:true})</code> is a <b>silent no-op</b>. The single
+  <code>useWebGPU</code> string in the shipped bundle is three-render-objects' own default, not a forward.
+  Reaching WebGPU means patching the wrapper, driving ThreeForceGraph + ThreeRenderObjects directly, or
+  dropping the wrapper.
+</div>
+
+<h2>Bundle cost of dropping the wrapper &mdash; MEASURED, not estimated (2026-09-07)</h2>
+<div class="card">
+  Built here with <code>esbuild --bundle --minify --format=iife</code> against <code>three@0.185.1</code>,
+  the same recipe that produced the shipped <code>3d-bundle.js</code>:
+  <table style="margin-top:8px">
+    <tr><th>entry</th><th class="n">min</th><th class="n">gzip</th></tr>
+    <tr><td><code>import * as THREE from 'three'</code> (WebGL only)</td><td class="n">730,456 B</td><td class="n">187,572 B</td></tr>
+    <tr><td>+ the 12 addons the station needs (SVGLoader, GLTFLoader, MarchingCubes, ConvexGeometry,
+      OrbitControls, <b>Line2/LineMaterial/LineSegments2/LineSegmentsGeometry</b>,
+      EffectComposer/RenderPass/UnrealBloomPass)</td><td class="n win">880,513 B</td><td class="n win">229,851 B</td></tr>
+    <tr><td><code>three/webgpu</code> + <code>three/tsl</code> (no addons)</td><td class="n">1,062,146 B</td><td class="n">294,020 B</td></tr>
+    <tr><td><b>shipped <code>3d-bundle.js</code></b> (three + 3d-force-graph, WebGL <i>and</i> the unreachable WebGPU backend)</td><td class="n bad">1,637,037 B</td><td class="n bad">447,385 B</td></tr>
+  </table>
+  <p class="note">Dropping the wrapper is <b>&minus;756 KB minified / &minus;49% gzipped</b> <i>while
+  adding</i> fat lines and post-processing the current bundle does not carry. The wrapper's own code is
+  small (<code>three-forcegraph.min.js</code> 110,855 B); the weight is
+  <code>three-render-objects.min.js</code> at 832,215 B, which is fat because it pulls
+  <code>three/webgpu</code> we then cannot switch on.</p>
+</div>
+
+<h2>SWEEP C &mdash; the GAME arm &middot; &ldquo;we might move in that direction&rdquo;</h2>
+<p class="sub" style="margin:0 0 10px">Six labs render the SAME committed estate as a walkable
+<b>codebase city</b> (14 districts &middot; 1,390 solids) through one library-neutral adapter,
+<code>game-city.js</code>. Load-bearing finding: <b>every position is precomputed deterministically from
+committed data &mdash; no force simulation runs at view time.</b> That is what makes a non-JS engine port
+thinkable at all, and a city you can learn has to hold still anyway.</p>
+
+<table>
+  <tr><th>lab</th><th>engine</th><th class="n">fps<br><span style="font-weight:400;font-size:10px">1.4k / 4.2k</span></th>
+      <th class="n">draws<br><span style="font-weight:400;font-size:10px">1.4k / 4.2k</span></th>
+      <th class="n">first frame</th><th class="n">bundle (raw / gz)</th><th>P1&ndash;P6</th></tr>
+  <tr><td class="lab"><a href="./game-lab-three-raw.html">G1</a></td>
+      <td>raw three r185 &mdash; <b>already vendored, zero new bytes</b></td>
+      <td class="n">34 / 24</td><td class="n">6 / 73</td><td class="n">369 ms</td>
+      <td class="n">&mdash;</td><td class="win">6/6</td></tr>
+  <tr><td class="lab"><a href="./game-lab-three-rapier.html">G2</a></td>
+      <td>three r185 + Rapier 3D (4,170 colliders built in 33 ms)</td>
+      <td class="n">27 / 23</td><td class="n">6 / 73</td><td class="n">136 ms</td>
+      <td class="n">2.2 M / 816 K</td><td class="win">6/6</td></tr>
+  <tr><td class="lab"><a href="./game-lab-babylon.html">G3</a></td><td>Babylon.js 9.25</td>
+      <td class="n"><span class="win">51</span> / <span class="bad">18</span></td><td class="n">1 / 1343</td><td class="n">147 ms</td>
+      <td class="n">8.0 M / 1.8 M</td><td class="win">6/6</td></tr>
+  <tr><td class="lab"><a href="./game-lab-playcanvas.html">G4</a></td><td>PlayCanvas 2.22</td>
+      <td class="n">25 / 25</td><td class="n win">15 / 15</td><td class="n win">74 ms</td>
+      <td class="n">2.4 M / 617 K</td><td class="win">6/6</td></tr>
+  <tr><td class="lab"><a href="./game-lab-phaser2d.html">G5</a></td><td>Phaser 3.90 &mdash; the 2D floor</td>
+      <td class="n win">40 / 41</td><td class="n">&mdash;</td><td class="n">241 ms</td>
+      <td class="n">1.2 M / 308 K</td><td class="win">6/6</td></tr>
+  <tr><td class="lab"><a href="./game-lab-excalibur2d.html">G6</a></td><td>Excalibur 0.32 &mdash; the typed 2D floor</td>
+      <td class="n">59 / 31</td><td class="n">&mdash;</td><td class="n bad">554 ms</td>
+      <td class="n">561 K / 144 K</td><td class="win">6/6</td></tr>
+</table>
+<p class="note">P1 feed loads from <code>file://</code> &middot; P2 city drawn &middot; P3 camera moves under
+key/API control &middot; P4 collision stops a walk &middot; P5 in-world labels &middot; P6 picking names a
+node. Re-run <code>node probe-game-labs.mjs</code>, or <code>MULT=3 node probe-game-labs.mjs</code> for the
+4,170-solid onyx-class column. Software rendering (swiftshader, no GPU) &mdash; read fps as ratios between
+labs, never as an absolute. Babylon&rsquo;s 1&nbsp;&rarr;&nbsp;1343 draw jump is measured but its cause is
+NOT isolated (octree selection path is the suspect); PlayCanvas holding 15 draws across a 3&times; scale is
+the cleaner batching result.</p>
+
+<h2>The constraint that decides it &mdash; <a href="./file-url-probe.html">file-url-probe.html</a></h2>
+<div class="card">
+<p style="margin:0 0 8px">Before any engine is compared, the station&rsquo;s hard rule &mdash; opens from
+<code>file://</code>, no server, no network &mdash; is measured rather than assumed.
+Run <code>node probe-file-url.mjs</code>. Result on Chrome 144, <b>2 of 8 capabilities available</b>:</p>
+<table style="margin:0">
+  <tr><th>capability</th><th>offline</th><th>who needs it</th></tr>
+  <tr><td><code>WebAssembly.instantiateStreaming(fetch(".wasm"))</code></td><td class="bad">FAIL</td>
+      <td>Godot HTML5 &middot; Unity WebGL &middot; stock <code>wasm-bindgen</code> (Bevy)</td></tr>
+  <tr><td><code>fetch("./feed.json")</code></td><td class="bad">FAIL</td><td>any runtime JSON feed</td></tr>
+  <tr><td><code>XMLHttpRequest</code></td><td class="bad">FAIL</td><td>older loaders</td></tr>
+  <tr><td><code>WebAssembly.instantiate(&lt;base64 in the JS&gt;)</code></td><td class="win">PASS</td>
+      <td><code>rapier3d-compat</code> &middot; inline Havok</td></tr>
+  <tr><td><code>new Worker("./file.js")</code></td><td class="bad">FAIL</td><td>Godot threads &middot; troika SDF worker</td></tr>
+  <tr><td><code>new Worker(blob:)</code></td><td class="win">PASS</td><td>the escape hatch for the row above</td></tr>
+  <tr><td><code>SharedArrayBuffer</code></td><td class="bad">FAIL</td><td>wasm threads &middot; Godot &ldquo;Use Threads&rdquo;</td></tr>
+  <tr><td><code>crossOriginIsolated</code></td><td class="bad">FAIL</td><td>needs COOP+COEP response headers</td></tr>
+</table>
+<p class="note" style="margin-top:8px">A <code>file://</code> document has the opaque origin <code>null</code>,
+so every sibling file is cross-origin. <code>&lt;script src&gt;</code> is exempt &mdash; which is exactly why
+the station ships its feed as <code>c4-graph.js</code> assigning <code>window.GABE_C4</code> rather than as
+<code>c4-graph.json</code>. Any engine whose loader begins with <code>fetch()</code> of its own
+<code>.wasm</code> is dead here before its renderer is even discussed.</p>
+</div>
+
+<h2>The data side &mdash; <code>export-city.mjs</code></h2>
+<div class="card">
+<p style="margin:0 0 6px">What the feed would have to become for a non-JS engine to consume it. Measured:</p>
+<pre style="margin:0;color:#c9d3de;font-size:11.5px">node export-city.mjs            &rarr; city.json     14 districts  1,390 buildings   0.41 MB   build 2 ms
+node export-city.mjs --mult 3   &rarr; city.x3.json  42 districts  4,170 buildings   1.22 MB   build 10 ms
+deterministic across rebuilds: YES</pre>
+<p class="note" style="margin-top:8px">The change is a file format, not a model: <code>game-city.js</code>
+already computes every position deterministically, so baking it is free. A Godot importer is a ~40-line
+GDScript loop over <code>buildings</code> spawning BoxMesh + BoxShape3D; a Bevy one is a serde struct. Neither
+can <i>fetch</i> that file from <code>file://</code> &mdash; it would have to be embedded in the export.</p>
+</div>
+
+<h2>Re-run the proofs</h2>
+<div class="card">
+  <code>node probe.mjs</code> — every lab at <code>scale=full</code><br>
+  <code>node probe.mjs lab-b2-three-raw.html</code> — one lab<br>
+  <code>GABE_SCALE=x4 node probe.mjs</code> — a rung of the ladder<br>
+  <code>node probe-game-labs.mjs</code> — the six sweep-C game labs<br>
+  <code>MULT=3 node probe-game-labs.mjs</code> — the same six at onyx class (4,170 solids)<br>
+  <code>node probe-file-url.mjs</code> — the file:// capability table<br>
+  <code>node export-city.mjs [--mult N]</code> — bake the engine-neutral city JSON<br>
+  <p class="note">Solo-sequential by design (concurrent chrome starves on this machine). Each lab must
+  set <code>window.__LAB_READY</code>, throw nothing, and put measurable ink on the composited
+  screenshot — screenshots land in <code>_shots/</code>.</p>
+</div>
+</div>

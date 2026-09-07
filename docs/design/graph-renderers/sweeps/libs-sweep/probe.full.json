@@ -1,0 +1,17 @@
+[
+  {
+    "lab": "lab-b1-3d-force-graph.html",
+    "ok": true,
+    "ms": 6597,
+    "nodes": 1393,
+    "links": 4402,
+    "fps": 13,
+    "frame": 79.66,
+    "draws": 5417,
+    "boot": 0.1,
+    "layout": null,
+    "ink": 0.3858,
+    "gl": "webgl2",
+    "errs": []
+  }
+]

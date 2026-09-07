@@ -1,0 +1,80 @@
+/* Shared chrome for the graph-library labs. One look, so the only difference
+   a reader sees between two labs is the library under the glass. */
+:root{
+  --bg:#0e1116; --panel:#161b22; --line:#2a323d; --ink:#e6edf3; --dim:#8b949e;
+  --acc:#58a6ff; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--sans);overflow:hidden}
+#lab-head{
+  position:fixed;top:0;left:0;right:0;height:44px;z-index:40;display:flex;align-items:center;
+  gap:14px;padding:0 14px;background:linear-gradient(180deg,#161b22,#12161d);
+  border-bottom:1px solid var(--line)
+}
+#lab-head .name{font-weight:650;letter-spacing:.2px}
+#lab-head .ver{font:11px var(--mono);color:var(--dim);padding:2px 7px;border:1px solid var(--line);border-radius:99px}
+#lab-head .tech{font:11px var(--mono);color:var(--acc)}
+#lab-head .spacer{flex:1}
+#lab-head a{color:var(--dim);font-size:12px;text-decoration:none;border-bottom:1px dotted var(--line)}
+#lab-head a:hover{color:var(--acc)}
+#lab-stage{position:fixed;inset:44px 0 0 0}
+#lab-stage canvas{display:block}
+
+#lab-hud{
+  position:fixed;top:56px;left:12px;z-index:30;width:250px;background:rgba(22,27,34,.94);
+  border:1px solid var(--line);border-radius:8px;padding:10px 11px;backdrop-filter:blur(6px)
+}
+#lab-hud h4{margin:0 0 7px;font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+#lab-hud .row{display:flex;justify-content:space-between;gap:8px;font:11px var(--mono);padding:1.5px 0}
+#lab-hud .row b{font-weight:500;color:var(--dim)}
+#lab-hud .row span{color:var(--ink)}
+#lab-hud .row span.good{color:var(--ok)} #lab-hud .row span.mid{color:var(--warn)} #lab-hud .row span.bad{color:var(--bad)}
+#lab-hud hr{border:0;border-top:1px solid var(--line);margin:8px 0}
+#lab-ctl{display:flex;flex-wrap:wrap;gap:5px}
+#lab-ctl button{
+  font:11px var(--sans);color:var(--ink);background:#1f262e;border:1px solid var(--line);
+  border-radius:5px;padding:4px 8px;cursor:pointer
+}
+#lab-ctl button:hover{border-color:var(--acc);color:var(--acc)}
+#lab-ctl button.on{background:#1f6feb33;border-color:var(--acc);color:var(--acc)}
+
+#lab-legend{
+  position:fixed;bottom:12px;left:12px;z-index:30;max-width:250px;background:rgba(22,27,34,.94);
+  border:1px solid var(--line);border-radius:8px;padding:9px 11px;backdrop-filter:blur(6px)
+}
+#lab-legend h4{margin:0 0 6px;font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+#lab-legend .k{display:inline-flex;align-items:center;gap:5px;font:11px var(--mono);margin:0 8px 3px 0}
+#lab-legend .sw{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+#lab-detail{
+  position:fixed;top:56px;right:12px;z-index:30;width:310px;max-height:calc(100vh - 80px);overflow:auto;
+  background:rgba(22,27,34,.96);border:1px solid var(--line);border-radius:8px;padding:11px 12px;
+  backdrop-filter:blur(6px);display:none
+}
+#lab-detail.on{display:block}
+#lab-detail .t{font:600 13px var(--sans);margin-bottom:2px;word-break:break-word}
+#lab-detail .s{font:11px var(--mono);color:var(--dim);margin-bottom:8px;word-break:break-all}
+#lab-detail .kv{display:grid;grid-template-columns:78px 1fr;gap:3px 8px;font:11px var(--mono)}
+#lab-detail .kv b{color:var(--dim);font-weight:500}
+#lab-detail ul{margin:6px 0 0;padding-left:15px;font:11px var(--mono);color:var(--dim)}
+#lab-detail li{margin:1px 0}
+
+#lab-note{
+  position:fixed;bottom:12px;right:12px;z-index:30;max-width:420px;background:rgba(22,27,34,.94);
+  border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:6px;padding:9px 11px;
+  font:11.5px/1.5 var(--sans);color:var(--dim);backdrop-filter:blur(6px)
+}
+#lab-note b{color:var(--ink);font-weight:600}
+#lab-note code{font:10.5px var(--mono);color:var(--acc)}
+#lab-boot{
+  position:fixed;inset:44px 0 0 0;z-index:50;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);font:13px var(--mono);color:var(--dim)
+}
+#lab-boot.done{display:none}
+.lab-tip{
+  position:fixed;z-index:45;pointer-events:none;background:#0d1117ee;border:1px solid var(--line);
+  border-radius:5px;padding:4px 7px;font:11px var(--mono);color:var(--ink);display:none;max-width:340px
+}

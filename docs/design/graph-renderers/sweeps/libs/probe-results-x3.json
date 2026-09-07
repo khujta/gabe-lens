@@ -1,0 +1,102 @@
+[
+ {
+  "lab": "lab-echarts.html",
+  "ok": true,
+  "result": {
+   "lab": "Apache ECharts (graph series)",
+   "version": "6.1.0 (Apache-2.0)",
+   "tech": "Canvas 2D (SVG renderer optional)",
+   "totalMs": 51728.5,
+   "marks": {
+    "build": 2.5,
+    "layout": 45216.3,
+    "paint": 11.2
+   },
+   "ok": true,
+   "nodes": 4152,
+   "edges": 12159,
+   "groups": 60,
+   "fps": 15,
+   "p95Ms": 83.3,
+   "bundleKb": 1096,
+   "repaints": 90,
+   "benchFrames": 86,
+   "fpsTrusted": true,
+   "api": {
+    "hulls": "NONE — categories = colour + legend filter only",
+    "labels": "labelLayout hideOverlap/moveOverlap — real collision pass",
+    "picking": "built-in (click/tooltip, focus:adjacency)"
+   },
+   "shotBytes": 423513,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-cytoscape.html",
+  "ok": true,
+  "result": {
+   "lab": "cytoscape.js",
+   "version": "3.34.2 · fcose 2.2 · cola 2.5 · dagre 4.0 · bubblesets 4.1",
+   "tech": "Canvas 2D",
+   "totalMs": 29688,
+   "marks": {
+    "build": 4.4,
+    "layout(fcose)": 9428.5,
+    "layout": 10458.4,
+    "paint": 873.4
+   },
+   "ok": true,
+   "nodes": 4152,
+   "edges": 12159,
+   "groups": 60,
+   "fps": 6,
+   "p95Ms": 350,
+   "bundleKb": 681,
+   "repaints": 91,
+   "benchFrames": 86,
+   "fpsTrusted": true,
+   "api": {
+    "hulls": "compound parents (first-class) + bubblesets ext",
+    "labels": "stylesheet, min-zoomed-font-size; NO collision solver",
+    "picking": "built-in, selector-based"
+   },
+   "shotBytes": 218104,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-g6.html",
+  "ok": true,
+  "result": {
+   "lab": "AntV G6",
+   "version": "5.1.1",
+   "tech": "Canvas (G renderer; SVG/WebGL swappable)",
+   "totalMs": 24844.8,
+   "marks": {
+    "build": 2,
+    "layout": 9688.2,
+    "paint": 429
+   },
+   "ok": true,
+   "nodes": 4152,
+   "edges": 12159,
+   "groups": 60,
+   "fps": 6.7,
+   "p95Ms": 183.4,
+   "bundleKb": 1351,
+   "api": {
+    "hulls": "COMBOS — first-class, collapsible, layout-aware",
+    "labels": "per-node labelText; autoHide via label plugins",
+    "picking": "built-in behaviors (click-select/hover-activate)"
+   },
+   "shotBytes": 209258,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ }
+]

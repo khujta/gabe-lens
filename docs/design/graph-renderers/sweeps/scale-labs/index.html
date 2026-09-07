@@ -1,0 +1,262 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sweep D · scale and layout labs</title>
+<link rel="stylesheet" href="lab.css">
+<style>
+  body{overflow:auto}
+  .page{max-width:1140px;margin:0 auto;padding:26px 22px 80px}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+  .lede{color:var(--dim);max-width:76ch;margin:0 0 22px;font-size:13.5px;line-height:1.6}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);
+     margin:30px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr:hover td{background:#14171c}
+  .win{color:var(--ok);font-weight:700}
+  .meh{color:var(--warn)}
+  .no{color:var(--bad)}
+  a.lab{color:#e6edf3;font-weight:600;text-decoration:none;border-bottom:1px solid #39424e}
+  a.lab:hover{border-color:var(--accent)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+  .card h3{margin:0 0 3px;font-size:13.5px}
+  .card .k{color:var(--dim);font-size:11.5px;margin-bottom:8px}
+  .card p{margin:0;color:#b8c0cb;font-size:12.5px;line-height:1.55}
+  .scroll{overflow-x:auto}
+  ul{color:#b8c0cb;font-size:13px;line-height:1.65;max-width:82ch;padding-left:20px}
+  li{margin-bottom:7px}
+  code{background:#1b2028;padding:1px 5px;border-radius:4px;font-size:11.5px}
+  .verdict{background:#12161c;border:1px solid #2a3a2c;border-left:3px solid var(--ok);
+           border-radius:8px;padding:14px 16px;margin:14px 0;font-size:13px;line-height:1.6;color:#c9d1d9;max-width:88ch}
+  .verdict b{color:#e6edf3}
+  .caveat{border-left-color:var(--warn);border-color:#4a3a12}
+  .kill{border-left-color:var(--bad);border-color:#5c2226}
+</style>
+<div class="page">
+  <h1>Sweep D — scale and layout</h1>
+  <p class="lede">
+    Eight labs over the same committed feed (the example estate’s <code>c4-graph.js</code> →
+    <b>1,384 nodes · 4,053 edges · 20 groups</b>), each opening from <code>file://</code> with
+    no network. The variable in this sweep is the <b>layout</b>, not the renderer: every lab that
+    is not explicitly testing a renderer draws through one shared canvas-2D view, so
+    <i>layout ms</i> and <i>draw ms</i> are separate columns and no engine can win on the wrong
+    half. A <code>?k=3</code> switch clones the feed to <b>4,152 nodes / 12,279 edges</b> —
+    onyx’s ~3.9k drawn size — so every row has a scale reading beside it.
+    All numbers below were measured on this machine (WSL2, Chrome 144 headless, swiftshader,
+    <b>no GPU</b>); vendor claims are labelled as such.
+  </p>
+
+  <h2>the labs</h2>
+  <div class="cards">
+    <div class="card" style="border-color:#2a3a2c"><h3><a class="lab" href="lab-precomputed.html">D1 · precomputed</a></h3>
+      <div class="k">graphviz fdp-clustered / sfdp / neato · networkx · EPL-1.0 / BSD-3</div>
+      <p>The layout is baked by a generator-time script and rides the feed as x/y. Client cost is
+         literally zero, the picture is byte-stable across regens — and <b>fdp with cluster
+         subgraphs is the only engine in the sweep that keeps our 9 entities intact</b>.</p></div>
+    <div class="card"><h3><a class="lab" href="lab-d3-worker.html">D2 · d3-force in a Worker</a></h3>
+      <div class="k">d3-force 3.0.0 · ISC · 14 kB · Blob-URL worker</div>
+      <p>The engine we effectively already run, moved off the main thread. Positions come back
+         as one transferred Float32Array per frame.</p></div>
+    <div class="card"><h3><a class="lab" href="lab-fa2-worker.html">D3 · ForceAtlas2 in a Worker</a></h3>
+      <div class="k">graphology-layout-forceatlas2 0.10.1 · MIT · 77 kB</div>
+      <p>sigma.js’s layout half, used standalone with Barnes-Hut on a toggle so the
+         O(n log n) → O(n²) cliff is visible.</p></div>
+    <div class="card"><h3><a class="lab" href="lab-cosmos-layout.html">D4 · cosmos.gl as a layout engine</a></h3>
+      <div class="k">@cosmos.gl/graph 3.4.1 · MIT (OpenJS) · WebGL2 · 678 kB</div>
+      <p>GPU force simulation, then <code>getPointPositions()</code> harvests the result for our
+         own renderer. Entity clusters are a real force here, not a hull drawn afterwards.</p></div>
+    <div class="card"><h3><a class="lab" href="lab-ngraph-3d.html">D5 · ngraph.forcelayout 3D</a></h3>
+      <div class="k">ngraph.forcelayout 3.3.1 · BSD-3 · 31 kB · true nD</div>
+      <p>A physics engine with no renderer at all — the projection is ours. The direct answer to
+         “what drives raw three.js”.</p></div>
+    <div class="card"><h3><a class="lab" href="lab-webgpu-force.html">D6 · WebGPU compute shader</a></h3>
+      <div class="k">hand-written WGSL · no dependency</div>
+      <p>Tiled all-pairs repulsion in workgroup memory, CSR springs, ping-pong buffers, one
+         readback. Degrades honestly where there is no device — which is here.</p></div>
+    <div class="card"><h3><a class="lab" href="lab-lod-aggregate.html">D7 · LOD + aggregation</a></h3>
+      <div class="k">no library · capsules → hubs → full</div>
+      <p>The strategy lab. T0 draws 20 capsules and ~90 aggregated wires whatever the node count,
+         which is the only thing on this page that is flat in n.</p></div>
+    <div class="card"><h3><a class="lab" href="lab-fcose-compound.html">D8 · fCoSE compound</a></h3>
+      <div class="k">cytoscape 3.34 + fcose 2.2.0 / cola · MIT</div>
+      <p>The only engine <i>told</i> about our 9 entities: each is a compound parent with its own
+         gravity. Real placement constraints, at a real price.</p></div>
+  </div>
+
+  <h2>the measurement that decided it — entity purity</h2>
+  <p style="color:#b8c0cb;font-size:13px;max-width:88ch;line-height:1.6">
+    Our map is not a hairball to be untangled; it is <b>20 groups that must stay legible as
+    groups</b>. So the number that matters is not edge-crossing count, it is <b>entity purity</b>:
+    of each node’s 10 nearest neighbours in the final layout, what fraction belong to its own
+    entity. A layout can have lovely edge lengths and still shred every hull, and only this catches
+    it. The control is the feed’s own group-seeded ring — <b>grouped but not laid out at all</b>.
+  </p>
+  <div class="scroll">
+  <table>
+    <tr><th>engine</th><th class="num">bake</th><th class="num">entity purity (k=10)</th><th>reading</th></tr>
+    <tr><td><b>graphviz fdp + cluster subgraphs</b></td><td class="num">1,782 ms</td>
+        <td class="num win">0.996</td><td><b>hulls come out disjoint.</b> fdp honours
+        <code>subgraph cluster_*</code>, so each entity is a real constraint</td></tr>
+    <tr><td style="color:var(--dim)">— control: feed seed ring, no layout —</td><td class="num">0 ms</td>
+        <td class="num">0.888</td><td>the bar every force engine has to clear</td></tr>
+    <tr><td>graphviz sfdp</td><td class="num">547 ms</td><td class="num no">0.481</td>
+        <td>fast and pretty, and it shreds the grouping</td></tr>
+    <tr><td>graphviz sfdp <i>with</i> cluster subgraphs</td><td class="num">534 ms</td><td class="num no">0.475</td>
+        <td><b>sfdp silently ignores clusters</b> — identical to plain sfdp. Measured, not read off a doc</td></tr>
+    <tr><td>networkx spring_layout</td><td class="num">16,542 ms</td><td class="num no">0.472</td><td>30× the cost of sfdp for the same shredding</td></tr>
+    <tr><td>networkx spring_layout dim=3</td><td class="num">16,463 ms</td><td class="num no">0.426</td><td>the 3D variant, same story</td></tr>
+    <tr><td>graphviz neato</td><td class="num">3,181 ms</td><td class="num no">0.405</td><td>stress majorization; worst grouping here</td></tr>
+    <tr><td>graphviz fdp <i>without</i> clusters</td><td class="num">761 ms</td><td class="num no">0.282</td><td>the clusters are doing all the work, not fdp</td></tr>
+  </table>
+  </div>
+  <div class="verdict">
+    <b>Every plain force layout scores worse than doing nothing.</b> 0.40–0.48 against a 0.888
+    control: a force simulation optimises edge length, and edge length is not entity membership,
+    so it actively pulls our entities apart. That reframes the whole sweep — the question is not
+    “which engine settles fastest”, it is <b>“which engine can be told about the 20 groups”</b>.
+    Three can: graphviz <code>fdp</code> (cluster subgraphs, 0.996), cosmos.gl
+    (<code>setPointClusters</code>, a real GPU force), and fCoSE (compound parents). Everything
+    else needs the grouping enforced afterwards, by us.
+  </div>
+
+  <h2>measured — 1,384 nodes / 4,053 edges</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>lane</th><th class="num">layout</th><th class="num">draw / frame</th><th class="num">fps</th>
+        <th>hulls / groups</th><th>thread</th><th>bundle</th><th>licence</th></tr>
+    <tr><td><b>D1 precomputed fdp-c</b></td><td class="num win">0 ms<br><span style="color:var(--dim)">(1,782 ms server)</span></td>
+        <td class="num win">0.6 ms</td><td class="num">60</td><td class="win">purity 0.996</td><td>none</td><td class="num">0</td><td>EPL-1.0 (tool only)</td></tr>
+    <tr><td>D2 d3-force worker</td><td class="num">1,480 ms</td><td class="num">1.1 ms</td><td class="num">60</td>
+        <td>post-hoc</td><td class="win">worker</td><td class="num">14 kB</td><td>ISC</td></tr>
+    <tr><td>D3 ForceAtlas2 worker</td><td class="num">2,409 ms</td><td class="num">0.8 ms</td><td class="num">60</td>
+        <td>post-hoc</td><td class="win">worker</td><td class="num">77 kB</td><td>MIT</td></tr>
+    <tr><td>D4 cosmos.gl</td><td class="num">5,113 ms*</td><td class="num">3.5 ms</td><td class="num">60</td>
+        <td class="win">cluster FORCE</td><td>GPU</td><td class="num">678 kB</td><td>MIT</td></tr>
+    <tr><td>D5 ngraph 3D</td><td class="num">1,108 ms<br><span style="color:var(--dim)">300 steps</span></td>
+        <td class="num win">0.6 ms</td><td class="num meh">31</td><td>post-hoc</td><td>main</td><td class="num">31 kB</td><td>BSD-3</td></tr>
+    <tr><td>D6 WebGPU</td><td class="num no">no device</td><td class="num">0.9 ms</td><td class="num">60</td>
+        <td>post-hoc</td><td>GPU</td><td class="num">0</td><td>—</td></tr>
+    <tr><td>D7 LOD (T0)</td><td class="num">—</td><td class="num win">2.2 ms<br><span style="color:var(--dim)">0.4 ms at T0</span></td>
+        <td class="num">60</td><td class="win">capsule IS the group</td><td>main</td><td class="num">0</td><td>—</td></tr>
+    <tr><td>D8 fCoSE compound</td><td class="num no">8,138 ms</td><td class="num">—</td><td class="num">60</td>
+        <td class="win">compound PARENT</td><td>main</td><td class="num">738 kB</td><td>MIT</td></tr>
+  </table>
+  </div>
+  <p style="color:var(--dim);font-size:11.5px;max-width:86ch">
+    * cosmos.gl’s 5,113 ms is the fixed budget the lab gives the GPU sim before harvesting, not a
+    measured convergence — cosmos runs a decaying simulation with no “done” event to read. What
+    <i>is</i> measured: <code>getPointPositions()</code> returned all 1,384 points in
+    <b>0.50 ms</b>, and the sim held 60 fps throughout. D8’s draw column is empty because
+    cytoscape renders itself; press <b>harvest → canvas</b> in that lab to put it on the same axis.
+  </p>
+
+  <h2>measured — 4,152 nodes / 12,279 edges (<code>?k=3</code>, onyx’s drawn size)</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>lane</th><th class="num">layout @1×</th><th class="num">layout @3×</th><th class="num">growth</th>
+        <th class="num">draw @3×</th><th class="num">fps @3×</th><th>reading</th></tr>
+    <tr><td><b>D1 precomputed fdp-c</b></td><td class="num">1,638 ms</td><td class="num">4,904 ms</td>
+        <td class="num win">3.0×</td><td class="num win">0.6 ms</td><td class="num">60</td>
+        <td>server-side and <b>linear</b>; the client never pays either number</td></tr>
+    <tr><td>D2 d3-force worker</td><td class="num">1,480 ms</td><td class="num">4,804 ms</td><td class="num win">3.2×</td>
+        <td class="num">3.1 ms</td><td class="num">60</td><td>near-linear; the best-behaved CPU lane</td></tr>
+    <tr><td>D3 ForceAtlas2 worker</td><td class="num">2,409 ms</td><td class="num">8,552 ms</td><td class="num">3.6×</td>
+        <td class="num">2.7 ms</td><td class="num">60</td><td>fixed 600 iterations, so this is honest cost/iter</td></tr>
+    <tr><td>D4 cosmos.gl</td><td class="num">5,113 ms*</td><td class="num">5,019 ms*</td><td class="num win">1.0×</td>
+        <td class="num">6.1 ms</td><td class="num">60</td><td><b>flat</b> — the GPU did not notice 3× the graph</td></tr>
+    <tr><td>D5 ngraph 3D</td><td class="num">1,108 ms</td><td class="num">4,137 ms</td><td class="num">3.7×</td>
+        <td class="num">1.3 ms</td><td class="num no">9</td><td>fps is our per-frame re-projection, not ngraph</td></tr>
+    <tr><td>D7 LOD (T0)</td><td class="num">—</td><td class="num">—</td><td class="num win">flat</td>
+        <td class="num win">0.4 ms</td><td class="num">60</td><td>20 capsules at any n — the only flat row</td></tr>
+    <tr><td>D8 fCoSE compound</td><td class="num">8,138 ms</td><td class="num no">141,679 ms</td><td class="num no">17.4×</td>
+        <td class="num">—</td><td class="num">60</td><td><b>2m22s.</b> super-linear; disqualifying at onyx scale</td></tr>
+  </table>
+  </div>
+
+  <h2>the server-side bake, scaled out</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>nodes</th><th class="num">edges</th><th class="num">fdp + clusters<br><span style="font-weight:400">(the one to use)</span></th>
+        <th class="num">sfdp<br><span style="font-weight:400">(faster, shreds groups)</span></th><th>reading</th></tr>
+    <tr><td>1,384 <span style="color:var(--dim)">(this estate)</span></td><td class="num">3,945</td>
+        <td class="num win">1,638 ms</td><td class="num">556 ms</td><td>inside one regen beat, unnoticed</td></tr>
+    <tr><td>2,768</td><td class="num">7,890</td><td class="num win">3,296 ms</td><td class="num">—</td><td>exactly 2× — fdp is linear on this shape</td></tr>
+    <tr><td>4,152 <span style="color:var(--dim)">(onyx-ish)</span></td><td class="num">11,835</td>
+        <td class="num win">4,904 ms</td><td class="num">2,406 ms</td><td>5 s at onyx scale, once per regen</td></tr>
+    <tr><td>8,304</td><td class="num">23,670</td><td class="num">—</td><td class="num">7,477 ms</td><td>sfdp still fine; fdp not measured this far</td></tr>
+    <tr><td>16,608</td><td class="num">47,340</td><td class="num">—</td><td class="num meh">27,150 ms</td><td>sfdp ~n<sup>1.35</sup>; the ceiling starts here</td></tr>
+  </table>
+  </div>
+  <p style="color:var(--dim);font-size:11.5px;max-width:86ch">
+    Same box, <code>bake-layouts.py</code>. For contrast on the identical 1,384-node graph:
+    graphviz <b>neato</b> (stress majorization) took <b>3,181 ms</b> and <b>networkx</b>
+    <code>spring_layout</code> took <b>16,542 ms</b> — pure-Python Fruchterman-Reingold is 30×
+    slower than sfdp <i>and</i> scores worse on grouping, so it should not be the baking engine.
+    The <b>fdp linearity</b> above is the load-bearing number: 1,638 → 3,296 → 4,904 ms for
+    1× → 2× → 3× the graph, so the good layout does not price itself out at onyx scale.
+  </p>
+
+  <h2>what the numbers say</h2>
+  <div class="verdict">
+    <b>The strongest result in this sweep is that we may not need a browser layout engine at all —
+    and that the best layout is not the fastest one.</b> Our graph is generated, not explored: a
+    regen already walks the whole archmap, and <b>1.6 s of graphviz fdp</b> on top of that is free.
+    Baking x/y into the feed removes the settle animation, removes the layout library from the
+    bundle, makes the picture <b>deterministic across regens</b> (so a reader’s spatial memory of
+    where <code>pantry</code> sits survives a commit), and leaves every renderer free to be chosen
+    on its own merits. Critically, it is also the <b>only lane that scored 0.996 on entity
+    purity</b> — the browser engines are not merely slower at this, they are worse at it. It is the
+    one option that improves the 3D station and a 2D lane simultaneously.
+  </div>
+  <div class="verdict caveat">
+    <b>The one thing precomputation cannot do is respond.</b> Expanding an entity, filtering to a
+    journey, or dragging a node all need a live solver. That is the real division of labour:
+    <b>bake the global layout, run a small local force only inside whatever the user just opened</b>
+    — a 40-node sub-simulation settles in a frame, and d3-force in a worker (D2, 14 kB, ISC) is
+    already enough for it.
+  </div>
+  <div class="verdict">
+    <b>If a live global layout is wanted anyway, cosmos.gl is the only lane that did not care about
+    3× the graph</b> — 5.0 s at 4,152 nodes against 5.1 s at 1,384, because the simulation never
+    leaves the GPU. Two facts make it usable rather than a curiosity: it is <b>MIT under the OpenJS
+    Foundation</b> as <code>@cosmos.gl/graph</code>, and <code>getPointPositions()</code> hands the
+    result back in 0.5 ms, so it can drive <i>our</i> renderer instead of replacing it. Its
+    <code>setPointClusters</code> is also the only place in this sweep where our 9 entities are a
+    force rather than a hull we draw afterwards.
+  </div>
+  <div class="verdict kill">
+    <b>Two lanes are ruled out on evidence.</b> <b>fCoSE</b> gives the nicest grouping semantics —
+    entities as real compound parents with their own gravity — but took <b>2 minutes 22 seconds</b>
+    at 4,152 nodes on the main thread; that is not a tuning problem, it is the wrong complexity
+    class for this graph. <b>WebGPU</b> is not rejected on merit — the WGSL in D6 is complete and
+    correct — but on this machine Chrome 144 gave <code>requestAdapter()</code> a null in every
+    configuration tried, headless and headed, with and without <code>--enable-unsafe-webgpu</code>.
+    A lane our own render gate cannot execute cannot be shipped behind that gate.
+  </div>
+
+  <h2>licence trap, stated once</h2>
+  <p style="color:#b8c0cb;font-size:13px;max-width:86ch;line-height:1.6">
+    <code>@cosmograph/cosmos</code> and <code>@cosmos.gl/graph</code> are at the same version
+    (3.4.1) from the same lineage, and only one of them is usable: <b>@cosmograph/cosmos is
+    CC-BY-NC-4.0</b> (non-commercial), <b>@cosmos.gl/graph is MIT</b> — the OpenJS Foundation fork,
+    announced 2025-05-14. Vendoring the wrong package name is a licence problem that looks like a
+    typo. Hosted <b>Graphistry</b> is out for a different and simpler reason: it renders on a
+    server GPU and streams to the browser, which our <code>file://</code>, no-network constraint
+    forbids outright — no amount of licence would fix that.
+  </p>
+
+  <h2>reproduce</h2>
+  <ul>
+    <li><code>python3 bake-layouts.py</code> — re-bakes <code>lab-layouts.js</code> from
+        <code>lab-feed.js</code>. Deterministic; a re-run on an unchanged feed is byte-identical.</li>
+    <li><code>node probe.mjs</code> — boots every lab under system Chrome, asserts no network
+        request leaves <code>file://</code>, screenshots, and writes
+        <code>probe-results.json</code>. <code>--k=3</code> repeats at onyx scale.</li>
+    <li>Every lab also takes <code>?k=2</code>/<code>?k=3</code> by hand, and each carries its own
+        controls for the knob that matters to it (Barnes-Hut θ, cluster force, LOD tier).</li>
+    <li>The feed is generated by the sibling sweep’s <code>build-feed.py</code> from the committed
+        example estate — one feed across all sweeps, so the pictures are comparable.</li>
+  </ul>
+</div>

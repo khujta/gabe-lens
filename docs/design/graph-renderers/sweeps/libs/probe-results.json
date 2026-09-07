@@ -1,0 +1,271 @@
+[
+ {
+  "lab": "lab-cosmos.html",
+  "ok": true,
+  "result": {
+   "lab": "cosmos.gl",
+   "version": "3.4.1 · @cosmos.gl/graph (MIT)",
+   "tech": "WebGL2 / luma.gl — layout IN SHADERS",
+   "totalMs": 14030.8,
+   "marks": {
+    "build": 2.7,
+    "layout": 1.1,
+    "paint": 9100.4
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 20,
+   "fps": 20,
+   "p95Ms": 66.7,
+   "bundleKb": 678,
+   "api": {
+    "hulls": "NONE — but setPointClusters is a real GPU grouping FORCE",
+    "labels": "NONE in core (Cosmograph adds a DOM label layer)",
+    "picking": "index callbacks only (onClick/onPointMouseOver)"
+   },
+   "shotBytes": 122596,
+   "painted": true,
+   "retried": true
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-cytoscape.html",
+  "ok": true,
+  "result": {
+   "lab": "cytoscape.js",
+   "version": "3.34.2 · fcose 2.2 · cola 2.5 · dagre 4.0 · bubblesets 4.1",
+   "tech": "Canvas 2D",
+   "totalMs": 10318.1,
+   "marks": {
+    "build": 4.1,
+    "layout(fcose)": 1409.9,
+    "layout": 1811.9,
+    "paint": 339.8
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 20,
+   "fps": 15,
+   "p95Ms": 150,
+   "bundleKb": 681,
+   "repaints": 91,
+   "benchFrames": 86,
+   "fpsTrusted": true,
+   "api": {
+    "hulls": "compound parents (first-class) + bubblesets ext",
+    "labels": "stylesheet, min-zoomed-font-size; NO collision solver",
+    "picking": "built-in, selector-based"
+   },
+   "shotBytes": 208740,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-d3-pixi.html",
+  "ok": true,
+  "result": {
+   "lab": "d3-force + PixiJS",
+   "version": "d3-force 3.0.0 · pixi.js 8.20.1",
+   "tech": "WebGL (Pixi) + JS physics (d3)",
+   "totalMs": 9328.3,
+   "marks": {
+    "build": 10,
+    "layout": 1211.3,
+    "paint": 97,
+    "d3 ticks": 220
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 18,
+   "fps": 12,
+   "p95Ms": 116.8,
+   "bundleKb": 862,
+   "extra": {
+    "d3 ticks": 220
+   },
+   "api": {
+    "hulls": "hand-written (convex hull, redrawn on change)",
+    "labels": "hand-written pool + greedy grid collision",
+    "picking": "hand-written (d3-quadtree hit test)"
+   },
+   "shotBytes": 295560,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-echarts.html",
+  "ok": true,
+  "result": {
+   "lab": "Apache ECharts (graph series)",
+   "version": "6.1.0 (Apache-2.0)",
+   "tech": "Canvas 2D (SVG renderer optional)",
+   "totalMs": 7544.3,
+   "marks": {
+    "build": 1,
+    "layout": 4933.2,
+    "paint": 18.1
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 20,
+   "fps": 59.9,
+   "p95Ms": 33.4,
+   "bundleKb": 1096,
+   "repaints": 90,
+   "benchFrames": 86,
+   "fpsTrusted": true,
+   "api": {
+    "hulls": "NONE — categories = colour + legend filter only",
+    "labels": "labelLayout hideOverlap/moveOverlap — real collision pass",
+    "picking": "built-in (click/tooltip, focus:adjacency)"
+   },
+   "shotBytes": 289757,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-g6.html",
+  "ok": true,
+  "result": {
+   "lab": "AntV G6",
+   "version": "5.1.1",
+   "tech": "Canvas (G renderer; SVG/WebGL swappable)",
+   "totalMs": 8331.8,
+   "marks": {
+    "build": 0.6,
+    "layout": 2890.1,
+    "paint": 154.5
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 20,
+   "fps": 20,
+   "p95Ms": 66.7,
+   "bundleKb": 1351,
+   "api": {
+    "hulls": "COMBOS — first-class, collapsible, layout-aware",
+    "labels": "per-node labelText; autoHide via label plugins",
+    "picking": "built-in behaviors (click-select/hover-activate)"
+   },
+   "shotBytes": 121732,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-sigma.html",
+  "ok": true,
+  "result": {
+   "lab": "sigma.js + graphology",
+   "version": "sigma 3.0.3 · graphology 0.26.0 · FA2 0.10.1",
+   "tech": "WebGL2",
+   "totalMs": 6635.3,
+   "marks": {
+    "build": 7,
+    "layout": 709.6,
+    "paint": 243
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 18,
+   "fps": 15,
+   "p95Ms": 83.3,
+   "bundleKb": 201,
+   "repaints": 90,
+   "benchFrames": 86,
+   "fpsTrusted": true,
+   "webgl": true,
+   "hullsDrawn": 18,
+   "api": {
+    "hulls": "lab-drawn (beforeRender hook)",
+    "labels": "built-in grid collision",
+    "picking": "built-in (enterNode/clickNode)"
+   },
+   "shotBytes": 1147972,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-visnetwork.html",
+  "ok": true,
+  "result": {
+   "lab": "vis-network",
+   "version": "10.1.2 (Apache-2.0 OR MIT)",
+   "tech": "Canvas 2D",
+   "totalMs": 10756,
+   "marks": {
+    "build": 5.4,
+    "layout": 7933.5,
+    "paint": 43.8
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 0,
+   "stabilized": true,
+   "fps": 59.9,
+   "p95Ms": 33.4,
+   "bundleKb": 637,
+   "api": {
+    "hulls": "NONE — cluster() folds members into a meta-node",
+    "labels": "per-node only; no collision solver",
+    "picking": "built-in (click/hoverNode)"
+   },
+   "shotBytes": 264994,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ },
+ {
+  "lab": "lab-vivagraph.html",
+  "ok": true,
+  "result": {
+   "lab": "VivaGraphJS (ngraph)",
+   "version": "0.12.0 — last npm release 2019-10-27",
+   "tech": "WebGL (custom shader programs)",
+   "totalMs": 4357.5,
+   "marks": {
+    "build": 2.2,
+    "layout": 557.9,
+    "paint": 32.7,
+    "layout ticks": 260
+   },
+   "ok": true,
+   "nodes": 1384,
+   "edges": 4053,
+   "groups": 0,
+   "fps": 29.9,
+   "p95Ms": 50,
+   "bundleKb": 65,
+   "extra": {
+    "layout ticks": 260
+   },
+   "api": {
+    "hulls": "NONE",
+    "labels": "NONE (DOM overlay is on you)",
+    "picking": "webglInputEvents (click/enter/leave)"
+   },
+   "shotBytes": 779881,
+   "painted": true,
+   "suspectBlank": false
+  },
+  "err": null
+ }
+]

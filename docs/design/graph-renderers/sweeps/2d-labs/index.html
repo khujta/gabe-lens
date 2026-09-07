@@ -1,0 +1,105 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>2D graph library labs — Gabe Suite</title>
+<link rel="stylesheet" href="lab.css">
+<style>
+html,body{overflow:auto}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 22px 70px}
+h1{font-size:22px;margin:0 0 4px} h1 small{font:400 12px var(--mono);color:var(--dim);display:block;margin-top:5px}
+h2{font:600 10px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:30px 0 10px}
+.feed{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.feed b{font:11px var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 9px;font-weight:400}
+.feed b i{font-style:normal;color:#fff;font-weight:700}
+table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{font:600 10px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+td.n{font:11px var(--mono);white-space:nowrap;text-align:right}
+tr:hover td{background:#161a27}
+a.lab{font-weight:700;color:#fff;text-decoration:none;border-bottom:1px solid var(--acc)}
+a.lab:hover{color:var(--acc)}
+.tag{font:10px var(--mono);padding:1px 5px;border-radius:3px;border:1px solid var(--line);color:var(--dim)}
+.g{color:var(--ok)} .w{color:var(--warn)} .b{color:var(--bad)}
+.why{border-left:2px solid var(--line);padding:2px 0 2px 12px;margin:8px 0;color:var(--dim);font-size:12px;line-height:1.6}
+.why b{color:var(--ink)}
+code{font:11px var(--mono);background:#1b2030;padding:1px 4px;border-radius:3px}
+</style></head><body>
+<div class="wrap">
+<h1>2D graph-library labs
+<small>Every lab renders the SAME committed example estate through a different renderer. Nothing is a mock: each page loads
+<code>templates/center/shell/example/codebase-graph-station/c4-graph.js</code>, flattens it with the shared <code>feed.js</code>,
+and reports its own measured numbers in the right rail. All bundles are vendored under <code>vendor/</code>; every page opens from file:// with the network off.</small></h1>
+
+<div class="feed" id="feed"></div>
+
+<h2>the labs</h2>
+<table>
+<thead><tr><th>lab</th><th>rendering</th><th class="n">layout time</th><th class="n">idle fps*</th><th class="n">bundle</th><th>grouping / hulls</th><th>typed glyphs</th><th>labels</th></tr></thead>
+<tbody>
+<tr><td><a class="lab" href="lab-sigma.html">sigma.js v3</a><br><span class="tag">MIT</span></td>
+ <td>WebGL, instanced</td><td class="n g">0.73 s<br><small>FA2 ×220</small></td><td class="n g">60</td><td class="n">184K<br>+72K+168K</td>
+ <td class="b">none — our overlay</td><td class="w">circles only in core</td><td class="g">grid collision, built in</td></tr>
+<tr><td><a class="lab" href="lab-cytoscape.html">cytoscape.js</a><br><span class="tag">MIT</span></td>
+ <td>Canvas2D + opt-in WebGL</td><td class="n w">7.6 s<br><small>fcose default</small></td><td class="n g">54</td><td class="n">428K<br>+324K</td>
+ <td class="g">NATIVE compound nodes</td><td class="g">shape in the stylesheet</td><td class="w">zoom threshold only</td></tr>
+<tr><td><a class="lab" href="lab-g6.html">AntV G6 v5</a><br><span class="tag">MIT</span></td>
+ <td>Canvas2D (@antv/g)</td><td class="n g">1.2 s<br><small>d3-force</small></td><td class="n g">58</td><td class="n b">1.4 MB</td>
+ <td class="g">NATIVE combos</td><td class="g">type + custom node class</td><td class="w">placement, no solver</td></tr>
+<tr><td><a class="lab" href="lab-vis-network.html">vis-network</a><br><span class="tag">Apache-2.0/MIT</span></td>
+ <td>Canvas2D</td><td class="n w">3.6 s<br><small>barnesHut ×200</small></td><td class="n g">58</td><td class="n">640K</td>
+ <td class="b">none, but real CLUSTERS</td><td class="g">shape per node</td><td class="b">none</td></tr>
+<tr><td><a class="lab" href="lab-echarts.html">ECharts graph series</a><br><span class="tag">Apache-2.0</span></td>
+ <td>Canvas2D (zrender)</td><td class="n w">4.0 s<br><small>force</small></td><td class="n g">60</td><td class="n">1.1 MB<br><small>~380K custom</small></td>
+ <td class="b">none — our overlay</td><td class="w">symbols + path://</td><td class="w">hideOverlap</td></tr>
+<tr><td><a class="lab" href="lab-d3-canvas.html">d3-force + Canvas2D</a><br><span class="tag">ISC</span></td>
+ <td>Canvas2D, batched by us</td><td class="n g">1.6 s<br><small>300 ticks</small></td><td class="n g">60<br><small>2.6 ms redraw</small></td><td class="n g">276K<br><small>~90K used</small></td>
+ <td class="g">ours — d3.polygonHull</td><td class="g">ours — batched paths</td><td class="g">ours — greedy LOD</td></tr>
+<tr><td><a class="lab" href="lab-pixi.html">PixiJS v8 + d3-force</a><br><span class="tag">MIT</span></td>
+ <td>WebGL / WebGPU sprites</td><td class="n g">1.6 s<br><small>300 ticks</small></td><td class="n w">13*</td><td class="n">800K+276K</td>
+ <td class="g">ours — Graphics</td><td class="g">sprite per texture</td><td class="w">BitmapText needed</td></tr>
+<tr><td><a class="lab" href="lab-force-graph.html">force-graph <b class="g">(incumbent)</b></a><br><span class="tag">MIT</span></td>
+ <td>Canvas2D</td><td class="n b">15.4 s<br><small>renders every tick</small></td><td class="n g">60</td><td class="n g">177K<br><small>already here</small></td>
+ <td class="g">onRenderFramePre</td><td class="g">nodeCanvasObject</td><td class="w">ours</td></tr>
+<tr><td><a class="lab" href="lab-vivagraph.html">VivaGraphJS</a><br><span class="tag">BSD-3</span></td>
+ <td>WebGL points/lines</td><td class="n g">0.70 s<br><small>350 steps</small></td><td class="n g">60</td><td class="n g">66K</td>
+ <td class="b">none — our overlay</td><td class="b">square / image only</td><td class="b">none at all</td></tr>
+<tr><td><a class="lab" href="lab-cosmos.html">cosmos.gl</a><br><span class="tag">MIT (OpenJS)</span></td>
+ <td>GPU sim + GPU render</td><td class="n g">on the GPU<br><small>never blocks</small></td><td class="n w">19* / 60 paused</td><td class="n">688K</td>
+ <td class="b">none — our overlay</td><td class="b">points only</td><td class="b">none</td></tr>
+</tbody></table>
+<p class="why">* fps was measured under this host's <b>software rasteriser</b> (system Chrome with <code>--use-angle=swiftshader</code>, no GPU).
+Pixi and cosmos.gl re-render <b>every frame whether or not anything moved</b>, so they pay full cost while idle; sigma, cytoscape and
+force-graph render only on change and idle at 60. On real GPU hardware none of these idle numbers is the constraint — the
+<b>layout</b> column is.</p>
+
+<h2>libraries deliberately given no lab</h2>
+<div class="why"><b>react-flow / xyflow</b> — every node is a real DOM element with React reconciliation behind it. That is exactly right for a
+20-node editable flow editor and exactly wrong for 1,384 read-only nodes: no canvas, no WebGL, no batching. Its performance page offers no
+node-count guidance at all — the advice is React.memo, hiding subtrees, and simplifying CSS. The one virtualisation prop,
+<code>onlyRenderVisibleElements</code>, is documented in the API reference but a maintainer has warned it can make things
+<i>slower</i>, because a node re-initialises every time it scrolls back into view. It also brings React as a hard dependency into a
+vanilla, file://-loaded page. Node <b>editor</b>, not graph <b>viewer</b>.</div>
+<div class="why"><b>Konva</b> — same category as PixiJS but Canvas2D-only with a per-shape scene graph; you would be hand-rolling exactly what the
+d3+Canvas lab hand-rolls, plus a shape-object allocation per node. PixiJS covers the "custom renderer" slot with a GPU path, so it got the lab.</div>
+<div class="why"><b>Graphistry</b> — GPU rendering happens on a <b>server</b> and arrives as a streamed session in an iframe. There is no offline artifact to
+vendor. Disqualified by the file://-no-network constraint before any feature comparison.</div>
+<div class="why"><b>KeyLines / ReGraph (Cambridge Intelligence), Ogma (Linkurious), yFiles for HTML (yWorks)</b> — commercial, per-developer/per-deployment
+licences, no public npm artifact to download and no build obtainable without a sales conversation. They are the strongest products in
+this space on hulls, layouts and labelling (yFiles in particular has the only genuinely good orthogonal/hierarchical edge routing), and
+they are the right answer if this were a product being sold. For a vendored, offline, MIT-shaped suite artifact they cannot be evaluated
+here at all — no lab is possible, not merely inconvenient.</div>
+
+<h2>how to run</h2>
+<div class="why">Open any <code>lab-*.html</code> directly from the filesystem. No server, no network, no build step.
+Each lab's right rail reports the numbers it measured on YOUR machine — the table above is this host (WSL2, swiftshader, 1500×900).</div>
+</div>
+<script src="../../../templates/center/shell/example/codebase-graph-station/c4-graph.js"></script>
+<script src="feed.js"></script>
+<script>
+(function(){
+  var m = window.GABE_FEED.meta, f = document.getElementById('feed');
+  [['nodes',m.counts.nodes],['edges',m.counts.edges],['backend',m.counts.be],['frontend',m.counts.fe],
+   ['entity groups',m.counts.groups],['node kinds',Object.keys(m.nodeKinds).length],
+   ['edge kinds',Object.keys(m.edgeKinds).length],['c4 head',m.head]].forEach(function(p){
+    var b=document.createElement('b'); b.innerHTML=p[0]+' <i>'+p[1]+'</i>'; f.appendChild(b);
+  });
+})();
+</script></body></html>

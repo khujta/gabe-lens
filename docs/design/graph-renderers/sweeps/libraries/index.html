@@ -1,0 +1,308 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Sweep D · scale &amp; layout labs</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{ --bg:#0b0d10; --pane:#0f1216; --fg:#e6e8ea; --dim:#9aa1a9; --line:#22262c; --accent:#5aa9e6;
+       --ok:#6ec98a; --warn:#e0a24a; --bad:#e06a5a; }
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);
+  font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 22px 80px}
+h1{font-size:19px;margin:0 0 4px;letter-spacing:.01em}
+h1 span{color:var(--accent)}
+.sub{color:var(--dim);margin:0 0 22px;font-size:12.5px}
+h2{font-size:13px;letter-spacing:.10em;text-transform:uppercase;color:var(--dim);
+   margin:34px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:12px;margin:6px 0 4px}
+th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10.5px;border:1px solid var(--line)}
+.ok{color:var(--ok);border-color:#2c5f45} .warn{color:var(--warn);border-color:#6b4a1e}
+.bad{color:var(--bad);border-color:#6b2c25}
+.card{background:var(--pane);border:1px solid var(--line);border-radius:5px;padding:12px 14px;margin:8px 0}
+.card h3{margin:0 0 5px;font-size:13.5px}
+.card p{margin:5px 0;color:#c6ccd3}
+.card .meta{color:var(--dim);font-size:11.5px}
+code{background:#151a20;padding:1px 5px;border-radius:3px;color:#c9d6e2;font-size:11.5px}
+ul{margin:6px 0 6px 18px;padding:0} li{margin:3px 0;color:#c6ccd3}
+.scales a{display:inline-block;margin-right:4px;padding:1px 6px;border:1px solid var(--line);
+  border-radius:3px;color:var(--dim);font-size:11px}
+.lead{background:#0f1620;border-left:3px solid var(--accent);padding:11px 14px;margin:14px 0;color:#cfe3f2}
+.foot{color:var(--dim);font-size:11.5px;margin-top:34px;border-top:1px solid var(--line);padding-top:12px}
+</style></head><body><div class="wrap">
+
+<h1>Sweep D — <span>scale &amp; layout</span></h1>
+<p class="sub">Ten labs, one feed. Every page reads the committed example estate
+<code>templates/center/shell/example/codebase-graph-station/c4-graph.js</code> through one shared adapter
+(<code>_kit.js</code>), so what differs between labs is the library, never the input.
+Open any lab from <code>file://</code> — no server, no network.</p>
+
+<div class="lead">
+<b>The finding that reorders the question.</b> At 1,399 nodes this station is not renderer-bound.
+Every library here draws the graph. What they differ on is <em>when the layout is paid for</em> and
+<em>whether the 9 entity hulls are a first-class object</em>. graphviz <code>sfdp</code> lays out the whole
+estate in <b>550&nbsp;ms server-side</b> and the onyx-scale stand-in in <b>1.66&nbsp;s</b> — once, at emit
+time, next to the generator that already writes the feed. Every in-browser force layout in this sweep
+costs <b>1.8&nbsp;s to 12&nbsp;s of the reader's time on every page load</b> to reach a worse picture.
+</div>
+
+<h2>The four scales</h2>
+<table>
+<tr><th>scale</th><th class="n">nodes</th><th class="n">edges</th><th>what it is</th></tr>
+<tr><td><code>l1</code></td><td class="n">9</td><td class="n">36</td><td>the entity ring</td></tr>
+<tr><td><code>l2</code></td><td class="n">316</td><td class="n">1,174</td><td>+ 313 backend pieces, cross edges</td></tr>
+<tr><td><code>full</code></td><td class="n">1,404</td><td class="n">5,530</td><td>+ 1,077 frontend pieces, 3,228 fe edges, 11 home buckets — the real station</td></tr>
+<tr><td><code>onyx</code></td><td class="n">3,931</td><td class="n">15,080</td><td><code>full</code> &times;2.8, slug-preserving clones — stands in for the onyx study estate (~3.9k)</td></tr>
+</table>
+<p class="sub">The adapter also wires a join the feed already carries but the station does not draw:
+each <code>bridge</code> cross-edge names the fe <b>export</b> that fetched
+(<code>export: fe:&lt;file&gt;#&lt;hook&gt;</code>). Without it the backend and frontend are two
+disconnected components and every force layout flings them apart as two blobs.</p>
+
+<h2>Measured — <code>full</code> (1,404 / 5,530) and <code>onyx</code> (3,931 / 15,080)</h2>
+<p class="sub">One headless Chrome 144 pass per row, SwiftShader software rasterizer (no GPU), WSL2.
+"layout" is wall clock to a settled layout; "main-thread" is the page's own frame rate while that
+happens. Treat the software-render fps as a floor, not a verdict — but note it <em>is</em> the number
+our render gates see.</p>
+<table>
+<tr><th>lab</th><th>library</th><th class="n">layout @ full</th><th class="n">layout @ onyx</th>
+    <th class="n">main-thread</th><th>hulls</th><th>offline</th></tr>
+
+<tr><td><a href="./lab-d9-precomputed.html">9</a></td><td>graphviz <b>sfdp</b>, baked</td>
+    <td class="n"><b>0 ms</b> <span class="meta">(550 ms server)</span></td>
+    <td class="n"><b>0 ms</b> <span class="meta">(1,663 ms server)</span></td>
+    <td class="n">first draw 17 / 10 ms</td>
+    <td><span class="tag ok">sfdp clusters</span></td><td><span class="tag ok">total</span></td></tr>
+
+<tr><td><a href="./lab-d7-deckgl-graph.html">7</a></td><td>deck.gl GraphLayer <span class="meta">(our worker)</span></td>
+    <td class="n">1,028 ms<br><span class="meta">first paint 182 ms</span></td>
+    <td class="n">2,548 ms<br><span class="meta">first paint 228 ms</span></td>
+    <td class="n">60 fps</td><td><span class="tag warn">PolygonLayer</span></td>
+    <td><span class="tag bad">its own layouts: no</span></td></tr>
+
+<tr><td><a href="./lab-d2-d3force-worker.html">2</a></td><td>d3-force in a Blob Worker</td>
+    <td class="n">1,793 ms</td><td class="n">4,020 ms</td><td class="n">60 fps</td>
+    <td><span class="tag warn">drawn after</span></td><td><span class="tag ok">inlined</span></td></tr>
+
+<tr><td><a href="./lab-d8-webgpu-force.html">8</a></td><td>WebGPU compute (ours, no lib)</td>
+    <td class="n">14.9 ms/step</td><td class="n">55.6 ms/step</td><td class="n">60 fps</td>
+    <td><span class="tag ok">cluster force</span></td><td><span class="tag warn">costs a flag change</span></td></tr>
+
+<tr><td><a href="./lab-d3-ngraph-three.html">3</a></td><td>ngraph.forcelayout &rarr; three.js</td>
+    <td class="n">8,739 ms <span class="meta">(3D)</span></td><td class="n">19,620 ms</td>
+    <td class="n">60 / 30 fps</td><td><span class="tag ok">ConvexGeometry</span></td>
+    <td><span class="tag ok">yes</span></td></tr>
+
+<tr><td><a href="./lab-d4-forceatlas2.html">4</a></td><td>graphology + ForceAtlas2 worker</td>
+    <td class="n">9 s <span class="meta">(our cap)</span></td><td class="n">9 s <span class="meta">(our cap)</span></td>
+    <td class="n">60 fps</td><td><span class="tag warn">drawn after</span></td>
+    <td><span class="tag ok">self-shipping worker</span></td></tr>
+
+<tr><td><a href="./lab-d5-fcose.html">5</a></td><td>cytoscape + fcose</td>
+    <td class="n">5,259 ms<br><span class="meta">mount 344 ms</span></td>
+    <td class="n"><b>47,052 ms</b><br><span class="meta">blocks load for 48 s</span></td>
+    <td class="n">60 fps <span class="meta">after</span></td>
+    <td><span class="tag ok">compound nodes</span></td><td><span class="tag ok">yes</span></td></tr>
+
+<tr><td><a href="./lab-d1-cosmos.html">1</a></td><td>cosmos.gl GPU force</td>
+    <td class="n">continuous</td><td class="n">continuous</td>
+    <td class="n">15 / 6 fps <span class="meta">software</span></td>
+    <td><span class="tag ok">cluster force</span></td><td><span class="tag ok">yes</span></td></tr>
+
+<tr><td><a href="./lab-d6-cola-groups.html">6</a></td><td>WebCola constrained groups</td>
+    <td class="n"><b>did not converge</b><br><span class="meta">140 of 400 ticks in 60 s</span></td>
+    <td class="n">not attempted</td><td class="n">10 fps</td>
+    <td><span class="tag ok">group rectangles</span></td><td><span class="tag ok">yes</span></td></tr>
+
+<tr><td><a href="./lab-d10-lod-clustering.html">10</a></td><td>LOD strategies (no library)</td>
+    <td class="n">n/a</td><td class="n">n/a</td>
+    <td class="n">12.3 / 4.8 ms per frame</td><td><span class="tag ok">capsules</span></td>
+    <td><span class="tag ok">yes</span></td></tr>
+</table>
+<p class="sub">WebCola solves <code>l2</code> (316 nodes) in <b>10.5 s</b> and produces the best-looking
+architecture diagram in the sweep; at <code>full</code> it is still solving after a minute.
+The LOD lab's budget guard fires on its own at <code>onyx</code>: T3 folds to T2, 977 of 3,931 nodes
+drawn, 4.8 ms per frame.</p>
+
+<h2>Server-side bake — <code>bake-layout.py</code>, measured</h2>
+<table>
+<tr><th>engine</th><th class="n">9 / 36</th><th class="n">316 / 1,174</th><th class="n">1,404 / 5,530</th><th class="n">3,931 / 15,080</th></tr>
+<tr><td>graphviz <b>sfdp</b></td><td class="n">50 ms</td><td class="n">106 ms</td><td class="n"><b>550 ms</b></td><td class="n"><b>1,663 ms</b></td></tr>
+<tr><td>sfdp + <code>cluster_N</code></td><td class="n">11 ms</td><td class="n">93 ms</td><td class="n">619 ms</td><td class="n">1,585 ms</td></tr>
+<tr><td>graphviz neato <span class="meta">(sgd)</span></td><td class="n">10 ms</td><td class="n">284 ms</td><td class="n">6,529 ms</td><td class="n">16,284 ms</td></tr>
+<tr><td>networkx spring</td><td class="n">43 ms</td><td class="n">181 ms</td><td class="n">6,103 ms</td><td class="n">30,854 ms</td></tr>
+</table>
+<p class="sub">Re-run with <code>python3 bake-layout.py</code> in this directory (needs graphviz on PATH).
+Shipping cost of a baked layout, measured: one flat array of x/y rounded to one decimal is
+<b>18.8 KB raw / 7.9 KB gzipped</b> for the <code>full</code> estate and
+<b>53.3 KB / 22.2 KB</b> at <code>onyx</code> — against a feed that is already 1,188 KB.</p>
+
+<h2>The labs</h2>
+
+<div class="card"><h3><a href="./lab-d1-cosmos.html">1 — cosmos.gl</a>
+  <span class="scales" style="float:right"><a href="./lab-d1-cosmos.html?scale=l2">l2</a><a href="./lab-d1-cosmos.html?scale=full">full</a><a href="./lab-d1-cosmos.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">@cosmos.gl/graph 3.4.1 · MIT · OpenJS incubating · 681 KB IIFE (bundled from ESM)</p>
+<p>A GPU force layout where positions live in float textures and every force step is a shader pass.
+The feature that matters to us is <code>setPointClusters()</code> + <code>simulationCluster</code>: the
+9 entity hulls become a force the GPU enforces, not a polygon drawn afterwards.</p>
+<p><b>The licence trap:</b> the package you would reach for by name, <code>@cosmograph/cosmos</code>,
+went MIT at 2.0.0-beta.20 (2024-12-19) and <b>back to CC-BY-NC-4.0 at 3.4.0 (2026-07-30)</b>.
+The MIT continuation is <code>@cosmos.gl/graph</code>, under the OpenJS Foundation. Use that name.</p></div>
+
+<div class="card"><h3><a href="./lab-d2-d3force-worker.html">2 — d3-force in a Blob Worker</a>
+  <span class="scales" style="float:right"><a href="./lab-d2-d3force-worker.html?scale=l2">l2</a><a href="./lab-d2-d3force-worker.html?scale=full">full</a><a href="./lab-d2-d3force-worker.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">d3-force 3.0.0 · ISC · 15 KB bundled with its d3 deps</p>
+<p>The CPU baseline, and the cheapest possible change to what we ship today. The
+<b><code>file://</code> constraint every worker option inherits</b> is proven here: a worker
+cannot <code>fetch()</code>, <code>importScripts()</code> or load a relative path from an opaque
+origin. The solver ships <em>inside the page</em> as inlined worker source text, or not at all.</p></div>
+
+<div class="card"><h3><a href="./lab-d3-ngraph-three.html">3 — ngraph.forcelayout &rarr; raw three.js</a>
+  <span class="scales" style="float:right"><a href="./lab-d3-ngraph-three.html?scale=l2">l2</a><a href="./lab-d3-ngraph-three.html?scale=full">full</a><a href="./lab-d3-ngraph-three.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">ngraph.forcelayout 3.3.1 · BSD-3 · 37 KB + our existing 1.6 MB 3d-bundle</p>
+<p>Layout engine and renderer fully separated: ngraph owns positions only (n-dimensional — the same
+solver does 2D, 3D or higher), and every pixel is ours. 1,404 nodes and 5,530 edges in <b>two draw
+calls</b> (<code>THREE.Points</code> + <code>THREE.LineSegments</code>) plus a real
+<code>ConvexGeometry</code> hull per entity. This is the direct answer to "is raw three.js viable"
+from the layout side: yes, and we own the clock, which <code>3d-force-graph</code> currently does not
+let us do.</p>
+<p><b>A vendoring trap found here:</b> ngraph.forcelayout picks its default node-mass function off
+<code>graph.version&nbsp;&gt;&nbsp;19</code>; the vendored UMD build of ngraph.graph does not carry
+that marker, so it reads <code>.length</code> on a <code>Set</code> and throws
+<em>"Node mass should be a number"</em> on the first step. Own the function.</p></div>
+
+<div class="card"><h3><a href="./lab-d4-forceatlas2.html">4 — graphology + ForceAtlas2</a>
+  <span class="scales" style="float:right"><a href="./lab-d4-forceatlas2.html?scale=l2">l2</a><a href="./lab-d4-forceatlas2.html?scale=full">full</a><a href="./lab-d4-forceatlas2.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">graphology 0.26.0 + graphology-layout-forceatlas2 0.10.1 · MIT · 74 + 19 KB</p>
+<p>ForceAtlas2 separates communities harder than d3-force does, which is what a 9-entity map wants:
+territories, not a hairball with colours in it. It is also <b>the only off-thread layout in this sweep
+that works from <code>file://</code> with nothing inlined by us</b> — its worker is built from a Blob of
+a stringified function.</p>
+<p><b>There is no WebGL/GPU ForceAtlas2.</b> The package ships one worker utility and it is a plain CPU web worker with Barnes-Hut (O(n&nbsp;log&nbsp;n)); the upstream docs mention no GPU path, present or planned. What is WebGL in this stack is sigma's <em>renderer</em>, not the layout.</p><p><b>Cost noted:</b> graphology is a simple graph by default; 121 parallel edges (363 at <code>onyx</code>) are silently dropped on this feed. <b>Maintenance:</b> FA2 last shipped 0.10.1 in 2022-10 and an 0.11.0-rc1 has sat since 2024-11, but the graphology monorepo is active (1.7k&nbsp;stars, pushed 2026-09-02) and core shipped 0.26.0 on 2025-01-26.</p></div>
+
+<div class="card"><h3><a href="./lab-d5-fcose.html">5 — cytoscape + fcose</a>
+  <span class="scales" style="float:right"><a href="./lab-d5-fcose.html?scale=l2">l2</a><a href="./lab-d5-fcose.html?scale=full">full</a><a href="./lab-d5-fcose.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">cytoscape 3.34.2 + cytoscape-fcose 2.2.0 · MIT · 435 + 126 KB</p>
+<p>The only option where the 9 hulls have an <b>identity</b>: cytoscape compound nodes are real parents
+that own their children, that the layout keeps its children inside, and that you can collapse, drag and
+style. Everything else in this sweep draws a polygon after the fact.</p>
+<p><b>The cost is the model:</b> one JS object per element with per-element hit-testing. Model build is 4-8 ms and mount 344-779 ms, but fcose itself takes <b>5.3 s at <code>full</code></b> and <b>47.1 s at <code>onyx</code></b> &mdash; and it blocks the main thread so completely that <code>DOMContentLoaded</code> does not fire for 48 s. cytoscape-fcose last shipped 2.2.0 in 2023-01 (repo pushed 2026-04-17); cytoscape itself is very much alive &mdash; 3.34.2 on 2026-08-25, 11.2k&nbsp;stars. The algorithm is Balci &amp; Dogrusoz, IEEE TVCG 2022.</p></div>
+
+<div class="card"><h3><a href="./lab-d6-cola-groups.html">6 — WebCola constrained groups</a>
+  <span class="scales" style="float:right"><a href="./lab-d6-cola-groups.html?scale=l2">l2</a><a href="./lab-d6-cola-groups.html?scale=full">full</a></span></h3>
+<p class="meta">webcola 3.4.0 · MIT · 79 KB · 2.1k&nbsp;stars · <b>last npm publish 2019-05-10</b> · repo still pushed 2026-04-30</p>
+<p>Groups as a hard constraint: hand it <code>groups: [{leaves, padding}]</code> and constrained stress
+majorization produces guaranteed non-overlapping group rectangles. It also ships
+<code>flowLayout('y', gap)</code>, which is the shape a request path actually has. The <code>l2</code>
+result is the best-looking architecture diagram in the sweep.</p>
+<p><b>And it is the slowest by an order:</b> 10.5 s for 316 nodes on the main thread, and at <code>full</code> it had completed 140 of a 400-tick budget after <b>60 s</b> without converging. Nothing has been RELEASED in six years, though the repo still takes the odd commit &mdash; which is the distinction worth carrying: dormant on npm, not abandoned on GitHub. A layout for hundreds of nodes with good constraints, not thousands.</p></div>
+
+<div class="card"><h3><a href="./lab-d7-deckgl-graph.html">7 — deck.gl graph-layers</a>
+  <span class="scales" style="float:right"><a href="./lab-d7-deckgl-graph.html?scale=l2">l2</a><a href="./lab-d7-deckgl-graph.html?scale=full">full</a><a href="./lab-d7-deckgl-graph.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">deck.gl 9.3.11 + @deck.gl-community/graph-layers 9.3.9 · MIT · 1.73 MB IIFE</p>
+<p><b>Its layouts are disqualified, verified in the shipped source.</b> Both force layouts build their
+worker from <code>new URL('./worker.js', import.meta.url)</code> — dead under <code>file://</code> and
+dead in any bundle — and the workers <code>importScripts()</code> over the network:
+<code>https://d3js.org/d3-force.v1.min.js</code> (d3 <b>v1</b>) and
+<code>https://cdn.jsdelivr.net/npm/gpu.js@latest/…</code>. <code>GPUForceLayout</code> then runs
+<code>new GPU.GPU({mode: 'cpu'})</code> beside a <code>// FIXME remove cpu mode</code>. It is not a GPU
+layout; it downloads a GPU library to not use it. <code>JSONGraphLoader.parseTextSync</code> throws
+"not implemented". The repo describes itself as "semi-maintained".</p>
+<p>So this lab drives <code>SimpleLayout</code> from our own worker and tests only the RENDERER — where
+deck.gl is genuinely good: first paint <b>182 ms</b> and a settled layout in 1.0 s at <code>full</code>, 228 ms / 2.5 s at <code>onyx</code>, 60 fps throughout, and PolygonLayer/TextLayer compose in the same view for hulls and labels.</p></div>
+
+<div class="card"><h3><a href="./lab-d8-webgpu-force.html">8 — WebGPU compute-shader force layout</a>
+  <span class="scales" style="float:right"><a href="./lab-d8-webgpu-force.html?scale=l2">l2</a><a href="./lab-d8-webgpu-force.html?scale=full">full</a><a href="./lab-d8-webgpu-force.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">no library · one WGSL kernel · ~200 lines</p>
+<p>Tiled n-body repulsion in workgroup shared memory, springs over a CSR adjacency, integrate — the
+GraphWaGu structure, written directly. It answers "do we need a GPU-layout dependency at all": on this
+evidence, no. There is no WebGPU force-layout library worth depending on yet
+(<code>d3-force-webgpu</code> 4&nbsp;stars / 8&nbsp;commits; <code>GraphGPU</code> 34&nbsp;stars, new in 2026;
+GraphWaGu is EGPGV 2022 research code).</p>
+<p><b>The cost we would actually pay is our own test harness.</b> <code>file://</code> IS a secure
+context, so <code>navigator.gpu</code> exists there. But under this repo's headless flags
+(<code>--use-angle=swiftshader --enable-unsafe-swiftshader</code>) <code>requestAdapter()</code>
+returns <b>null</b>. Adding <code>--use-webgpu-adapter=swiftshader --enable-unsafe-webgpu
+--enable-features=Vulkan</code> brings adapter and device up. Adopt WebGPU and every
+<code>tests/&lt;battery&gt;/run.sh</code> render proof must change, or it goes quietly blind.</p></div>
+
+<div class="card"><h3><a href="./lab-d9-precomputed.html">9 — precomputed server-side layout</a>
+  <span class="scales" style="float:right"><a href="./lab-d9-precomputed.html?scale=l2">l2</a><a href="./lab-d9-precomputed.html?scale=full">full</a><a href="./lab-d9-precomputed.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">graphviz sfdp / neato · EPL-1.0 · networkx · BSD-3 · <b>0 KB client</b></p>
+<p>A codebase map is not a live dataset. It changes when the code changes, and the generators already
+regenerate it. So the layout moves to the emitter: <code>bake-layout.py</code> runs sfdp once and writes
+two floats per node into the feed. Client layout cost becomes zero; first draw is 17 ms.</p>
+<p>What you give up is response — a baked layout cannot react to an expand or a filter. The lab's
+"live relax" switch shows the honest hybrid: baked positions as the SEED plus a short <em>local</em>
+relax (grid-bucketed repulsion + CSR springs, no global n-body), because a good layout only has to be
+fixed where the interaction disturbed it.</p></div>
+
+<div class="card"><h3><a href="./lab-d10-lod-clustering.html">10 — LOD, capsules, bundling, label budget</a>
+  <span class="scales" style="float:right"><a href="./lab-d10-lod-clustering.html?scale=l2">l2</a><a href="./lab-d10-lod-clustering.html?scale=full">full</a><a href="./lab-d10-lod-clustering.html?scale=onyx">onyx</a></span></h3>
+<p class="meta">no library · strategy lab, over lab 9's baked positions</p>
+<p>At this size the station is legibility-bound, not renderer-bound. Four moves, each on a switch,
+each with its cost printed live:</p>
+<ul>
+<li><b>disclosure tiers</b> — 20 capsules / +9 entities / +313 backend / +1,077 frontend; the station's
+existing T0–T3, priced</li>
+<li><b>budget guard</b> — <code>window.__uniBudget = 1600</code> made adjustable, so the threshold can be
+argued about with a number</li>
+<li><b>edge aggregation</b> — 5,530 edges collapse to ~60 weighted inter-group wires; exact, cheap,
+reversible. Force-directed edge bundling (Holten 2006) is prettier and O(E²) per iteration and buys
+nothing an aggregate does not</li>
+<li><b>label LOD</b> — rank by degree, collision-test in screen space, redo on zoom; labels are the real
+budget, not nodes</li>
+</ul></div>
+
+<h2>What each option costs to vendor</h2>
+<table>
+<tr><th>bundle</th><th class="n">size</th><th>shipped as</th><th>how it got here</th></tr>
+<tr><td>deck.gl + graph-layers</td><td class="n">1.73 MB</td><td>ESM</td><td>esbuild &rarr; IIFE</td></tr>
+<tr><td>cosmos.gl</td><td class="n">681 KB</td><td>ESM only</td><td>esbuild &rarr; IIFE</td></tr>
+<tr><td>cytoscape</td><td class="n">435 KB</td><td>UMD shipped</td><td>copied</td></tr>
+<tr><td>cytoscape-fcose</td><td class="n">126 KB</td><td>UMD + peer</td><td>esbuild &rarr; IIFE</td></tr>
+<tr><td>webcola</td><td class="n">79 KB</td><td>CJS</td><td>esbuild &rarr; IIFE</td></tr>
+<tr><td>graphology</td><td class="n">74 KB</td><td>UMD shipped</td><td>copied</td></tr>
+<tr><td>ngraph.forcelayout + ngraph.graph</td><td class="n">37 + 21 KB</td><td>UMD shipped</td><td>copied</td></tr>
+<tr><td>graphology-layout-forceatlas2</td><td class="n">19 KB</td><td>CJS</td><td>esbuild &rarr; IIFE</td></tr>
+<tr><td>d3-force + deps</td><td class="n">15 KB</td><td>ESM</td><td>esbuild &rarr; IIFE, inlined in-page</td></tr>
+<tr><td>WebGPU kernel / LOD lab / baked layout</td><td class="n">0 KB</td><td>—</td><td>ours</td></tr>
+</table>
+<p class="sub"><b>An ESM-only package cannot be loaded from <code>file://</code> at all.</b> Verified
+directly: <code>&lt;script type="module" src="./mod.js"&gt;</code> from a <code>file://</code> page gives
+<em>"Access to script at 'file:///…' from origin 'null' has been blocked by CORS policy"</em> and the
+module never runs. Every modern graph library now ships ESM-first, so "vendorable offline" means
+"we run esbuild on it", not "we copy a dist file" — a build step this repo does not have yet. The same
+opaque origin blocks a Worker's <code>fetch()</code>, <code>importScripts()</code> and relative
+<code>new Worker('./w.js')</code>, which is why every off-thread layout here either inlines its solver
+into the page or ships its worker as a stringified Blob.</p>
+
+<h2>Not labbed, and why</h2>
+<div class="card"><h3>Graphistry</h3>
+<p class="meta">pygraphistry BSD-3 · the renderer is not open</p>
+<p>The visualization is a <b>hosted GPU service</b> (Graphistry Hub) or a self-hosted GPU server via
+Docker/Kubernetes; the Python client is open source, the GPU renderer is the product. Every page is an
+iframe against a server. That is disqualifying twice over here: our pages open from <code>file://</code>
+with no network, and a codebase map is not something to send to someone else's cluster.</p></div>
+
+<h2>Re-running any of this</h2>
+<table>
+<tr><th>what</th><th>how</th></tr>
+<tr><td>open a lab</td><td><code>google-chrome docs/design/graph-libraries/labs/index.html</code> — file://, no server</td></tr>
+<tr><td>a different scale</td><td>append <code>?scale=l1|l2|full|onyx</code>, or use the pills in the bar</td></tr>
+<tr><td>re-bake the layouts</td><td><code>cd docs/design/graph-libraries/labs &amp;&amp; python3 bake-layout.py</code> (needs <code>sfdp</code> on PATH)</td></tr>
+<tr><td>re-vendor a bundle</td><td><code>npm i &lt;pkg&gt; &amp;&amp; npx esbuild entry.js --bundle --format=iife --minify --outfile=vendor/&lt;name&gt;.iife.min.js</code></td></tr>
+<tr><td>headless proof</td><td>system chrome + <code>docs/design/graft-adoption/spike/_build/node_modules/playwright-core</code>, the same pair <code>tests/gabe-universe/run.sh</code> uses</td></tr>
+<tr><td>WebGPU headless</td><td>add <code>--use-webgpu-adapter=swiftshader --enable-unsafe-webgpu --enable-features=Vulkan</code>, or lab 8 silently runs its CPU fallback</td></tr>
+</table>
+
+<p class="foot">Every number on this page was measured on this machine — Chrome 144 headless,
+SwiftShader software rasterizer, WSL2 — against the committed example feed at head
+<code>afb646c9</code>. Software-render fps is a floor, not a verdict. Layout wall-clock varies
+±2× run to run under load; the table reports one sequential single-browser pass.
+Vendored bundles live in <code>./vendor/</code>; the bake script is <code>./bake-layout.py</code>.</p>
+
+</div></body></html>

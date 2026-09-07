@@ -1,0 +1,38 @@
+html,body{margin:0;height:100%;background:#0b0e13;color:#e6edf3;
+  font:12px/1.45 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+canvas{display:block}
+#g{position:absolute;inset:0}
+.lab-panel{position:absolute;top:10px;left:10px;width:300px;z-index:20;
+  background:rgba(13,17,23,.92);border:1px solid #232a35;border-radius:10px;padding:10px 11px;
+  backdrop-filter:blur(6px);max-height:calc(100% - 20px);overflow:auto}
+.lp-h{font-size:14px;letter-spacing:.02em;margin-bottom:4px}
+.lp-h b{font-weight:650}
+.lp-v{color:#7d8794;font-size:11px;margin-left:4px}
+.lp-meta{display:flex;gap:12px;color:#7d8794;font-size:11px;margin-bottom:8px}
+.lp-meta b{color:#c9d3de;font-weight:600}
+.lp-hud{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:11px;
+  border-top:1px solid #232a35;border-bottom:1px solid #232a35;padding:6px 0;margin-bottom:8px}
+.lp-hud>div{display:flex;justify-content:space-between}
+.lp-hud span{color:#7d8794}
+.lp-hud b{color:#e6edf3;font-variant-numeric:tabular-nums;font-weight:600}
+.lp-list{display:flex;flex-direction:column;gap:3px}
+.lp-row{display:grid;grid-template-columns:8px 1fr;gap:6px;align-items:start;font-size:11px}
+.lp-dot{width:7px;height:7px;border-radius:50%;margin-top:4px}
+.lp-row.free .lp-dot{background:#22c55e}
+.lp-row.build .lp-dot{background:#f59e0b}
+.lp-row.na .lp-dot{background:#8b3a3a}
+.lp-k{color:#c9d3de}
+.lp-d{grid-column:2;color:#7d8794;font-size:10.5px}
+.lp-verdict{margin-top:9px;padding-top:8px;border-top:1px solid #232a35;color:#9aa5b1;font-size:11px}
+.lp-verdict b{color:#e6edf3}
+.lab-tip{position:absolute;z-index:30;pointer-events:none;background:#11161d;border:1px solid #2b3441;
+  border-radius:7px;padding:6px 9px;font-size:11px;max-width:340px;box-shadow:0 6px 22px #0009;display:none}
+.lab-tip b{display:block;color:#fff;font-size:12px;margin-bottom:2px}
+.lab-tip i{color:#7d8794;font-style:normal}
+.lab-legend{position:absolute;right:10px;bottom:10px;z-index:20;background:rgba(13,17,23,.9);
+  border:1px solid #232a35;border-radius:9px;padding:8px 10px;font-size:10.5px;color:#9aa5b1;max-width:260px}
+.lab-legend b{color:#e6edf3;display:block;margin-bottom:4px;font-size:11px}
+.lab-scale{position:absolute;top:10px;right:10px;z-index:20;display:flex;gap:4px}
+.lab-scale a{background:rgba(13,17,23,.9);border:1px solid #232a35;border-radius:6px;
+  padding:4px 8px;color:#9aa5b1;text-decoration:none;font-size:11px}
+.lab-scale a.on{border-color:#3b82f6;color:#e6edf3}

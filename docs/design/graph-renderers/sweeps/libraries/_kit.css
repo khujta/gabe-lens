@@ -1,0 +1,23 @@
+/* Sweep D lab chrome — deliberately plain: the labs are instruments, not pages. */
+:root{ --bg:#0b0d10; --fg:#e6e8ea; --dim:#9aa1a9; --line:#22262c; --accent:#5aa9e6; }
+*{ box-sizing:border-box; }
+html,body{ margin:0; height:100%; background:var(--bg); color:var(--fg);
+  font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; overflow:hidden; }
+.labbar{ position:fixed; inset:0 0 auto 0; height:34px; display:flex; align-items:center; gap:10px;
+  padding:0 12px; background:#0f1216; border-bottom:1px solid var(--line); z-index:50; font-size:12px; }
+.labbar b{ color:var(--fg); font-weight:600; }
+.labbar .lib{ color:var(--accent); }
+.labbar .lic,.labbar .sz{ color:var(--dim); }
+.labbar .grow{ flex:1; }
+.labbar .scales a{ color:var(--dim); text-decoration:none; padding:2px 7px; border:1px solid var(--line);
+  border-radius:3px; margin-left:4px; }
+.labbar .scales a.on{ color:#0b0d10; background:var(--accent); border-color:var(--accent); }
+.labbar .home{ color:var(--dim); text-decoration:none; margin-left:12px; border-bottom:1px dotted var(--dim); }
+.labhud{ position:fixed; left:12px; bottom:12px; z-index:50; background:rgba(15,18,22,.9);
+  border:1px solid var(--line); border-radius:4px; padding:8px 10px; max-width:min(560px,60vw);
+  font-size:12px; line-height:1.6; pointer-events:none; }
+.labhud b{ color:var(--accent); }
+.labhud #hudnote{ color:var(--dim); margin-top:4px; }
+#stage{ position:fixed; inset:34px 0 0 0; }
+canvas{ display:block; }
+.err{ position:fixed; inset:34px 0 auto 0; padding:16px; color:#ff8080; white-space:pre-wrap; z-index:60; }

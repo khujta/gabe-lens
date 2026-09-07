@@ -1,0 +1,113 @@
+{
+ "when": "measured on this machine",
+ "scale": 3,
+ "webgpuFlags": false,
+ "rows": [
+  {
+   "lab": "lab-d3-worker.html",
+   "ok": true,
+   "lib": "d3-force-worker",
+   "nodes": 4152,
+   "edges": 12239,
+   "groups": 20,
+   "layoutMs": 4804,
+   "settleMs": 4804,
+   "drawMs": 3.1,
+   "fps": 60,
+   "bootMs": 7506,
+   "shotKb": 508,
+   "network": [],
+   "notes": [],
+   "errors": []
+  },
+  {
+   "lab": "lab-fa2-worker.html",
+   "ok": true,
+   "lib": "forceatlas2-worker",
+   "nodes": 4152,
+   "edges": 12239,
+   "groups": 20,
+   "layoutMs": 8552,
+   "settleMs": 8552,
+   "drawMs": 2.7,
+   "fps": 60,
+   "bootMs": 11255,
+   "shotKb": 971,
+   "network": [],
+   "notes": [],
+   "errors": []
+  },
+  {
+   "lab": "lab-ngraph-3d.html",
+   "ok": true,
+   "lib": "ngraph.forcelayout",
+   "nodes": 4152,
+   "edges": 12239,
+   "groups": 20,
+   "layoutMs": 4137,
+   "settleMs": 4137,
+   "drawMs": 1.3,
+   "fps": 9,
+   "bootMs": 8872,
+   "shotKb": 830,
+   "network": [],
+   "notes": [],
+   "errors": []
+  },
+  {
+   "lab": "lab-lod-aggregate.html",
+   "ok": true,
+   "lib": "lod-aggregate",
+   "nodes": 4152,
+   "edges": 12239,
+   "groups": 20,
+   "layoutMs": null,
+   "settleMs": null,
+   "drawMs": 0.4,
+   "fps": 60,
+   "bootMs": 3766,
+   "shotKb": 239,
+   "network": [],
+   "notes": [],
+   "errors": []
+  },
+  {
+   "lab": "lab-cosmos-layout.html",
+   "ok": true,
+   "lib": "cosmos.gl-layout",
+   "nodes": 4152,
+   "edges": 12239,
+   "groups": 20,
+   "layoutMs": 5019,
+   "settleMs": null,
+   "drawMs": 6.1,
+   "fps": 60,
+   "bootMs": 7589,
+   "shotKb": 300,
+   "network": [],
+   "notes": [
+    "getPointPositions() returned 4152 points in 0.70 ms"
+   ],
+   "errors": []
+  },
+  {
+   "lab": "lab-webgpu-force.html",
+   "ok": true,
+   "lib": "webgpu-compute",
+   "nodes": 4152,
+   "edges": 12239,
+   "groups": 20,
+   "layoutMs": null,
+   "settleMs": null,
+   "drawMs": 2.1,
+   "fps": 60,
+   "bootMs": 15221,
+   "shotKb": 872,
+   "network": [],
+   "notes": [
+    "navigator.gpu present but requestAdapter() returned null"
+   ],
+   "errors": []
+  }
+ ]
+}

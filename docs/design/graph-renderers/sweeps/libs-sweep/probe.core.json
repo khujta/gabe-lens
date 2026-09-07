@@ -1,0 +1,17 @@
+[
+  {
+    "lab": "lab-b2-three-raw.html",
+    "ok": true,
+    "ms": 6291,
+    "nodes": 316,
+    "links": 1174,
+    "fps": 20,
+    "frame": 49.05,
+    "draws": 3,
+    "boot": 0.5,
+    "layout": 3562,
+    "ink": 0.0219,
+    "gl": "webgl2",
+    "errs": []
+  }
+]

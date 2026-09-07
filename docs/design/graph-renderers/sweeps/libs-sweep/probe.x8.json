@@ -1,0 +1,17 @@
+[
+  {
+    "lab": "lab-b7-regl.html",
+    "ok": true,
+    "ms": 10657,
+    "nodes": 11144,
+    "links": 35223,
+    "fps": 5,
+    "frame": 218.07,
+    "draws": 2,
+    "boot": 0.5,
+    "layout": null,
+    "ink": 0.0356,
+    "gl": "webgl1",
+    "errs": []
+  }
+]

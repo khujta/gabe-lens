@@ -1,0 +1,198 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>graph-library labs</title>
+<link rel="stylesheet" href="lab-shell.css">
+<style>
+  body{overflow:auto;background:var(--bg)}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 22px 70px}
+  h1{font:650 21px var(--sans);margin:0 0 3px}
+  .sub{color:var(--dim);font-size:12.5px;margin-bottom:20px;line-height:1.6}
+  .sub code{font:11px var(--mono);color:var(--acc)}
+  h2{font:600 13px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+     margin:26px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  table{border-collapse:collapse;width:100%;font:11.5px var(--mono)}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font:600 10.5px var(--sans);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr:hover td{background:#161b2255}
+  a.lab{color:var(--acc);text-decoration:none;font-weight:600}
+  a.lab:hover{text-decoration:underline}
+  .good{color:var(--ok)} .mid{color:var(--warn)} .bad{color:var(--bad)}
+  .tag{display:inline-block;font:10px var(--mono);padding:1px 5px;border-radius:3px;
+       border:1px solid var(--line);color:var(--dim);margin-right:3px}
+  .tag.yes{border-color:#238636;color:var(--ok)}
+  .tag.no{border-color:#6e2f2f;color:#c96}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 13px;background:var(--panel)}
+  .card h3{margin:0 0 3px;font:600 14px var(--sans)}
+  .card h3 a{color:var(--ink);text-decoration:none}
+  .card h3 a:hover{color:var(--acc)}
+  .card .m{font:10.5px var(--mono);color:var(--dim);margin-bottom:7px}
+  .card p{margin:0;font-size:11.5px;line-height:1.55;color:#adbac7}
+  .card img{width:100%;border:1px solid var(--line);border-radius:5px;margin-top:9px;display:block}
+  .note{border-left:3px solid var(--warn);background:#161b22;padding:10px 13px;border-radius:5px;
+        font-size:12px;line-height:1.6;color:#adbac7;margin:14px 0}
+  .note b{color:var(--ink)}
+  ul{font-size:12px;line-height:1.65;color:#adbac7;padding-left:20px}
+  code{font:11px var(--mono);color:var(--acc)}
+</style>
+<body>
+<div class="wrap">
+<h1>Graph-library labs — Sweep A (2D)</h1>
+<div class="sub">
+  Seven candidate libraries, one feed, one chrome. Every lab loads
+  <code>lab-feed.js</code> — <b>1,384 nodes · 4,053 edges · 20 entity groups</b>,
+  derived by <code>build-feed.py</code> from the committed example estate
+  (<code>templates/center/shell/example/codebase-graph-station/c4-graph.js</code>) —
+  and renders it with nothing but a vendored local bundle. No CDN, no network,
+  opens from <code>file://</code>.
+</div>
+
+<div class="note">
+  <b>Read the FPS column as a RANK, not a rating.</b> Every number below was
+  measured by <code>probe.mjs</code> under system Chrome with
+  <code>--use-gl=swiftshader</code> — software GL, no GPU. That is the same
+  handicap for all seven, so the ordering is meaningful; the absolute numbers
+  on a machine with a GPU will be several times higher, and the WebGL labs
+  gain the most from that.
+  <br><br>
+  <b>A green boot is not a render.</b> During this sweep the sigma lab reported
+  60 fps with <code>afterRender</code> firing 90 times over 86 frames — while
+  drawing nothing at all. Only the screenshot caught it. So
+  <code>probe.mjs</code> photographs every stage, fails a lab whose PNG is
+  smaller than a blank page compresses to, and retries once when a draw looks
+  suspiciously empty. Trust the pictures below, not the events.
+  <br><br>
+  <b>Scale:</b> add <code>?dup=N</code> to any lab (or
+  <code>node probe.mjs --dup=3</code>) to replicate the whole feed N times —
+  ×3 is 4,152 nodes / 12,159 edges, past the onyx estate's ~3.9k.
+</div>
+
+<h2>measured on this machine</h2>
+<div id="table">loading probe-results.json …</div>
+
+<h2>×3 scale run — 4,152 nodes · 12,159 edges · 60 groups</h2>
+<div class="sub">Past the onyx estate's ~3.9k. Same probe, <code>--dup=3</code>.
+Read the ratios, not the absolutes: a sibling sweep was also driving headless
+Chrome for part of this run, so these are a floor.</div>
+<div id="scale">—</div>
+
+<h2>what each lab is actually testing</h2>
+<div class="cards" id="cards"></div>
+
+<h2>ruled out without a lab</h2>
+<ul>
+  <li><b>react-flow / xyflow</b> (MIT, 38.3k★, v12.11.6) — a <i>node editor</i>:
+      every node is a React DOM element, which is why it wins at custom node UI
+      and loses at 1,384 of them. Its own discussions recommend a canvas
+      renderer past ~100 nodes. Wrong instrument: we render a map, not an editor.</li>
+  <li><b>Konva</b> (MIT, 14.8k★) — a 2D canvas scene graph with no graph model,
+      no layout, and no picking beyond shape hit-tests. Everything the
+      d3-force + PixiJS lab hand-writes, you would hand-write again with less
+      GPU batching. PixiJS covers this branch.</li>
+  <li><b>Graphistry</b> — GPU rendering, but server-side: the client streams
+      frames/data from a Graphistry server. Incompatible with a
+      <code>file://</code> page that must open with no network.</li>
+  <li><b>KeyLines / Ogma / yFiles</b> — commercial, per-developer licences
+      (yFiles list price starts at $17,000/developer/year; KeyLines and Ogma
+      are quote-only). All three are excellent and all three fail the same
+      test: the suite ships these pages inside other people's repos.</li>
+  <li><b>@cosmograph/cosmos</b> — <b>CC-BY-NC-4.0, non-commercial</b>. Do not
+      vendor it. The lab below uses <code>@cosmos.gl/graph</code>, the OpenJS
+      Foundation fork of the same engine, which is MIT.</li>
+</ul>
+
+<h2>how to re-run</h2>
+<ul>
+  <li><code>python3 build-feed.py</code> — regenerate <code>lab-feed.js</code>
+      from the example estate (deterministic; byte-identical on an unchanged source).</li>
+  <li><code>node probe.mjs</code> — boot every lab under headless Chrome, assert
+      no network request leaves the page, screenshot the stage as render proof,
+      write <code>probe-results.json</code> and <code>shots/</code>.</li>
+  <li><code>node probe.mjs lab-sigma.html</code> — one lab.</li>
+</ul>
+</div>
+
+<script>
+var BLURB = {
+  'lab-sigma.html': 'The WebGL renderer + graphology as a real graph model. Hulls are NOT sigma’s — they are a convex hull the lab paints on a sigma <code>createCanvas</code> layer and reprojects every frame. Labels ARE sigma’s: a grid-based collision solver, the best built-in label handling in the sweep.',
+  'lab-cytoscape.html': 'Compound parents make every entity a real graph node that OWNS its children — layout, selection and collapse all understand it. fCoSE/cola/dagre swap at runtime. The catch is visible in the screenshot: at this density fCoSE’s compound boxes overlap heavily.',
+  'lab-visnetwork.html': 'Physics-first Canvas. No hull primitive at all: the grouping idiom is <code>cluster()</code>, which REPLACES members with one meta-node. <code>improvedLayout:false</code> is mandatory at this size — the Kamada-Kawai pre-pass is what hangs the tab.',
+  'lab-g6.html': 'Combos are G6’s hull: first-class, collapsible, layout-aware. Biggest bundle in the sweep (1.35 MB). Sharp edge found in this lab: <code>lineDash:false</code> throws inside the renderer — it must be an array.',
+  'lab-echarts.html': 'A chart library with a graph series. No graph API, no compound nodes; <code>categories</code> is colour + a legend filter, nothing more. What it uniquely has: <code>labelLayout:{hideOverlap}</code>, a genuine label-collision pass, and <code>path://</code> SVG symbols.',
+  'lab-d3-pixi.html': 'The build-it-yourself stack. Hulls come OUT of the layout (per-entity forceX/forceY anchors) instead of being drawn over it; glyphs are a generated Pixi texture atlas; labels and hit-testing are hand-written (~180 lines). Maximum control, maximum ownership.',
+  'lab-cosmos.html': 'Layout AND rendering in shaders — nothing crosses to JS per frame. <code>setPointClusters</code> makes entity grouping a real GPU force. You give up labels, hulls, and DOM entirely; picking is an index callback.',
+  'lab-vivagraph.html': 'The floor, not a candidate: last npm release 2019-10-27, no types, no hulls, no labels. Kept because it shows what a bare WebGL graph renderer costs and delivers.'
+};
+var ORDER = ['lab-sigma.html','lab-cosmos.html','lab-cytoscape.html','lab-g6.html',
+             'lab-echarts.html','lab-d3-pixi.html','lab-visnetwork.html','lab-vivagraph.html'];
+
+function cls(v, good, mid) { return v >= good ? 'good' : v >= mid ? 'mid' : 'bad'; }
+function render(rows) {
+  var by = {}; rows.forEach(function (r) { by[r.lab] = r; });
+  var out = ['<table><thead><tr>' +
+    '<th>lab</th><th>tech</th><th class="n">layout ms</th><th class="n">1st paint ms</th>' +
+    '<th class="n">pan fps</th><th class="n">frame p95</th><th class="n">vendored kb</th>' +
+    '<th>grouping</th><th>labels</th></tr></thead><tbody>'];
+  ORDER.forEach(function (k) {
+    var r = by[k]; if (!r || !r.result) return;
+    var x = r.result, a = x.api || {};
+    out.push('<tr><td><a class="lab" href="' + k + '">' + x.lab + '</a></td>' +
+      '<td>' + (x.tech || '') + '</td>' +
+      '<td class="n">' + Math.round(x.marks && x.marks.layout || 0) + '</td>' +
+      '<td class="n">' + Math.round(x.marks && x.marks.paint || 0) + '</td>' +
+      '<td class="n ' + cls(x.fps, 25, 14) + '">' + x.fps + '</td>' +
+      '<td class="n">' + x.p95Ms + '</td>' +
+      '<td class="n">' + x.bundleKb + '</td>' +
+      '<td>' + (a.hulls || '') + '</td>' +
+      '<td>' + (a.labels || '') + '</td></tr>');
+  });
+  out.push('</tbody></table>');
+  document.getElementById('table').innerHTML = out.join('');
+
+  document.getElementById('cards').innerHTML = ORDER.map(function (k) {
+    var r = by[k]; if (!r || !r.result) return '';
+    var x = r.result;
+    return '<div class="card"><h3><a href="' + k + '">' + x.lab + '</a></h3>' +
+      '<div class="m">' + x.version + ' · ' + x.nodes + ' nodes · ' + x.edges + ' edges' +
+      (x.groups ? ' · ' + x.groups + ' groups' : '') + '</div>' +
+      '<p>' + (BLURB[k] || '') + '</p>' +
+      '<a href="shots/' + k.replace('.html', '.png') + '"><img src="shots/' +
+      k.replace('.html', '.png') + '" alt="' + x.lab + ' render" loading="lazy"></a></div>';
+  }).join('');
+}
+
+// probe-results.json cannot be fetch()ed from file://, so the probe also writes
+// probe-results.js (the same rows as a global). That script tag sits BELOW this
+// one, so at this point the global is not there yet — the fetch is only the
+// http:// path, and its failure must not clobber a table the global filled.
+var rendered = false;
+function renderOnce(rows) { if (!rendered) { rendered = true; render(rows); } }
+window.__labRenderOnce = renderOnce;
+fetch('probe-results.json').then(function (r) { return r.json(); }).then(renderOnce)
+  .catch(function () {
+    if (rendered || window.LAB_PROBE_RESULTS) return;
+    document.getElementById('table').innerHTML =
+      '<div class="note">No results yet. Run <code>node probe.mjs</code> in this ' +
+      'directory — it writes <code>probe-results.js</code>, which this page reads ' +
+      'when opened from <code>file://</code>.</div>';
+  });
+</script>
+<script src="scale-x3.js"></script>
+<script>
+(function () {
+  var S = window.LAB_SCALE_X3; if (!S) return;
+  document.getElementById('scale').innerHTML =
+    '<table><thead><tr><th>lab</th><th class="n">layout ms</th>' +
+    '<th class="n">1st paint ms</th><th class="n">pan fps</th><th class="n">frame p95</th>' +
+    '<th>note</th></tr></thead><tbody>' +
+    S.map(function (r) {
+      return '<tr><td>' + r.lab + '</td><td class="n">' + Math.round(r.layoutMs) +
+        '</td><td class="n">' + Math.round(r.paintMs) + '</td><td class="n ' +
+        (r.fps >= 14 ? 'mid' : 'bad') + '">' + r.fps + '</td><td class="n">' + r.p95 +
+        '</td><td>' + r.note + '</td></tr>';
+    }).join('') + '</tbody></table>';
+})();
+</script>
+<script src="probe-results.js"></script>
+<script>if (window.LAB_PROBE_RESULTS) window.__labRenderOnce(window.LAB_PROBE_RESULTS);</script>
