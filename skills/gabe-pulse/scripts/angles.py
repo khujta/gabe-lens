@@ -729,13 +729,21 @@ def s18_entity_proposals(root: Path, plan: dict | None, cfg: dict | None):
             head = json.loads(c4p.read_text(encoding="utf-8")).get("head")
         except Exception:  # noqa: BLE001
             head = None
+    nmg = d.get("naming") if isinstance(d.get("naming"), dict) else {}
+    nm_clause = ""
+    if nmg:
+        nm_clause = f" · names by {nmg.get('strategy') or 'domain'}"
+        if nmg.get("config_error"):
+            nm_clause += f" · ⚠ naming config: {nmg['config_error']}"
+        if nmg.get("unused_words"):
+            nm_clause += f" · {len(nmg['unused_words'])} naming word(s) name nothing"
     named_r = " · ".join(f"{x.get('slug')} {x['verdict']}" for x in ruled[:3]) + (f" +{len(ruled) - 3}" if len(ruled) > 3 else "")
     named_c = " · ".join(str(x.get("name")) for x in cands[:3]) + (f" +{len(cands) - 3}" if len(cands) > 3 else "")
     body = (f"{len(ruled)} verdict(s) to rule" + (f" ({named_r})" if ruled else "") + f" · {len(cands)} candidate entit{'y' if len(cands) == 1 else 'ies'}" + (f" ({named_c})" if cands else ""))
     if head and d.get("head") and str(d.get("head")) != str(head):
         return (f"entity proposals STALE — the draft was projected from map {d.get('head')} but the committed map is {head}; {body} — re-run before trusting",
                 "python3 ~/.claude/skills/gabe-cc-update/scripts/draft-entities.py .  (then /gabe-cc-init rank)")
-    return (f"entity proposals — {body}; the REVIEW is owed (accept = one entities.<slug> edit in center.config.json), nothing re-homed",
+    return (f"entity proposals — {body}{nm_clause}; the REVIEW is owed (accept = one entities.<slug> edit in center.config.json), nothing re-homed",
             "/gabe-cc-init rank  (the entity-model third lens reads entities.draft.json)")
 
 

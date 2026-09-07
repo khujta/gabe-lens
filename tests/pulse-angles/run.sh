@@ -429,6 +429,11 @@ r=$(repo s18c); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{"head"
 run "$r" | grep -q "entity proposals" && bad "S18 fired on all-FEATURE verdicts with one candidate (below the bar)" || ok "S18 silent: all FEATURE, one candidate (< 2)"
 r=$(repo s18d); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{"head":"abc1234","declared":[{"slug":"a","verdict":"FEATURE"}],"candidates":[{"name":"one"},{"name":"two"}]}'
 run "$r" | grep -q "entity proposals — 0 verdict(s) to rule · 2 candidate entities (one · two)" && ok "S18 fires on two candidates alone (the entity_candidates bar)" || bad "S18 did not fire on two candidates: $(run "$r")"
+# the naming clause (naming-plan Phase 5): the strategy in force rides the line; a config error and unused words are NAMED; a clean block adds only the strategy
+r=$(repo s18g); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{"head":"abc1234","naming":{"strategy":"class","source":"center.config.json#naming","config_error":"naming.strategy '"'"'verb'"'"' is not one of domain · table","unused_words":["ghost","ghoul"]},"declared":[{"slug":"cooking","verdict":"SPLIT"}],"candidates":[]}'
+run "$r" | grep -q "names by class · ⚠ naming config: naming.strategy 'verb' is not one of domain · table · 2 naming word(s) name nothing" && ok "S18 names the strategy in force, the config error and the unused words" || bad "S18 lost the naming clause: $(run "$r")"
+r=$(repo s18h); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{"head":"abc1234","naming":{"strategy":"domain","source":"built-in"},"declared":[{"slug":"cooking","verdict":"SPLIT"}],"candidates":[]}'
+run "$r" | grep -q "names by domain;" && ! run "$r" | grep -q "naming config\|name nothing" && ok "S18 SILENT on a clean naming block — only the strategy word rides" || bad "S18 nagged on a clean naming block: $(run "$r")"
 r=$(repo s18e); mkc4 "$r" '{"head":"abc1234","stats":{}}'
 run "$r" | grep -q "entity proposals" && bad "S18 fired with no draft file" || ok "S18 silent with no draft file"
 r=$(repo s18f); mkc4 "$r" '{"head":"abc1234","stats":{}}'; mkdraft "$r" '{not json'

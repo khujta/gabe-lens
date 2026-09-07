@@ -173,11 +173,19 @@ def center(root: str, head: str):
               "rosters": {"derived": [{"id": "d:things", "twin": None, "name": "things", "kind": "feature", "anchor_table": "things", "anchor_cls": "Thing", "anchor_by": "read",
                                        "domain": "things", "named_by": "domain", "depth": 1, "truncated": False, "color": "#123456", "endpoints": 1, "screens": 0, "fetchers": 0,
                                        "purity": 1.0, "claim_mix": {"thing": 1}, "majority": "thing", "members": ["endpoint:GET /things/{item_id}"], "members_more": 0,
-                                       "why": "1 endpoint(s) read things under /things; no endpoint writes this table — anchored on reads"},
+                                       "why": "1 endpoint(s) read things under /things; no endpoint writes this table — anchored on reads",
+                                       "names": {"table": "things", "class": "thing", "path": "things", "action": "Look at things", "both": "things · /things"}},
                                       {"id": "l:other", "name": "other", "kind": "layer", "slug": "other", "files": 2, "tables": 1, "drawn": False, "why": "no endpoint — 1 table(s) held for other entities' endpoints"}],
                           "proposed": [{"slug": "thing", "verdict": "FEATURE", "why": "majority of things and sole-owns 2 URL domain(s)", "evidence": {"feature": "d:things"}},
                                        {"slug": "other", "verdict": "LAYER", "why": "no endpoint — 1 table(s) held for other entities' endpoints", "evidence": {"files": 2, "tables": 1}}],
                           "candidates": []},
+              "naming": {"default": "class", "source": "center.config.json#naming", "positions": ["domain", "table", "class", "path", "action", "config", "both"],
+                         "coverage": {"domain": 1, "table": 1, "class": 1, "path": 1, "action": 1, "config": 0, "both": 1, "rows": 1}, "collisions": {"path": 0}, "long": {"action": 0, "both": 0},
+                         "disabled": {"config": "no naming.words / naming.entities in center.config.json and no adoption display_name — nothing to name from"}, "entities": {},
+                         "fe": {"present": True, "reason": None, "convention": "bracket", "words": {"frontend": "ui", "backend": "api"}, "case": {"frontend": "camel", "backend": "pascal"},
+                                "forms": {"case": {"fe": "{name|camel}", "be": "{name|pascal}"}, "prefix": {"fe": "fe · {name}", "be": "{name}"}, "suffix": {"fe": "{name} (ui)", "be": "{name}"}, "bracket": {"fe": "[ui] {name}", "be": "[api] {name}"},
+                                          "glyph": {"fe": "{name}", "be": "{name}", "mark": "screen", "sprite": "tint"}, "tint": {"fe": "{name}", "be": "{name}"}, "none": {"fe": "{name}", "be": "{name}"}}, "homes": 1, "twins": 0},
+                         "config_error": None, "unused_words": ["ghost"], "unknown_entities": [], "caps": {"name_max": 40}, "rule": "names are DISPLAY — the claim slug and every cluster id are unchanged; nothing joins on a name"},
               "homes": {"seeded": {}, "derived": {"endpoint:GET /things/{item_id}": "d:things"}, "proposed": {}},
               "held": {"seeded": [], "derived": []},
               "abstain": {"seeded": [], "derived": ["endpoint:DELETE /things/{item_id}"], "proposed": []},
@@ -682,6 +690,22 @@ def run(T):
        "W4 FIRE: touches points a re-homed piece at its cross-model row", d and d["function"]["home_evidence"].get("note"))
     d, _, _, _ = call_json(c, "entity_shape", {})
     ok(d and "orphan" not in (d.get("one_line") or "").lower(), "R10: entity_shape's one_line never says orphan (the JSON key `orphans` is the contract three callers read)", d and d.get("one_line"))
+    # ── naming (naming-plan Phase 4): text surfaces speak the CONFIG default; names{} + name_from + a rendered label ride every row; the id stays beside ──
+    d, _, _, _ = call_json(c, "entity_models", {})
+    ok(d and d["naming"]["default"] == "class" and d["naming"]["convention"] == "bracket" and d["naming"]["unused_words"] == ["ghost"] and d["naming"]["disabled"]["config"].startswith("no naming.words") and "text surfaces speak the project default" in d["naming"]["note"],
+       "N-FIRE: the census carries the naming line — default · convention · unused words · disabled positions", d and d.get("naming"))
+    d, _, _, _ = call_json(c, "entity_models", {"model": "derived"})
+    r0 = d and d["clusters"][0]
+    ok(r0 and r0["name"] == "thing" and r0["name_from"] == "class" and r0["names"]["table"] == "things" and r0["label"] == "[api] thing" and r0["id"] == "d:things",
+       "N-FIRE: a derived row is named by the config default (class), keeps names{} + name_from, wears the config's mark, and the id stays beside it", r0)
+    d, _, _, _ = call_json(c, "entity_models", {"entity": "d:things", "model": "derived"})
+    ok(d and d["what"]["name"] == "thing" and d["what"]["label"] == "[api] thing" and d["what"]["names"]["both"] == "things · /things", "N-FIRE: a cluster's `what` carries its named fields", d and d.get("what"))
+    d, _, _, _ = call_json(c, "entity_models", {"entity": "thing"})
+    ok(d and d["found"] and d["what"]["kind"] == "declared entity", "N: a slug still resolves as a slug (names never become keys)", d and d.get("what"))
+    d, _, _, _ = call_json(c, "entity_models", {"entity": "[api] thing"})
+    ok(d and d["found"] is False and "grep -rn remains the floor" in d["reason"], "N-SILENT: a rendered LABEL passed where a slug is expected → found:false + the grep floor, never a match", d and d.get("reason"))
+    d, _, _, _ = call_json(c, "entity_context", {"slug": "thing"})
+    ok(d and d["c4"]["fe_home"]["label"] == "[ui] thing" and d["c4"]["fe_home"]["id"] == "fe·thing", "N-FIRE: entity_context's fe_home wears the config's frontend mark with the id beside it", d and d["c4"].get("fe_home"))
     # ── the OLDER-MAP variant: absence semantics (P2), honest-empty for the new kinds ──
     variant(root, older_map)
     d, is_err, _, _ = call_json(c, "entity_models", {})
@@ -693,6 +717,8 @@ def run(T):
     ok(d and "proposed" not in d, "W4 SILENT: entity_context carries no proposed field without the block (the answer's shape is unchanged)", d and sorted(d.keys()))
     d, _, _, _ = call_json(c, "touches", {"target": "apps/api/services/thing.py#thing"})
     ok(d and "cross-model" not in d["function"]["home_evidence"]["note"], "W4 SILENT: touches carries no cross-model pointer without the block (byte-identical note)", d and d["function"]["home_evidence"].get("note"))
+    d, _, _, _ = call_json(c, "entity_context", {"slug": "thing"})
+    ok(d and "label" not in d["c4"]["fe_home"], "N-SILENT: without the block fe_home carries no label (the answer's shape is unchanged)", d and d["c4"].get("fe_home"))
     d, _, _, _ = call_json(c, "map_status", {})
     h = d and d.get("map_health")
     ok(h and h["fn_similarity"] == {"state": "clean", "mode": "exact"} and h["unparseable"] == {"state": "clean", "count": 0} and h["tasks_state"] == "clean" and d["counts"]["tasks"] == 0 and d["counts"]["providers"] == 0,

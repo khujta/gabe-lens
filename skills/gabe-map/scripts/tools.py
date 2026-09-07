@@ -243,6 +243,14 @@ def t_entity_context(args: dict, roots) -> dict:
         if fe_home:
             fe_home = dict(fe_home)
             fe_home["homing"] = ((c.get("stats") or {}).get("fe") or {}).get("homing")   # layout | config — which witness homed the pieces
+        if fe_home:
+            try:
+                import tools_wave4 as _w4n
+                _blk, _st, _ = center.entity_models()
+                if _st == "present":
+                    fe_home["label"] = _w4n._label(_blk, "fe·%s" % slug, slug)      # the project's frontend mark over the slug's words — display only, the id stays
+            except Exception:  # noqa: BLE001
+                pass
         out["c4"]["fe_home"] = fe_home if fe_home else {"reason": "no fe·%s home in GABE_C4.fe" % slug}
         ent_code = (out.get("entity") or {}).get("code")
         if isinstance(ent_code, dict) and isinstance(ent_code.get("counts"), dict):

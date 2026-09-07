@@ -23,11 +23,58 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import re  # noqa: E402
 import mapquery as mq  # noqa: E402
 import tools as T  # noqa: E402
 
 VIEWS = ("claim", "seeded", "derived", "proposed")
 _C4_PREFIX = ("endpoint:", "model:", "schema:", "web:", "provider:", "middleware:", "flag:", "prompt:", "external:", "element:", "fe:")
+_CASE_RX = re.compile(r"^(.*?)( · | — )(.*)$")
+
+
+def _case(run: str, how: str) -> str:
+    ws = [w for w in re.split(r"[\s_\-]+", run) if w]
+    if not ws:
+        return run
+    if how == "camel":
+        return ws[0].lower() + "".join(w[:1].upper() + w[1:].lower() for w in ws[1:])
+    if how == "pascal":
+        return "".join(w[:1].upper() + w[1:].lower() for w in ws)
+    return run
+
+
+def _render(form: str, name: str) -> str:
+    """The three-line substitution every surface owns (mirrors _a3_naming.render): {name} · {name|camel} · {name|pascal} on the leading word-run."""
+    m = _CASE_RX.match(name or "")
+    head, sep, tail = (m.group(1), m.group(2), m.group(3)) if m else (name or "", "", "")
+    return (form or "{name}").replace("{name|camel}", _case(head, "camel") + sep + tail).replace("{name|pascal}", _case(head, "pascal") + sep + tail).replace("{name}", name or "")
+
+
+def _naming(block: dict) -> dict:
+    nb = (block or {}).get("naming") or {}
+    return nb if isinstance(nb, dict) and nb.get("positions") else {}
+
+
+def _named(block: dict, row: dict) -> dict:
+    """`name` under the CONFIG default strategy (a text surface has no reader to hold a preference) + `name_from` + the alternates; the id stays beside it."""
+    nb = _naming(block)
+    k = nb.get("default") or "domain"
+    names = row.get("names") or {}
+    if k != "domain" and names.get(k):
+        return {"name": names[k], "name_from": k, "names": names}
+    return {"name": row.get("name"), "name_from": "domain" if row.get("name") else None, "names": names}
+
+
+def _label(block: dict, ident: str, name: str) -> str:
+    """The name through the config's frontend/backend convention — `[api] cooking` · `cookingSessions` — never used as a key."""
+    nb = _naming(block)
+    fe = nb.get("fe") or {}
+    forms = fe.get("forms") if fe.get("present") is not False else None
+    conv = fe.get("convention") or "case"
+    form = (forms or {}).get(conv) or {"fe": "fe · {name}", "be": "{name}"}
+    return _render(form["fe" if str(ident).startswith("fe·") else "be"], name)
+
+
 _MARK_TEXT = {"moved": "moved by this view", "abstain": "no witness reaches this piece — it keeps its claim", "held": "shared plumbing — held out of every re-home",
               None: "keeps its claim"}
 
@@ -66,11 +113,15 @@ def _roster_index(block: dict) -> dict:
     return r
 
 
+_BLOCK: dict = {}      # the current block for the row helpers (set per call — one process serves one request at a time)
+
+
 def _cluster_row(cid: str, ridx: dict, verdicts: dict) -> dict | None:
     """What a cluster IS in one line — a feature/aspect/layer/candidate row, or a declared slug's proposed verdict."""
     r = ridx.get(cid)
     if r:
-        return {"id": cid, "name": r.get("name"), "kind": ("candidate feature" if r.get("candidate") else r.get("kind")),
+        nm = _named(_BLOCK.get("b") or {}, r)
+        return {"id": cid, **nm, "label": _label(_BLOCK.get("b") or {}, cid, nm.get("name") or cid), "kind": ("candidate feature" if r.get("candidate") else r.get("kind")),
                 **({"named_by": r["named_by"]} if r.get("named_by") else {}), **({"anchor_table": r["anchor_table"], "anchor_by": r.get("anchor_by")} if r.get("anchor_table") else {}),
                 **({"purity": r["purity"]} if r.get("purity") is not None else {}), **({"twin_of": r["twin_of"]} if r.get("twin_of") else {}),
                 **({"suggested_slug": r["suggested_slug"]} if r.get("suggested_slug") else {}), "why": r.get("why")}
@@ -138,6 +189,7 @@ def t_entity_models(args: dict, roots) -> dict:
         out["reason"] = why
         return out
     views = block.get("views") or {}
+    _BLOCK["b"] = block
     verdicts = {r.get("slug"): r for r in ((block.get("rosters") or {}).get("proposed") or []) if r.get("slug")}
     ridx = _roster_index(block)
     # ── piece → the cross-model row ──
@@ -216,14 +268,15 @@ def t_entity_models(args: dict, roots) -> dict:
             out["note"] = "Part C's move verdicts applied — hubs held, targets tier-consistent; %s" % (vw.get("note") or "")
         elif model == "derived":
             rows = ((block.get("rosters") or {}).get("derived") or [])
-            out["clusters"] = [{k: r.get(k) for k in ("id", "name", "kind", "named_by", "anchor_table", "anchor_by", "domain", "endpoints", "screens", "purity", "twin", "detector", "drawn", "why") if r.get(k) is not None}
+            out["clusters"] = [{**{k: r.get(k) for k in ("id", "kind", "named_by", "anchor_table", "anchor_by", "domain", "endpoints", "screens", "purity", "twin", "detector", "drawn", "why") if r.get(k) is not None},
+                                **_named(block, r), "label": _label(block, r.get("id") or "", _named(block, r).get("name") or r.get("id") or "")}
                                for r in rows[:mq.CAP]]
             out["clusters_total"] = len(rows)
             out["abstained"] = sorted(AB)[:mq.CAP]
             out["note"] = vw.get("note")
         else:
             out["verdicts"] = [{k: r.get(k) for k in ("slug", "verdict", "why", "suggested_edit") if r.get(k) is not None} for r in ((block.get("rosters") or {}).get("proposed") or [])[:mq.CAP]]
-            out["candidates"] = [{k: r.get(k) for k in ("id", "name", "named_by", "anchor_table", "suggested_slug", "endpoints", "spans_entities") if r.get(k) is not None}
+            out["candidates"] = [{**{k: r.get(k) for k in ("id", "named_by", "anchor_table", "suggested_slug", "endpoints", "spans_entities") if r.get(k) is not None}, **_named(block, r)}
                                  for r in ((block.get("rosters") or {}).get("candidates") or [])[:mq.CAP]]
             out["note"] = vw.get("note")
         out["cap"] = mq.CAP
@@ -234,6 +287,11 @@ def t_entity_models(args: dict, roots) -> dict:
                 "views": {v: ({k: views[v].get(k) for k in ("present", "moved", "held", "abstained", "features", "aspects", "layers", "atoms", "anchored", "purity", "verdicts", "candidates", "reason") if views.get(v, {}).get(k) is not None}
                               if isinstance(views.get(v), dict) else {"present": False}) for v in VIEWS},
                 "shared_hubs": len(block.get("shared") or []),
+                "naming": ({"default": _naming(block).get("default"), "source": _naming(block).get("source"), "convention": ((_naming(block).get("fe") or {}).get("convention") if (_naming(block).get("fe") or {}).get("present") is not False else "none — " + str((_naming(block).get("fe") or {}).get("reason"))),
+                            "coverage": _naming(block).get("coverage"), "collisions": _naming(block).get("collisions"), "disabled": _naming(block).get("disabled"), "config_error": _naming(block).get("config_error"),
+                            "unused_words": _naming(block).get("unused_words"), "unknown_entities": _naming(block).get("unknown_entities"),
+                            "note": "names are DISPLAY — text surfaces speak the project default (center.config.json#naming); the station honours a reader's pill; every answer keeps the raw id beside the name"}
+                           if _naming(block) else {"state": "not_emitted", "reason": "no naming block on this map — regen with the current generators; names fall back to the emitted row.name"}),
                 "candidates": [r.get("name") for r in ((block.get("rosters") or {}).get("candidates") or [])][:mq.CAP],
                 "caps": (block.get("stats") or {}).get("caps"), "truncated": (block.get("stats") or {}).get("truncated") or [],
                 "next": "model=<view> for a roster · entity=<slug|d:…> for members · piece=<file#fn|'METHOD /path'|fe:…> for the cross-model row"})
@@ -242,7 +300,7 @@ def t_entity_models(args: dict, roots) -> dict:
 
 TOOLS = [
     {"name": "entity_models", "fn": t_entity_models, "annotations": T.RO,
-     "description": "The four entity models on the map — claim (the registry) · seeded · derived · proposed (views). No args → census; model= → roster; entity= → members; piece= → its home under each.",
+     "description": "The four entity models on the map — claim (the registry) · seeded · derived · proposed (views) — named by the project's strategy. No args → census; model= roster; entity= members; piece= its homes.",
      "inputSchema": T._schema({"model": {"type": "string", "enum": list(VIEWS), "description": "A view's roster (claim = the entity list)."},
                                "entity": {"type": "string", "description": "A slug or a view's cluster id (d:<table> · a:<gate> · fe·<x>) — its members under `model` (default claim)."},
                                "piece": {"type": "string", "description": "file#fn · 'METHOD /path' · 'TASK <name>' · fe:<file>#<name> · endpoint:/schema:/model: id — its home under each model."},

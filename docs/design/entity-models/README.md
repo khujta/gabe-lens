@@ -102,6 +102,25 @@ the draft's `coverage` + `abstained`. 31/29/46/29% witness coverage must never r
 Zero candidates accepted across three drafts on both twins ⇒ the pill is a picture, not a proposal. Say so here (with the
 three draft heads), keep the pill, do not delete the emitter — a picture of the disagreement is still the operator's ask.
 
+## Naming — strategies and the frontend mark (naming-plan, 2026-09-06)
+
+The operator's second ask: options for how a cluster is NAMED and how a frontend home is told apart from a backend one, per
+model. The plan is [naming-plan.md](naming-plan.md); the law is one sentence — a name is a RENDERING over an unchanged id. The
+emitter (`_a3_naming.py`) computes every candidate name once (`names{}` per row) and the convention FORMS with the project's
+words; the station, gabe-map and the drafter substitute one `{name}`. Rulings (AskUserQuestion): default strategy `domain`
+(zero churn) · default convention `case` — frontend camelCase, backend PascalCase (every label's casing changes on regen: the
+operator's chosen churn; `naming.fe.case` swaps the pair) · the emitter imports the INSTALLED `draft_name` · the phrase==noun
+dedupe landed first (`69daa37`). Recommendations taken: `both` = table · /url prefix; `path` ships with collision suffixes and
+a 1/3 self-disable; the config binds text surfaces and seeds the station (the reader may override the station only);
+`url_domain_map` absorbed as a fallback, never moved; `suggested_slug` never follows a strategy (`slug_from` + `slug_options`);
+the claim model renders display names under `config`; S18 gains one clause, no S19. Measured on the six committed maps: rows
+25 · 12 · 2 · 0 · 1 · 65; differs from today — table 5 · 1 · 1 · – · 1 · 15, class 21 · 12 · 1 · – · 1 · 24, both 21 · 11 · 2 · – ·
+1 · 61; path collisions 4 · 5 · 0 · – · 0 · 19 (gastify's `path` self-disables at 5/12); action over `name_max` 40: 10 · 3 · 0 · – · 0 ·
+39 (the hull sprite truncates with an ellipsis; a two-line label is the cap's kill condition); config coverage 0 everywhere until
+a project writes words (display names keep the position on for 8 · 7 · 4 entities); `OAuthConfig` reads `o auth config` by
+rule — honestly; cost +6.7 · +4.3 · +1.8 · +1.3 · +1.5 · +15.4 KB. Deferred with triggers: a `both_owner` composition (the
+audit string) when wanted; S19 for naming debt the first time a `naming.words` key survives a regen that dropped its cluster.
+
 ## The estates as shipped (2026-09-06, suite `a6cf665`)
 
 | Estate | seeded moved · held | derived features · anchored/atoms · abstained · purity | proposed | candidates | hubs |

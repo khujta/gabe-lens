@@ -4,7 +4,7 @@ description: "The suite's MCP server — the project's committed codebase map as
 when_to_use: "Manage the gabe-map MCP server: is it registered at user scope, is it disabled in this project, does the running server match the install, does this project have a map. Human-initiated only; the TOOLS themselves are reached for by every skill through mcp__gabe-map__*."
 disable-model-invocation: true
 metadata:
-  version: 1.3.0
+  version: 1.3.1
 ---
 
 # Gabe Map — the codebase map as tools

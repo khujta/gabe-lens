@@ -65,8 +65,8 @@ assert "orphan" not in json.dumps(r).lower()
 assert f["head"]=="abc1234" and f["declared"]==r["declared"] and f["candidates"]==r["candidates"], "the file is the report minus out/written"
 assert "window." not in open(sys.argv[2]).read(), "plain JSON — loaded by no page"
 PY
-o=$(python3 "$D" "$r"); echo "$o" | grep -q "3 declared verdict(s) \[FEATURE 1 · SPLIT 1 · MERGE 1\] · 2 candidate(s) · witnessed 78/80 atoms · 2 abstained · head abc1234" \
-  && echo "$o" | grep -q "SPLIT    cooking" && echo "$o" | grep -q "CANDIDATE dish history events  (named by its table; slug dish-history-events; 3 endpoint(s))  — Manage dishes — history" \
+o=$(python3 "$D" "$r"); echo "$o" | grep -q "3 declared verdict(s) \[FEATURE 1 · SPLIT 1 · MERGE 1\] · 2 candidate(s) · witnessed 78/80 atoms · 2 abstained · naming: domain (no naming block on this map" && echo "$o" | grep -q "· head abc1234" \
+  && echo "$o" | grep -q "SPLIT    cooking" && echo "$o" | grep -q "CANDIDATE dish history events  (named by domain; slug dish-history-events, or dish-history-events; 3 endpoint(s))  — Manage dishes — history" \
   && ok || bad "FIRE: the one-line report + the verdict and candidate lines ($o)"
 echo "$o" | grep -qi "orphan" && bad "R10: the report says orphan" || ok
 # ── PROJECTION equality: the draft's declared verdicts are the block's proposed roster, field for field (nothing derived here) ──
@@ -140,6 +140,34 @@ r=$(mkcenter dv); c4 > "$r/docs/site/center/c4-graph.json"; python3 "$D" "$r" --
 python3 - "$T/dv.json" <<'PY' && ok || bad "--model derived: the derived clusters (feature + aspect) as rows, declared []"
 import json,sys; r=json.load(open(sys.argv[1])); assert r["model"]=="derived" and r["declared"]==[] and [(c["id"],c["kind"]) for c in r["candidates"]]==[("d:cooking_sessions","feature"),("a:auth","aspect")], r["candidates"]
 PY
+
+# ── NAMING (naming-plan Phase 5): a committed draft speaks the project default; --naming overrides for a human run; suggested_slug never follows a strategy ──
+r=$(mkcenter nm); c4 | python3 -c "
+import json,sys; j=json.load(sys.stdin); m=j['models']
+m['naming']={'default':'class','source':'center.config.json#naming','positions':['domain','table','class','path','action','config','both'],'coverage':{'rows':2},'config_error':None,'unused_words':['ghost'],'fe':{'present':True,'convention':'case','forms':{}}}
+for c in m['rosters']['candidates']:
+    c['names']={'table':c['anchor_table'].replace('_',' '),'class':c['anchor_table'].replace('_',' ').rstrip('s'),'path':c['name']+' path','action':'Manage '+c['name'],'both':c['anchor_table'].replace('_',' ')+' · /x'}
+print(json.dumps(j))" > "$r/docs/site/center/c4-graph.json"
+python3 "$D" "$r" --json > "$T/nm.json"; python3 "$D" "$r" --json --naming path --out "$r/path.json" > "$T/nmp.json"; python3 "$D" "$r" --json --naming table --out "$r/table.json" > "$T/nmt.json"
+python3 - "$T/nm.json" "$T/nmp.json" "$T/nmt.json" <<'PY' && ok || bad "NAMING: the committed draft is named by the project default (class); --naming path/table rename, name_from says which, suggested_slug is IDENTICAL across strategies, slug_options offered"
+import json,sys; a,b,c=[json.load(open(x)) for x in sys.argv[1:]]
+ca={x["id"]:x for x in a["candidates"]}; cb={x["id"]:x for x in b["candidates"]}; cc={x["id"]:x for x in c["candidates"]}
+assert a["naming"]["strategy"]=="class" and a["naming"]["source"]=="center.config.json#naming" and a["naming"]["unused_words"]==["ghost"], a["naming"]
+assert ca["d:dish_history_events"]["name"]=="dish history event" and ca["d:dish_history_events"]["name_from"]=="class", ca["d:dish_history_events"]
+assert b["naming"]["strategy"]=="path" and b["naming"]["source"]=="your --naming" and cb["d:dish_history_events"]["name"]=="dish history events path" and cb["d:dish_history_events"]["name_from"]=="path"
+assert cc["d:dish_history_events"]["name"]=="dish history events" and cc["d:dish_history_events"]["name_from"]=="table"
+for k in ca: assert ca[k]["suggested_slug"]==cb[k]["suggested_slug"]==cc[k]["suggested_slug"] and ca[k]["slug_from"]=="domain", (ca[k]["suggested_slug"], cb[k]["suggested_slug"])
+assert ca["d:dish_history_events"]["slug_options"]=={"table":"dish-history-events","class":"dish-history-event"} and ca["d:dish_history_events"]["action"]=="Manage dish history events", ca["d:dish_history_events"]
+assert ca["d:dish_history_events"]["names"]["both"]=="dish history events · /x"
+PY
+o=$(python3 "$D" "$r"); echo "$o" | grep -q "naming: class (project default — center.config.json#naming)" && echo "$o" | grep -q "CANDIDATE dish history event  (named by class; slug dish-history-events, or dish-history-events / dish-history-event" && ok || bad "NAMING: the one-line report names the strategy in force and the slug alternatives ($o)"
+# fallback: a feed without names/naming still drafts and SAYS so (the emitted row.name; the sibling's action phrase)
+python3 - "$T/fire.json" <<'PY' && ok || bad "NAMING fallback: no naming block → names {} · name_from domain · the note says regen · the action still comes from the sibling law"
+import json,sys; r=json.load(open(sys.argv[1])); c={x["name"]:x for x in r["candidates"]}
+assert r["naming"]["strategy"]=="domain" and r["naming"]["source"]=="none" and "no naming block" in r["naming"]["note"], r["naming"]
+assert c["orph"]["name_from"]=="domain" and c["orph"]["names"]=={} and c["orph"]["action"]=="Add orph" and c["orph"]["slug_options"]=={"table":"t7"}, c["orph"]
+PY
+o=$(python3 "$D" "$r" --naming verb 2>&1); echo "$o" | grep -q "invalid choice" && ok || bad "NAMING: an unknown --naming is refused by argparse ($o)"
 
 echo "draft-entities battery: $pass passed, $fail failed"
 [ "$fail" -eq 0 ] || exit 1

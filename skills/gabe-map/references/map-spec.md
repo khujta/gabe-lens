@@ -239,7 +239,15 @@ MERGE · ASPECT · LAYER — plus candidates, as if accepted).
 - **Honest-empty (tri-state, `mq.MODELS_STATES`).** `present` · `not_emitted` (no block — an older map; "regen with the current
   generators") · `absent` (the emitter ran and `stats.models.reason` says why — e.g. no levels graph). Unknown `model` → `MapStop`
   naming the four. Unknown entity/piece → `{found:false}` + the grep floor. An abstained atom's row says "keeps its claim".
-- **Neighbours.** `entity_context <slug>` carries `proposed {verdict, why}` on the SLUG (no join hazard); `touches` appends
+- **Names (naming-plan Phase 4, 2026-09-06).** A name is DISPLAY. Every derived/candidate row carries `name` (the PROJECT DEFAULT strategy
+  from `c4.models.naming.default` — a text surface has no reader to hold a preference), `name_from`, `names{}` (every candidate name the
+  emitter computed: table · class · path · action · config · both) and `label` (the name through the config's frontend/backend
+  convention — `[api] thing`, `cookingSessions`); the raw id stays beside it in every answer, and a rendered label passed where a slug
+  is expected is `{found:false}`. The census carries a `naming` line (default · source · convention · coverage · collisions · disabled ·
+  config_error · unused/unknown words), `not_emitted` on an older map. There is NO `naming=` argument on any tool (the alternates ride
+  the payload; schemas are deferred).
+- **Neighbours.** `entity_context <slug>` carries `proposed {verdict, why}` on the SLUG (no join hazard) and its `fe_home` a `label`
+  through the config's frontend mark beside the id; `touches` appends
   `· cross-model: mcp__gabe-map__entity_models piece=<key>` to a piece's `home_evidence.note` only when a view re-homes it (no
   block → byte-identical answers). `map_census` gains NO `models` kind — one surface, not two.
 
