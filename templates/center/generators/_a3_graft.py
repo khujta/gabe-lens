@@ -179,7 +179,8 @@ def _file2slug(entities: dict[str, Any]) -> dict[str, str]:
 
 def derive_functions(wiring: dict[str, Any],
                      entities: dict[str, Any],
-                     dispatches: list[dict] | None = None) -> dict[str, Any]:
+                     dispatches: list[dict] | None = None,
+                     module_calls: list[dict] | None = None) -> dict[str, Any]:
     """The function-level slice the LEVELS graph draws: every graft FUNCTION node homed
     to its entity (``id`` = ``path#symbol``, homed by file → entity) + the ``calls``
     edges between two homed functions. ``_a3_levels`` selects the trace-relevant subset
@@ -219,6 +220,12 @@ def derive_functions(wiring: dict[str, Any],
         if s in fn_slug and t in fn_slug and s != t:
             calls.append({"s": s, "t": t, "ss": fn_slug[s], "ts": fn_slug[t],
                           "conf": d.get("conf", "extracted"), "rel": "dispatches"})
+    _seen_calls = {(c["s"], c["t"]) for c in calls}
+    for m in module_calls or []:                       # class 14: module-attribute calls the graft could not resolve — a plain call, suite-extracted
+        s, t = m.get("s"), m.get("t")
+        if s in fn_slug and t in fn_slug and s != t and (s, t) not in _seen_calls:
+            _seen_calls.add((s, t))
+            calls.append({"s": s, "t": t, "ss": fn_slug[s], "ts": fn_slug[t], "conf": m.get("conf", "extracted")})
     calls.sort(key=lambda c: (c["ss"], c["ts"], c["s"], c["t"], c.get("rel", "")))
     return {"fn_slug": fn_slug, "calls": calls}
 
@@ -855,7 +862,8 @@ def graft_arm(root: Path, entities: dict[str, Any],
               allow_build: bool = True,
               faccess: dict[str, Any] | None = None,
               dispatches: list[dict] | None = None,
-              boot_roots: list[dict] | None = None) -> dict[str, Any]:
+              boot_roots: list[dict] | None = None,
+              module_calls: list[dict] | None = None) -> dict[str, Any]:
     """The whole arm, one call: ensure → load → derive. NEVER raises.
 
     Returns ``{present, reason, index_hash?, index_nodes?, index_edges?,
@@ -879,12 +887,13 @@ def graft_arm(root: Path, entities: dict[str, Any],
         # cross_calls / confidence never move); derive_functions gets the dispatch edges as a
         # DISTINCT rel. Byte-identical when there are no dispatches (_w2 is wiring).
         _disp = dispatches or []
+        _mcalls = module_calls or []                  # class 14: module-attribute calls — the same fold, so behind/d2w/roles see the hop
         _w2 = wiring
-        if _disp:
+        if _disp or _mcalls:
             _w2 = dict(wiring)
             _w2["edges"] = list(wiring.get("edges") or []) + [
                 {"source": _e["s"], "target": _e["t"], "relation": "calls", "confidence": "extracted"}
-                for _e in _disp]
+                for _e in list(_disp) + list(_mcalls)]
         # class 7 · home the BOOT root's file (main.py — unclaimed) into __unclaimed__ so its
         # lifespan fn homes and the graft calls behind it survive the both-ends-homed drop. Only for
         # the FUNCTION/behind/access derives; derive_cross reads the ORIGINAL entities (P5: L1 pairs
@@ -899,7 +908,7 @@ def graft_arm(root: Path, entities: dict[str, Any],
             _bu["endpoints"] = list(_bu.get("endpoints") or []) + list(_unowned)
             bentities["__unclaimed__"] = _bu
         out = derive_cross(wiring, entities)       # ORIGINAL wiring + entities — L1 kinds untouched (P5)
-        fout = derive_functions(wiring, bentities, dispatches=_disp)   # ORIGINAL calls + dispatches appended once; boot-homed
+        fout = derive_functions(wiring, bentities, dispatches=_disp, module_calls=_mcalls)   # ORIGINAL calls + dispatches + module calls appended once; boot-homed
         behind = derive_behind(_w2, bentities)     # {<file>#<fn> → {fns, depth}} per endpoint handler (+ the BOOT root)
         endpoint_access = derive_endpoint_access(_w2, bentities, faccess)  # A2: ORM access via the call-tree
         fn_roles = derive_fn_roles(_w2, faccess)   # C1: accessor/caller/gate/pure per function

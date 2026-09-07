@@ -329,6 +329,39 @@ def build_levels(amap: dict[str, Any], graph: dict[str, Any],
                 if _t not in _seen:
                     _seen.add(_t)
                     _q.append(_t)
+    # 3c · DATA REACH (tier0 review 2026-09-07) — the READ path the write rule cannot see. Rule 3b descends only
+    #      toward a WRITE (d2w), so a helper that only READS a table two hops under the handler never drew:
+    #      login_access_token → crud.authenticate → get_user_by_email (User r) stopped at the handler, and the
+    #      table the spine reads was invisible. From every drawn fn, ALSO draw a callee that CARRIES access.ops
+    #      (function_insight — the ops are already on the archmap), to a bounded depth (_DATA_REACH_DEPTH — the
+    #      file's first walk cap, said here: a reader three hops down stays undrawn, a floor never a census).
+    #      A pass-through helper WITHOUT ops is not admitted (no lookahead — honest, cheap). Honest-empty: no such
+    #      callee → no new edge → byte-identical.
+    _DATA_REACH_DEPTH = 2
+    _adj3: dict[str, list[dict[str, Any]]] = {}
+    for c in _gf.get("calls") or []:
+        _adj3.setdefault(c["s"], []).append(c)
+    if _adj3:
+        _have3 = {(e["s"], e["t"]) for e in _fedges}
+        _front = sorted(drawn_fn)
+        for _hop in range(_DATA_REACH_DEPTH):
+            _nxt: list[str] = []
+            for _s in _front:
+                for c in _adj3.get(_s, []):
+                    _t = c["t"]
+                    _ops = ((FI.get(_t.replace("#", "::", 1), {}) or {}).get("access") or {}).get("ops")
+                    if not _ops:
+                        continue
+                    if _t not in drawn_fn:
+                        drawn_fn[_t] = c["ts"]
+                        _nxt.append(_t)
+                    if (_s, _t) not in _have3:
+                        _have3.add((_s, _t))
+                        _fedges.append({"s": _s, "ss": c["ss"], "t": _t, "ds": c["ts"],
+                                        "rel": c.get("rel", "calls"), "conf": c.get("conf", "inferred")})
+            _front = sorted(_nxt)
+            if not _front:
+                break
     # both endpoints are now in drawn_fn by construction; keep the edge only if so
     _fedges = [e for e in _fedges if e["s"] in drawn_fn and e["t"] in drawn_fn]
     # class 9 · reaches — a drawn fn → provider:<name> (external SDK/LLM edge). The provider is NOT a

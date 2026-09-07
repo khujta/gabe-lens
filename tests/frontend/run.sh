@@ -54,8 +54,8 @@ kind = {p["name"]: p["kind"] for p in fe["pieces"]}
 home = {p["name"]: p["home"] for p in fe["pieces"]}
 
 # ── classification: the enumeration, exactly ──────────────────────────────────────────
-check(fe["stats"]["pieces"] == 21, f"21 pieces from 23 files (got {fe['stats']['pieces']})")   # +2 (review 2026-09-05): the intersection-typed store + its type
-check(fe["stats"]["by_kind"] == {"component": 4, "fe-type": 5, "hook": 1, "module": 5, "route": 3, "store": 3},
+check(fe["stats"]["pieces"] == 22, f"22 pieces from 24 files (got {fe['stats']['pieces']})")   # +2 (review 2026-09-05): the intersection-typed store + its type · +1 (2026-09-07): the TanStack file route
+check(fe["stats"]["by_kind"] == {"component": 4, "fe-type": 5, "hook": 1, "module": 5, "route": 4, "store": 3},
       f"by_kind matches the enumeration ({fe['stats']['by_kind']})")
 check(kind.get("RecipeCard") == "component" and kind.get("Badge") == "component"
       and kind.get("Chip") == "component" and kind.get("RecipeDetailBody") == "component", "JSX-proven exports are components")
@@ -65,6 +65,9 @@ check(kind.get("ThemeContext") == "store" and kind.get("useUiStore") == "store",
       "createContext() const AND a create()-built useXStore are stores (not hooks)")
 check(kind.get("router") == "route" and kind.get("HomeRoute") == "route",
       "the router config (createBrowserRouter) + a JSX export under /routes/ are routes")
+check(P["fe:src/routes/settings.cards.tsx#Route"]["label"] == "/settings/cards" and P["fe:src/routes/settings.cards.tsx#Route"]["route"] == "/settings/cards"
+      and P["fe:src/routes/settings.cards.tsx#Route"]["name"] == "Route" and "label" not in P["fe:src/routes/HomeRoute.tsx#HomeRoute"],
+      "corpus: the TanStack file route's label is its URL (the extractor's arg0 → route_label); the JSX route keeps its export name with no label key")
 check(kind.get("Recipe") == "fe-type" and kind.get("RecipeProps") == "fe-type", "type + interface are fe-types")
 check(kind.get("scoring") == "module" and sorted(P["fe:src/features/recipe/scoring.ts"]["exports"]) == ["WEIGHTS", "score"],
       "plain value exports fold into ONE module piece per file, exports listed")
@@ -274,7 +277,7 @@ off = _a3_graph.fold_fe(copy.deepcopy(base), {"present": False, "reason": "no we
 check("fe" not in off and off["stats"]["fe"] == {"present": False, "reason": "no web source"},
       "present=False → only stats.fe names the absence")
 on = _a3_graph.fold_fe(copy.deepcopy(base), {**fe, "present": True, "reason": "typescript x"})
-check(sorted(on["fe"]) == ["edges", "homes", "pieces"] and on["stats"]["fe"]["present"] and on["stats"]["fe"]["pieces"] == 21,
+check(sorted(on["fe"]) == ["edges", "homes", "pieces"] and on["stats"]["fe"]["present"] and on["stats"]["fe"]["pieces"] == 22,
       "present → the `fe` key (pieces · edges · homes) + stats.fe")
 check("l2" in on and on["l2"] == {}, "the fold never touches l2")
 # ── honest-empty arm states ────────────────────────────────────────────────────────────
@@ -379,6 +382,31 @@ check(_k13.get("web/src/app/chat/page.tsx#ChatHome") == "route" and _k13.get("we
       f"pass 2 FIRE: app/**/page.tsx + layout.tsx default exports are routes ({_k13})")
 check(_k13.get("web/src/components/chat/ChatHome.tsx#ChatHome") == "component" and _k13.get("web/src/app/chat/helper.tsx#ChatHelper") == "component",
       f"pass 2 SILENT: the same component outside a page file, and a non-role file under app/, stay components ({_k13})")
+
+# ── a route's LABEL is its URL path (tier0 review 2026-09-07): the file-router literal first, the file by convention second, the export name last ──
+_X14 = {"byFile": {
+    "frontend/src/routes/_layout/admin.tsx": {"exports": [{"name": "Route", "kind": "call:createFileRoute", "arg0": "/_layout/admin", "hasJsx": False}], "bindings": {}},
+    "frontend/src/routes/_layout/index.tsx": {"exports": [{"name": "Route", "kind": "call:createFileRoute", "arg0": "/_layout/", "hasJsx": False}], "bindings": {}},
+    "frontend/src/routes/_layout.tsx": {"exports": [{"name": "Route", "kind": "call:createFileRoute", "arg0": "/_layout", "hasJsx": False}], "bindings": {}},
+    "frontend/src/routes/category.$key.tsx": {"exports": [{"name": "Route", "kind": "call:createFileRoute", "arg0": "/category/$key", "hasJsx": False}], "bindings": {}},
+    "frontend/src/routes/__root.tsx": {"exports": [{"name": "Route", "kind": "call:createRootRoute", "hasJsx": False}], "bindings": {}},
+    "frontend/src/routes/settings.cards.tsx": {"exports": [{"name": "Route", "kind": "call:createFileRoute", "hasJsx": False}], "bindings": {}},
+    "web/src/app/(marketing)/chat/[id]/page.tsx": {"exports": [{"name": "ChatPage", "kind": "function", "hasJsx": True, "isDefault": True}], "bindings": {}},
+    "apps/web/src/routes/screens.tsx": {"exports": [{"name": "HomeRoute", "kind": "function", "hasJsx": True}], "bindings": {}},
+    "apps/web/src/routes/router.tsx": {"exports": [{"name": "router", "kind": "call:createBrowserRouter", "hasJsx": True}], "bindings": {}}}}
+_fe14 = _a3_fe.build_fe(_X14, {}, [])
+_l14 = {p["file"]: (p.get("label"), p.get("route"), p["name"]) for p in _fe14["pieces"] if p["kind"] == "route"}
+check(_l14.get("frontend/src/routes/_layout/admin.tsx") == ("/admin", "/_layout/admin", "Route")
+      and _l14.get("frontend/src/routes/_layout/index.tsx") == ("/", "/_layout/", "Route")
+      and _l14.get("frontend/src/routes/category.$key.tsx") == ("/category/:key", "/category/$key", "Route"),
+      f"route label FIRE: the file-router literal becomes the label — pathless `_layout` dropped, `$key` → `:key`, `/_layout/` → `/`; the raw literal rides as `route`, `name` stays the export ({_l14})")
+check(_l14.get("frontend/src/routes/_layout.tsx") == ("/_layout", "/_layout", "Route")
+      and _l14.get("frontend/src/routes/__root.tsx") == ("root shell", None, "Route")
+      and _l14.get("frontend/src/routes/settings.cards.tsx") == ("/settings/cards", None, "Route")
+      and _l14.get("web/src/app/(marketing)/chat/[id]/page.tsx") == ("/chat/:id", None, "ChatPage"),
+      f"route label FIRE: a pathless-only literal keeps its raw form, the root route reads `root shell`, a file route without a literal and a Next page take the FILE by the router's convention ({_l14})")
+check(_l14.get("apps/web/src/routes/screens.tsx") == (None, None, "HomeRoute") and _l14.get("apps/web/src/routes/router.tsx") == (None, None, "router"),
+      f"route label SILENT: a react-router JSX route and a createBrowserRouter config carry NO label key — the export name stays the label, the example estate is byte-identical ({_l14})")
 
 # ── D6 (review 2026-09-05): NO feature layout → the config's web claims home the pieces; a feature layout wins outright ──
 _X10 = {"byFile": {

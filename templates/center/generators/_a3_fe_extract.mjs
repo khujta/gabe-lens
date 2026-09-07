@@ -84,6 +84,14 @@ const declKind = d => {
   }
   return 'other';
 };
+// the innermost call's FIRST argument when it is a string literal: `createFileRoute("/login")({…})` · `createContext("x")`.
+// Idiom-free here — the Python generator decides what a literal means (a file-router literal becomes the route's label).
+const callArg0 = d => {
+  if (!d || !ts.isVariableDeclaration(d) || !d.initializer || !ts.isCallExpression(d.initializer)) return null;
+  let c = d.initializer; while (ts.isCallExpression(c.expression)) c = c.expression;
+  const a = c.arguments[0];
+  return a && (ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a)) ? a.text : null;
+};
 const refsOf = node => {
   const jsx = new Set(), calls = new Set(), types = new Set(), idents = new Set(), ctxArgs = new Set();
   let hasJsx = false;
@@ -216,6 +224,7 @@ for (const sf of program.getSourceFiles()) {
     const name = (d && d.name && ts.isIdentifier(d.name)) ? d.name.text : e.name;
     const local = df === rel(f);
     const ex = { name, isDefault: e.name === 'default', kind: declKind(d), reexport: local ? null : df };
+    const a0 = local ? callArg0(d) : null; if (a0 != null) ex.arg0 = a0;   // the literal the call was given (a router's path) — absent when the first argument is not a string
     if (d && ts.isTypeAliasDeclaration(d) && /^components\s*\[/.test(d.type.getText(d.getSourceFile())))
       ex.apiAlias = true;                        // `type X = components["schemas"]["X"]` — a REFERENCE to the generated contract, not a shape
     if (local && d) {

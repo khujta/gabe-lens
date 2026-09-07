@@ -2033,6 +2033,11 @@ def main() -> int:
     _dm = _a3_code.dispatch_map(REPO_ROOT)
     if _dm:
         amap["dispatch"] = _dm
+    # class 14 (module calls): `mod.fn()` through a module alias the graft could not type — resolved suite-side,
+    # folded into the graft adjacency + drawn as a plain call. Emitted non-empty-only (P5).
+    _mc = _a3_code.module_calls(REPO_ROOT)
+    if _mc:
+        amap["module_calls"] = _mc
     # class 7 (boot): the lifespan/startup root — main.py is unclaimed, so its seeder write-path
     # never drew. Emit non-empty-only (P5); the graft arm homes main.py → __unclaimed__ for it.
     # class 13 (tasks): queue dispatch BY NAME (Celery/ARQ/Taskiq) — enqueue site → task fn, folded beside the
@@ -2094,7 +2099,8 @@ def main() -> int:
                      for _k, _v in _a3_code.function_insight(REPO_ROOT).items()
                      if _v.get("access") or _v.get("sinks") or _v.get("externals")},   # A2+C4+prov: joined onto the call-tree
             dispatches=(_dm.get("dispatches") or []) + (_tm.get("dispatches") or []),   # class 6 + 13: event-bus and task edges, one wire
-            boot_roots=(amap.get("boot_roots") or []) + (amap.get("task_roots") or []))  # class 7 + 13: boot + task roots homed for behind/calls
+            boot_roots=(amap.get("boot_roots") or []) + (amap.get("task_roots") or []),  # class 7 + 13: boot + task roots homed for behind/calls
+            module_calls=_mc.get("calls") or [])      # class 14: module-attribute calls resolved suite-side (tier0 review 2026-09-07)
         # the web→API bridge arm (Path A frontend): a SEPARATE module with its own
         # try/except so a fetch-parser bug degrades the bridge to honest-empty and
         # NEVER masquerades as graft absence (two arms, two presence flags). Read-only

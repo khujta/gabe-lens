@@ -207,6 +207,72 @@ finally:
     C.ENTITY_CODE = _sv_ec2; C._EMAP_CACHE.clear(); C._EMAP_CACHE.update(_sv_cache); C._DISPATCH = _sv_disp
 check(_dm0 == {}, "dispatch_map SILENT: no register/publish → {} (honest-empty, byte-identical)")
 
+# ── class 14 (tier0 review 2026-09-07) · module_calls: `from app import crud` + `crud.fn()` → a suite-extracted call edge ──
+_mr = _pl.Path(_tf.mkdtemp()); (_mr / "app/api/routes").mkdir(parents=True); (_mr / "app/core").mkdir()
+(_mr / "app/__init__.py").write_text(""); (_mr / "app/api/__init__.py").write_text(""); (_mr / "app/core/__init__.py").write_text("")
+(_mr / "app/crud.py").write_text("def authenticate(session, email, password):\n    return get_user_by_email(session, email)\ndef get_user_by_email(session, email):\n    return None\n")
+(_mr / "app/core/security.py").write_text("def create_access_token(sub):\n    return sub\n")
+(_mr / "app/api/routes/login.py").write_text("from app import crud\nimport app.core.security as sec\ndef login_access_token(session, form):\n    user = crud.authenticate(session=session, email=form.username, password=form.password)\n    return sec.create_access_token(user.id)\ndef test_token():\n    from app import crud as c2\n    c2.get_user_by_email(None, 'x')\n    crud.missing_fn()\n")
+(_mr / "app/api/routes/direct.py").write_text("from app.crud import authenticate\ndef d():\n    return authenticate(None, 'a', 'b')\n")
+_sv_mc = C._MODCALLS
+C.ENTITY_CODE = {"e": {"services": ["app/crud.py", "app/core/security.py", "app/api/routes/login.py", "app/api/routes/direct.py"]}}
+C._EMAP_CACHE.clear(); C._MODCALLS = None
+try:
+    _mc = C.module_calls(_mr)
+finally:
+    C.ENTITY_CODE = _sv_ec; C._EMAP_CACHE.clear(); C._EMAP_CACHE.update(_sv_cache); C._MODCALLS = _sv_mc
+_me = sorted((e["s"].split("#")[-1], e["t"].split("#")[-1]) for e in _mc.get("calls", []))
+check(_me == [("login_access_token", "authenticate"), ("login_access_token", "create_access_token"), ("test_token", "get_user_by_email")]
+      and all(e["conf"] == "extracted" for e in _mc["calls"]) and _mc["stats"] == {"sites": 4, "resolved": 3, "files": 1},
+      f"module_calls FIRE: `from app import crud` · `import app.core.security as sec` · a fn-local `from app import crud as c2` each resolve mod.fn() to <modfile>#fn (conf extracted; 4 sites, 3 resolved) ({_me} {_mc.get('stats')})")
+check(("d", "authenticate") not in _me and not any(t == "missing_fn" for _, t in _me),
+      "module_calls SILENT: a FUNCTION import (`from app.crud import authenticate`) is the graft's edge, not ours; a name the module does not define is never guessed")
+C._MODCALLS = None; _sv_ec3 = C.ENTITY_CODE; C.ENTITY_CODE = {"e": {"services": ["app/plain.py"]}}; C._EMAP_CACHE.clear()
+try:
+    _mc0 = C.module_calls(_dr0)
+finally:
+    C.ENTITY_CODE = _sv_ec3; C._EMAP_CACHE.clear(); C._EMAP_CACHE.update(_sv_cache); C._MODCALLS = _sv_mc
+check(_mc0 == {}, "module_calls SILENT: no module-attribute call site → {} (honest-empty, byte-identical)")
+
+# ── function_insight parses through the newer-syntax shim and RECORDS a file it still cannot parse (tier0 review 2026-09-07) ──
+_sr = _pl.Path(_tf.mkdtemp()); (_sr / "app").mkdir()
+(_sr / "app/deps.py").write_text("def get_current_user(token):\n    try:\n        return token\n    except InvalidTokenError, ValidationError:\n        return None\n")
+(_sr / "app/broken.py").write_text("def broken(:\n    pass\n")
+_sv_fi, _sv_sim, _sv_unp = C._FN_INSIGHT, dict(C._FN_SIM_MODE), dict(C._UNPARSEABLE)
+C.ENTITY_CODE = {"e": {"services": ["app/deps.py", "app/broken.py"]}}; C._EMAP_CACHE.clear(); C._FN_INSIGHT = None; C._FN_SIM_MODE = {}; C._UNPARSEABLE.clear()
+try:
+    _fi = C.function_insight(_sr)
+    _unp = dict(C._UNPARSEABLE)
+finally:
+    C.ENTITY_CODE = _sv_ec; C._EMAP_CACHE.clear(); C._EMAP_CACHE.update(_sv_cache); C._FN_INSIGHT = _sv_fi; C._FN_SIM_MODE = _sv_sim; C._UNPARSEABLE.clear(); C._UNPARSEABLE.update(_sv_unp)
+check("app/deps.py::get_current_user" in _fi,
+      f"function_insight FIRE: a PEP 758 `except A, B:` file parses through the shim — the auth gate keeps its fn key (tier0's deps.py had vanished here) ({sorted(_fi)})")
+check(str(_unp.get("app/broken.py", "")).startswith("syntax error") and "app/deps.py" not in _unp,
+      f"function_insight FIRE: a file the shim cannot rescue is NAMED in unparseable_files, never a silent hole ({_unp})")
+
+# ── the Depends ALIAS carries its declaring file + a factory callee; an ambiguous gate name resolves beside the alias ──
+_ar = _pl.Path(_tf.mkdtemp()); (_ar / "app/api/routes").mkdir(parents=True)
+(_ar / "app/__init__.py").write_text(""); (_ar / "app/api/__init__.py").write_text("")
+(_ar / "app/api/deps.py").write_text("from typing import Annotated\nfrom fastapi import Depends\ndef get_current_user():\n    return 1\ndef require_permission(p):\n    return p\nCurrentUser = Annotated[int, Depends(get_current_user)]\nAdminUser = Annotated[int, Depends(require_permission('admin'))]\n")
+_rt = ast.parse("from app.api.deps import CurrentUser, AdminUser\n@router.get('/me')\ndef me(user: CurrentUser, admin: AdminUser):\n    return user\n")
+_al = C._dep_aliases(_ar, "app/api/routes/users.py", _rt); _am = C._dep_alias_meta("app/api/routes/users.py")
+_fnn = [n for n in ast.walk(_rt) if isinstance(n, ast.FunctionDef)][0]
+_mw = {m["name"]: m for m in C._endpoint_middleware(_fnn, _fnn.decorator_list[0], _al, _am)}
+check(_mw.get("get_current_user", {}).get("_decl") == "app/api/deps.py" and _mw.get("require_permission('admin')", {}).get("callee") == "require_permission",
+      f"alias meta FIRE: a gate reached through `CurrentUser` knows the alias's declaring file, and a factory dep inside an alias keeps its callee ({_mw})")
+_ents = {"e": {"endpoints": [{"file": "app/api/routes/users.py", "fn": "me", "middleware": [dict(m) for m in _mw.values()]}]}}
+_ents_nohint = {"e": {"endpoints": [{"file": "app/api/routes/users.py", "fn": "me", "middleware": [{k: v for k, v in m.items() if k != "_decl"} for m in _mw.values()]}]}}
+_sv_fi2 = C._FN_INSIGHT
+C._FN_INSIGHT = {"app/api/deps.py::get_current_user": {"fn": "get_current_user"}, "app/other.py::get_current_user": {"fn": "get_current_user"}, "app/api/deps.py::require_permission": {"fn": "require_permission"}}
+try:
+    C.resolve_middleware_targets(_ents, _ar); C.resolve_middleware_targets(_ents_nohint, _ar)
+finally:
+    C._FN_INSIGHT = _sv_fi2
+_rmw = {m["name"]: m for m in _ents["e"]["endpoints"][0]["middleware"]}; _rmw0 = {m["name"]: m for m in _ents_nohint["e"]["endpoints"][0]["middleware"]}
+check(_rmw["get_current_user"].get("fn") == "app/api/deps.py::get_current_user" and not any("_decl" in m for m in _rmw.values()),
+      f"resolver FIRE: two fns named get_current_user — the one declared beside the alias wins; the hint is popped before the archmap ({_rmw})")
+check("fn" not in _rmw0["get_current_user"], "resolver SILENT: without the alias hint an ambiguous name stays unresolved (the honest floor, unchanged)")
+
 # ── class 7 (wave C) · parse_boot_roots (FastAPI(lifespan=) / @app.on_event('startup')) ──
 _br = _pl.Path(_tf.mkdtemp()); (_br / "app" / "api").mkdir(parents=True)
 (_br / "app" / "api" / "routes.py").write_text("from fastapi import APIRouter\nrouter=APIRouter()\n@router.get('/x')\ndef h():\n    return 1\n")
@@ -359,6 +425,9 @@ check(epmw('@router.get("/m")\ndef m(ctx=get_auth_context):\n    pass') == [],
 class _FP:
     def __init__(self, t=None, raw=None): self._t=t; self._raw=raw
     def exists(self): return True
+    def __fspath__(self): return "fake.py"   # the unparseable-file record keys by path (2026-09-06) — a fake needs a path string
+    def __str__(self): return "fake.py"
+    def is_dir(self): return False          # a fake FILE — the mount-chain scan (2026-09-06) asks; without this the whole block died at parse_endpoints and the runner still read 0
     def read_text(self, errors=None):
         return self._raw.decode("utf-8", errors=errors or "strict") if self._raw is not None else self._t
     def relative_to(self, o): return self
@@ -396,6 +465,7 @@ check(isinstance(C.parse_endpoints(_repo('@router.get(b"/x")\ndef h(): pass'), [
 print(f"orm-access: {pass_} passed, {fail} failed")
 sys.exit(1 if fail else 0)
 PY
+[ $? -eq 0 ] || exit 1   # fail-closed: this block crashed silently for a day (review 2026-09-07) — a battery that cannot fail is non-evidence
 
 # ── SCHEMA HOMING (operator ruling 2026-08-27: a schema lives where its CONSUMER lives) ──
 # Endpoint consumer → move · nested-only → follow the parent (transitive) · multi-consumer stays

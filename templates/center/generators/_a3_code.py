@@ -482,7 +482,7 @@ def parse_endpoints(repo: Path, files: list[str]) -> list[dict]:
                 }
                 if _streams(node, dec):                                # class 13b: the handler streams (SSE / chunked) — an async generator, not one payload
                     ep["stream"] = True
-                mw = _endpoint_middleware(node, dec, _aliases)   # C4: the level-2 gates (auth/consent/idempotency) run before the body
+                mw = _endpoint_middleware(node, dec, _aliases, _dep_alias_meta(rel))   # C4: the level-2 gates (auth/consent/idempotency) run before the body; the alias meta = declaring file + factory callee
                 if mw:
                     ep["middleware"] = mw
                 _fl = _flag_gates(node, parse_flags(repo))   # class 12: the feature-flag walls in the handler body
@@ -2024,6 +2024,17 @@ def _depends_callee(call) -> str | None:
 _ALIASES: dict[tuple, dict] = {}
 
 
+_ALIAS_META: dict[tuple, dict[str, dict]] = {}   # (rel, depth) → {Alias: {"decl": file, "callees": {dep expr: factory leaf|None}}} — beside _dep_aliases, same walk
+
+
+def _dep_alias_meta(rel: str, depth: int = 0) -> dict[str, dict]:
+    """The declaring FILE + factory callee per alias name (filled by the same walk as ``_dep_aliases``) — so a
+    by-NAME gate resolves to the fn its alias was declared beside when the bare name is ambiguous, and a
+    factory dep inside an alias (``Annotated[…, Depends(require_permission(P))]``) keeps its callee
+    (review 2026-09-07: the alias arm recorded the name only)."""
+    return _ALIAS_META.get((rel, depth), {})
+
+
 def _dep_aliases(repo: Path, rel: str, tree, depth: int = 0) -> dict[str, list[str]]:
     """{AliasName: [dep exprs]} — module-level ``X = Annotated[T, Depends(f)]`` in this file, plus the
     aliases it imports by name (one hop). tier1 declares ``CurrentUserDep`` in
@@ -2033,6 +2044,7 @@ def _dep_aliases(repo: Path, rel: str, tree, depth: int = 0) -> dict[str, list[s
     if ck in _ALIASES:
         return _ALIASES[ck]
     out: dict[str, list[str]] = {}
+    meta: dict[str, dict] = {}
     for node in getattr(tree, "body", []):
         if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
             deps = _annotated_depends(node.value)
@@ -2041,6 +2053,7 @@ def _dep_aliases(repo: Path, rel: str, tree, depth: int = 0) -> dict[str, list[s
                 for t in tg:
                     if isinstance(t, ast.Name):
                         out[t.id] = deps
+                        meta[t.id] = {"decl": rel, "callees": _annotated_callees(node.value)}
         elif isinstance(node, ast.ImportFrom) and depth < 1:
             mf = _resolve_module(repo, rel, node.module, node.level)
             if not mf:
@@ -2049,10 +2062,14 @@ def _dep_aliases(repo: Path, rel: str, tree, depth: int = 0) -> dict[str, list[s
             if sub_tree is None:
                 continue
             theirs = _dep_aliases(repo, mf, sub_tree, depth + 1)
+            their_meta = _dep_alias_meta(mf, depth + 1)
             for a in node.names:
                 if a.name in theirs:
                     out[a.asname or a.name] = theirs[a.name]
+                    if a.name in their_meta:
+                        meta[a.asname or a.name] = their_meta[a.name]
     _ALIASES[ck] = out
+    _ALIAS_META[ck] = meta
     return out
 
 
@@ -2064,6 +2081,22 @@ def _dec_name(dec) -> str | None:
     if isinstance(dec, ast.Attribute):
         return dec.attr
     return None
+
+
+def _annotated_callees(ann) -> dict[str, str | None]:
+    """{dep expr: factory leaf name | None} for every Depends inside an ``Annotated[...]`` — the callee
+    ``_depends_callee`` gives a parameter default, now for an alias too."""
+    out: dict[str, str | None] = {}
+    if isinstance(ann, ast.Subscript):
+        v = ann.value
+        if getattr(v, "id", None) == "Annotated" or getattr(v, "attr", None) == "Annotated":
+            sl = ann.slice
+            elts = sl.elts if isinstance(sl, ast.Tuple) else [sl]
+            for el in elts:
+                t = _depends_target(el)
+                if t:
+                    out[t] = _depends_callee(el)
+    return out
 
 
 def _annotated_depends(ann) -> list[str]:
@@ -2083,7 +2116,7 @@ def _annotated_depends(ann) -> list[str]:
     return out
 
 
-def _endpoint_middleware(node, route_dec, aliases: dict | None = None) -> list[dict]:
+def _endpoint_middleware(node, route_dec, aliases: dict | None = None, alias_meta: dict | None = None) -> list[dict]:
     """[{'name','via','gate'[,'callee']}] — the gates/deps that run before the handler body, or []
     (honest). via ∈ {route-dep, param-dep, decorator}; gate-first, then name-sorted. ``aliases`` =
     the file's ``Name = Annotated[…, Depends()]`` table (``_dep_aliases``) so a bare-Name annotation
@@ -2113,8 +2146,11 @@ def _endpoint_middleware(node, route_dec, aliases: dict | None = None) -> list[d
             for nm in _annotated_depends(p.annotation):
                 _add(nm, "param-dep")
             if isinstance(p.annotation, ast.Name) and aliases and p.annotation.id in aliases:   # 2c · x: CurrentUserDep (a module-level alias)
+                _am = (alias_meta or {}).get(p.annotation.id) or {}
                 for nm in aliases[p.annotation.id]:
-                    _add(nm, "param-dep")
+                    _add(nm, "param-dep", (_am.get("callees") or {}).get(nm))
+                    if _am.get("decl") and nm in found and "_decl" not in found[nm]:
+                        found[nm]["_decl"] = _am["decl"]      # the alias's declaring file — a resolver hint, popped before the archmap write
     for dec in node.decorator_list:                               # 3 · non-route decorator (@require_household)
         if dec is route_dec:
             continue
@@ -2154,7 +2190,12 @@ def function_insight(repo: Path) -> dict:
     for f, text in texts.items():
         try:
             trees[f] = ast.parse(text)
-        except SyntaxError:
+        except SyntaxError as exc:
+            _shimmed = _shim_parse(text)          # the newer-syntax shim _safe_parse applies (PEP 758) — tier0's deps.py (the auth gate) vanished here (review 2026-09-07)
+            if _shimmed is not None:
+                trees[f] = _shimmed
+            else:
+                _UNPARSEABLE.setdefault(f, f"syntax error at line {exc.lineno}")   # said on the archmap, never a silent hole in the fn graph
             continue
     # the model→table map ALSO sees the UNCLAIMED table classes (model_census) — so a
     # write to a table the config never claimed is still attributed (C2) and minted (C3);
@@ -2316,9 +2357,14 @@ def resolve_middleware_targets(entities: dict, repo: Path) -> int:
             continue
         for ep in e.get("endpoints") or []:
             for mw in ep.get("middleware") or []:
+                _decl = mw.pop("_decl", None)          # the alias's declaring file (a hint, never emitted)
                 if not mw.get("gate") or mw.get("fn"):
                     continue
                 cands = by_name.get(mw["name"]) or by_name.get(mw.get("callee") or "")   # a factory dep resolves by its callee (review 2026-09-06)
+                if cands and len(cands) > 1 and _decl:  # ambiguous by name → the one declared beside the alias wins (review 2026-09-07)
+                    _near = [c for c in cands if c.startswith(_decl + "::")]
+                    if len(_near) == 1:
+                        cands = _near
                 if cands and len(cands) == 1:           # unique → resolve; ambiguous → honest floor
                     mw["fn"] = cands[0]
                     resolved += 1
@@ -2476,6 +2522,95 @@ def dispatch_map(repo: Path) -> dict:
     return out
 
 
+
+
+# ── MODULE-ATTRIBUTE CALLS (tier0 review 2026-09-07 — class 14). `from app import crud` then `crud.authenticate(...)`:
+#    the third-party graft extracts the member call with receiver `crud` but resolves a member call only through a
+#    TYPED receiver, so a module alias drops the edge — tier0's login handler had 0 outgoing calls while its body
+#    calls crud.authenticate and security.create_access_token (13 such sites across its routes; not one `calls` edge
+#    into crud.py in the whole index). Resolved SUITE-SIDE, never by patching the package: the alias → its FILE through
+#    the import (`from pkg import mod` · `import pkg.mod as m` · `from . import mod` · a function-local import), and
+#    the call joins `<file>#<enclosing fn>` → `<modfile>#<fn>` ONLY when the target file DEFINES fn at module level
+#    (a def scan — never a guess). Same shape as the dispatch edges: appended beside graft's calls with conf
+#    'extracted', folded into the adjacency the behind/d2w derives read. {} honest-empty (no site → byte-identical).
+_MODCALLS: dict | None = None
+
+
+def module_calls(repo: Path) -> dict:
+    """{calls: [{s, t, conf:'extracted'}], stats: {sites, resolved, files}} or {} honest-empty — see the block comment."""
+    global _MODCALLS
+    if _MODCALLS is not None:
+        return _MODCALLS
+    trees: dict[str, ast.AST] = {}
+    for slug in ENTITY_CODE:
+        v = collect_entity_map(slug, repo)
+        if not v:
+            continue
+        for _layer, f, _n in v.get("files", []):
+            if f.endswith(".py") and f not in trees:
+                t, _ = _safe_parse(repo / f)
+                if t is not None:
+                    trees[f] = t
+    defs: dict[str, set[str]] = {}                        # file → its MODULE-LEVEL function names
+    for f, t in trees.items():
+        defs[f] = {n.name for n in t.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+
+    def _mod_alias_file(f: str, node) -> dict[str, str]:
+        """{alias: file} for one import statement — only aliases that name a MODULE FILE (a `from x import fn` names a fn, not a module → skipped)."""
+        out: dict[str, str] = {}
+        if isinstance(node, ast.ImportFrom):
+            for a in node.names:
+                if a.name == "*":
+                    continue
+                dotted = (node.module + "." + a.name) if node.module else a.name
+                mf = _resolve_module(repo, f, dotted, node.level)
+                if mf and mf.endswith(".py") and not mf.endswith("__init__.py"):
+                    out[a.asname or a.name] = mf
+        elif isinstance(node, ast.Import):
+            for a in node.names:
+                mf = _resolve_module(repo, f, a.name, 0)
+                if mf and mf.endswith(".py") and not mf.endswith("__init__.py"):
+                    out[a.asname or a.name] = mf     # `import pkg.mod` binds the DOTTED name; matched by the unparsed receiver below
+        return out
+
+    def _own_nodes(fn):
+        stack = list(ast.iter_child_nodes(fn))
+        while stack:
+            n = stack.pop()
+            yield n
+            if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                stack.extend(ast.iter_child_nodes(n))
+
+    sites = 0
+    edges: set[tuple[str, str]] = set()
+    for f, t in trees.items():
+        top: dict[str, str] = {}
+        for node in t.body:
+            top.update(_mod_alias_file(f, node))
+        for fnnode in ast.walk(t):
+            if not isinstance(fnnode, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            local = dict(top)
+            for n in _own_nodes(fnnode):
+                if isinstance(n, (ast.ImportFrom, ast.Import)):
+                    local.update(_mod_alias_file(f, n))
+            pid = f"{f}#{fnnode.name}"
+            for n in _own_nodes(fnnode):
+                if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)):
+                    continue
+                recv = n.func.value
+                key = recv.id if isinstance(recv, ast.Name) else (ast.unparse(recv) if isinstance(recv, ast.Attribute) else None)
+                if not key or key not in local:
+                    continue
+                sites += 1
+                tf = local[key]
+                if n.func.attr in defs.get(tf, set()) and f"{tf}#{n.func.attr}" != pid:
+                    edges.add((pid, f"{tf}#{n.func.attr}"))
+    calls = [{"s": s_, "t": t_, "conf": "extracted"} for (s_, t_) in sorted(edges)]
+    out = ({"calls": calls, "stats": {"sites": sites, "resolved": len(calls), "files": len({c["s"].split("#", 1)[0] for c in calls})}}
+           if calls else {})
+    _MODCALLS = out
+    return out
 
 
 # ── TASK DISPATCH BY NAME (review 2026-09-06, repo-study — class 13). A queue hands work to a worker by a

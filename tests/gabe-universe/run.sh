@@ -1100,6 +1100,19 @@ check('function _stepData(n){' in page and 'function _dataHTML(sd){' in page and
 # group rows are gone; ONE sticky header names every column; each row carries its entity color as --ec.
 check('class="jdcols"' in page and '#uni-jrnref .jdcols, #uni-jrnref .jdstep{ display:grid;' in page and 'grid-template-columns:26px 22px 190px 130px 130px 196px 196px;' in page and 'jd-grid' in page and 'class="jdmh"' in page and 'class="jdmx' in page and 'background:var(--panel);' in page and 'padding:0 0 22px' in page and 'class="jdgrp"' not in page and 'class="jdclu"' not in page and 'style="--ec:' in page and 'var(--ec, transparent) 9%' in page and 'function _srcsOf(id, rels){' in page and 'function _feEndpoints(id){' in page,
       "the 7-column GRID (element · entity·cluster · operation · from · to), the FLUSH opaque sticky header, entity-tinted rows, or the incoming-edge resolver are gone; or a retired group-row/standalone-cluster came back")
+# a route's LABEL is its URL path (tier0 review 2026-09-07): the emitter's `label` wins over the export name, the card names the export + the raw literal,
+# and the journey anchors on the route whose first URL segment matches the journey's first endpoint (path-aware, idiom-only)
+check('label:p.label||p.name, col:KINDS[kind].col' in page and 'route:p.route||null, exportName:(p.label&&p.label!==p.name)?p.name:null' in page
+      and 'det.exportName?kv("role","export", det.exportName+(det.route?' in page,
+      "route label FIRE: the fe node's label funnel (p.label || p.name), det.route/exportName, or the card's export · route row is gone")
+check('label:p.name, col:KINDS[kind].col' not in page,
+      "route label REGRESSION: the fe node label is the bare export name again (six TanStack routes would all read `Route`)")
+check('function _jrnRouteAnchor(ids, eps){' in page and 'var routeSeg=function(n){ return (n&&n.det&&n.det.route!=null&&/^\\//.test(n.label||""))?_seg(n.label):null; };' in page
+      and 'var pick=here.filter(function(n){ var rs=routeSeg(n); return rs&&epSeg[rs]; })[0]||' in page
+      and '_jrnRouteAnchor(fe, j.carriers.map(function(id){ var n=NIDS[id]; return (n&&n.kind==="endpoint")?n.label:null; }).filter(Boolean))' in page,
+      "journey anchor FIRE: the path-aware rule (a route whose first URL segment matches the journey's first endpoint leads) or its endpoint feed is gone")
+check('function _jrnRouteAnchor(ids){' not in page, "journey anchor REGRESSION: the anchor takes no endpoint paths — the walk opens on the first route in frontier order again")
+
 # journey matrix: operation frozen + transitive call-chain reach (indirect cells) (operator 2026-09-03)
 check('TRANSITIVE data reach' in page and '.cell.ind{' in page and 'jdopc{ position:sticky; left:368px' in page and '_HOP={calls:1' in page,
       "the transitive call-chain reach (indirect cells / .cell.ind style) or the operation-column freeze regressed")

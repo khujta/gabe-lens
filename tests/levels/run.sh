@@ -97,6 +97,28 @@ ck(len(_lvg["fn_edges"]) == 1, "fn_edges = handler-ROOTED graft calls only (non-
 _fe = _lvg["fn_edges"][0]
 ck(_fe["ss"] == "orders" and _fe["ds"] == "users" and _fe["rel"] == "calls" and _fe["conf"] == "extracted",
    "fn_edge reshaped {s·ss·t·ds·rel·conf} with the graft confidence carried")
+# 3c · DATA REACH (tier0 review 2026-09-07): a READ-only callee that carries access.ops draws under a drawn fn, two hops deep, never three
+_AM3 = copy.deepcopy(AMAP)
+for _nm, _mdl in (("reader", "Order"), ("reader2", "OrderLine"), ("reader3", "Order")):
+    _AM3["function_insight"]["svc/o.py::" + _nm] = {"fn": _nm, "entity": "orders", "file": "svc/o.py", "layer": "services", "handler": False, "god": False, "internal": 1, "api": 0, "web": 0,
+                                                    "access": {"ops": [{"model": _mdl, "table": _mdl.lower(), "rw": "r"}], "commits": False}}
+_AM3["function_insight"]["svc/o.py::noops"] = {"fn": "noops", "entity": "orders", "file": "svc/o.py", "layer": "services", "handler": False, "god": False, "internal": 1, "api": 0, "web": 0}
+_GR3 = {"present": True, "functions": {
+    "fn_slug": {"api/orders.py#list_orders": "orders", "api/users.py#helper": "users", "svc/o.py#reader": "orders", "svc/o.py#reader2": "orders", "svc/o.py#reader3": "orders", "svc/o.py#noops": "orders"},
+    "calls": [{"s": "api/orders.py#list_orders", "t": "api/users.py#helper", "ss": "orders", "ts": "users", "conf": "extracted"},
+              {"s": "api/users.py#helper", "t": "svc/o.py#reader", "ss": "users", "ts": "orders", "conf": "extracted"},     # hop 1: a reader (ops) under a drawn fn
+              {"s": "svc/o.py#reader", "t": "svc/o.py#reader2", "ss": "orders", "ts": "orders", "conf": "inferred"},       # hop 2
+              {"s": "svc/o.py#reader2", "t": "svc/o.py#reader3", "ss": "orders", "ts": "orders", "conf": "inferred"},      # hop 3: past the cap
+              {"s": "api/users.py#helper", "t": "svc/o.py#noops", "ss": "users", "ts": "orders", "conf": "extracted"},     # no ops: not admitted
+              {"s": "svc/o.py#noops", "t": "svc/o.py#reader", "ss": "orders", "ts": "orders", "conf": "extracted"}]}}
+_lv3 = _a3_levels.build_levels(_AM3, graph, graft=_GR3)
+_ids3 = {n["id"] for n in _lv3["fn_nodes"]}; _ed3 = {(e["s"], e["t"]) for e in _lv3["fn_edges"]}
+ck("svc/o.py#reader" in _ids3 and "svc/o.py#reader2" in _ids3 and ("api/users.py#helper", "svc/o.py#reader") in _ed3 and ("svc/o.py#reader", "svc/o.py#reader2") in _ed3,
+   "3c FIRE: a read-only callee carrying access.ops draws under a drawn fn, and its own ops callee one hop further (the table a handler READS through a helper lights)")
+ck("svc/o.py#reader3" not in _ids3 and "svc/o.py#noops" not in _ids3,
+   "3c SILENT: the third hop stays undrawn (the depth cap is said) and a pass-through helper without ops is never admitted")
+ck(json.dumps(_a3_levels.build_levels(AMAP, graph, graft=GRAFT)["fn_edges"], sort_keys=True) == json.dumps(_lvg["fn_edges"], sort_keys=True) and len(_lvg["fn_edges"]) == 1,
+   "3c SILENT: no ops-carrying callee → byte-identical fn_edges")
 ck(any(n["id"] == "api/users.py#helper" for n in _lvg["fn_nodes"]),
    "the call TARGET joins the drawn set (else the lab drops the edge to an undrawn node)")
 # per-entity HIDDEN functions (fn_slug − drawn_fn) — the star-field floor. FIRE: a homed-but-undrawn fn.
@@ -169,8 +191,8 @@ ck([e for e in _a3_levels.build_levels(AMAP, graph, graft={"present": True, "fun
    "class 8 honest-empty: no graft.depends → no depends fn_edge")
 _GW0 = {"present": True, "functions": _GW["functions"]}
 _lvw0 = _a3_levels.build_levels(AMAP, graph, graft=_GW0)
-ck(len(_lvw0["fn_edges"]) == 1 and _lvw0["fn_edges"][0]["t"] == "svc/o.py#svc_write",
-   "3b SILENT: no distance_to_write → handler-rooted edges only (honest-empty enrichment)")
+ck(len(_lvw0["fn_edges"]) == 2 and {e["t"] for e in _lvw0["fn_edges"]} == {"svc/o.py#svc_write", "svc/o.py#writer"},
+   "3b SILENT: no distance_to_write → the handler-rooted edge + the ONE data-reach hop (writer carries access.ops; 3c 2026-09-07) — no write-path descent")
 # fn CODE-BEHIND: graft.fn_behind attaches to the matching drawn fn_node; a fn with no
 # fn_behind entry (a leaf) carries no `behind` — honest-empty, the panel omits the section.
 _lo = [n for n in _lvg["fn_nodes"] if n["id"] == "api/orders.py#list_orders"][0]

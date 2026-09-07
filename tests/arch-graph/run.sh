@@ -606,6 +606,15 @@ check(all("rel" not in c for c in GG.derive_functions(WIRING, FIX["entities"])["
 check(GG.derive_functions(WIRING, FIX["entities"], dispatches=[{"s": "nope#x", "t": "apps/api/beta.py#do_b"}])["calls"]
       == GG.derive_functions(WIRING, FIX["entities"])["calls"],
       "class 6: a dispatch edge with an unhomed end is dropped (never guessed)")
+_df_mod = GG.derive_functions(WIRING, FIX["entities"], module_calls=[
+    {"s": "apps/api/beta.py#do_b2", "t": "apps/api/alpha.py#do_a", "conf": "extracted"},   # the module-alias call the graft dropped
+    {"s": "apps/api/alpha.py#do_a", "t": "apps/api/beta.py#do_b"},                         # a duplicate of a graft edge — never doubled
+    {"s": "nope#x", "t": "apps/api/beta.py#do_b"}])                                         # an unhomed end — dropped
+_df_plain = GG.derive_functions(WIRING, FIX["entities"])["calls"]
+check(any(c["s"] == "apps/api/beta.py#do_b2" and c["t"] == "apps/api/alpha.py#do_a" and c["conf"] == "extracted" and "rel" not in c for c in _df_mod["calls"])
+      and len(_df_mod["calls"]) == len(_df_plain) + 1,
+      "class 14 FIRE: a suite-extracted module-attribute call rides beside graft's calls as a PLAIN call (conf extracted, no rel); a duplicate is not doubled; an unhomed end is dropped")
+check(GG.derive_functions(WIRING, FIX["entities"], module_calls=[])["calls"] == _df_plain, "class 14 SILENT: no module calls → byte-identical calls")
 
 # ── class 7 (wave C) · boot root: mint the BOOT lifespan node into __unclaimed__ ──
 _fixbt = json.loads(json.dumps(FIX))

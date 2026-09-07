@@ -119,6 +119,70 @@ _PRINCIPAL = {"route": 0, "store": 1, "hook": 2, "component": 3, "fe-unknown": 4
 _NEXT_APP_RX = re.compile(r"(^|/)app/(?:.*/)?(page|layout|template|error|loading|not-found)\.(tsx|jsx)$")   # Next.js App Router file roles (review 2026-09-06: onyx web/src/app/**/page.tsx)
 
 
+# ── a route's LABEL is its URL path (tier0 review 2026-09-07: six TanStack routes all named `Route`) ────────
+# Resolution order, first hit wins: 1 · the literal the file-router factory was given (`createFileRoute("/_layout/admin")`)
+# 2 · the file, by the router's own convention (TanStack `routes/settings.cards.tsx` · Next `app/chat/page.tsx`)
+# 3 · the export name, as before (a react-router JSX route keeps its name — no `label` key at all).
+# `name` stays the export; the raw literal rides as `route` so the card can say `export Route · route "/_layout/admin"`.
+_FILE_ROUTER_CALLEES = frozenset({"createFileRoute", "createLazyFileRoute", "createRootRoute", "createRootRouteWithContext"})
+_ROUTE_PATHLESS_RX = re.compile(r"/_[^/]+(?=/|$)")          # a TanStack pathless segment (`/_layout`) — layout only, never in the URL
+_ROUTE_PARAM_RX = re.compile(r"\$([A-Za-z0-9_]+)")         # `$id` → `:id`
+_NEXT_GROUP_RX = re.compile(r"/(\([^/]*\)|@[^/]+)(?=/|$)")   # Next `(group)` and `@slot` segments — not in the URL
+
+
+def _route_path_label(lit: str) -> str:
+    """The display form of a file-route literal: pathless segments dropped, `$x` → `:x`; a literal that is ONLY
+    pathless segments (the layout route itself) keeps its raw form so it stays unique."""
+    p = _ROUTE_PATHLESS_RX.sub("", lit)
+    if not p:                       # `/_layout` — the layout route itself: nothing is left, the raw literal is the honest label
+        return lit
+    if not p.startswith("/"):
+        p = "/" + p
+    return _ROUTE_PARAM_RX.sub(r":\1", p)
+
+
+def _route_from_file(path: str) -> str | None:
+    """A TanStack file route without a literal: `…/routes/_layout/settings.cards.tsx` → `/settings/cards`."""
+    m = re.search(r"(^|/)routes/(.+)\.(tsx|jsx|ts|js)$", path)
+    if not m:
+        return None
+    stem = m.group(2)
+    if stem == "__root":
+        return "root shell"
+    stem = re.sub(r"\.(lazy|route)$", "", stem)
+    segs = [s for s in re.split(r"[/.]", stem) if s and s != "index" and not s.startswith("_")]
+    return _ROUTE_PARAM_RX.sub(r":\1", "/" + "/".join(segs))
+
+
+def _next_route_from_file(path: str) -> str | None:
+    """A Next.js App Router file: `web/src/app/(marketing)/chat/[id]/page.tsx` → `/chat/:id`."""
+    m = re.search(r"(^|/)app/(.*/)?(page|layout|template|error|loading|not-found)\.(tsx|jsx)$", path)
+    if not m:
+        return None
+    d = "/" + (m.group(2) or "").rstrip("/")
+    d = _NEXT_GROUP_RX.sub("", d) or "/"
+    d = re.sub(r"\[\.\.\.([A-Za-z0-9_]+)\]", r":\1*", d)
+    d = re.sub(r"\[([A-Za-z0-9_]+)\]", r":\1", d)
+    role = m.group(3)
+    return d if role == "page" else f"{d} · {role}"
+
+
+def route_label(ex: dict[str, Any], path: str) -> tuple[str | None, str | None]:
+    """(label, raw literal) for a route piece — (None, None) when the export name is the honest label (rule 3)."""
+    kind = ex.get("kind") or ""
+    callee = kind[5:] if kind.startswith("call:") else None
+    lit = ex.get("arg0")
+    if callee in _FILE_ROUTER_CALLEES:
+        if isinstance(lit, str) and lit.startswith("/"):
+            return _route_path_label(lit), lit
+        if callee.startswith("createRootRoute"):
+            return "root shell", None
+        return _route_from_file(path), None
+    if _NEXT_APP_RX.search(path):
+        return _next_route_from_file(path), None
+    return None, None
+
+
 def classify_export(ex: dict[str, Any], path: str) -> str | None:
     """ONE kind per exported symbol, or None = folds into the file's `module` piece.
     Order matters: a `useXStore` const from create() is a store, not a hook; a `*Route`
@@ -228,6 +292,12 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
             pid = _piece_id(path, ex["name"])
             pieces[pid] = {"id": pid, "name": ex["name"], "kind": k, "file": path, "home": home,
                            "candidate": bool(cand), "span": ex.get("span"), "area": _area_of(path, home)}
+            if k == "route":                              # the label is the URL path when the router says one; the export name otherwise
+                _rl, _rlit = route_label(ex, path)
+                if _rl:
+                    pieces[pid]["label"] = _rl
+                if _rlit:
+                    pieces[pid]["route"] = _rlit
             if _FIXTURE_RX.search(path):
                 pieces[pid]["fixture"] = True                   # showcase data, not domain mass — tagged, kept
             if ex.get("members"):                        # D5: a type's fields (the frontend's schema)
