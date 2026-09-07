@@ -15,7 +15,7 @@
     var LABELS = opts.labels !== false, PARTICLES = opts.particles !== false, WALK = !!opts.walk;
     var nodes = F.nodes, links = F.links, byId = F.byId, N = nodes.length, TIER = F.tier;
     var visible = function (n) { return n.tier <= TIER; };
-    var IS = 10, BR = IS * 0.62, BUB = '#aab4c6';
+    var IS = 10, BR = IS * 0.62, BUB = '#aab4c6', HULL_OP = { ent: 0.02, sub: 0.035 };   /* the station's OPMAP.polygon ghost · faint */
     var W = innerWidth, H = innerHeight, renderer = new T.WebGLRenderer({ antialias: N < 6000, powerPreference: 'high-performance', preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(W, H); renderer.setClearColor(0x0b0e13, 1); (opts.container || document.getElementById('g')).appendChild(renderer.domElement);
     var scene = new T.Scene(), cam = new T.PerspectiveCamera(55, W / H, 1, 20000); scene.add(new T.AmbientLight(0xffffff, 1.5)); var dl = new T.DirectionalLight(0xffffff, 1.2); dl.position.set(300, 400, 600); scene.add(dl);
@@ -25,7 +25,8 @@
       else if (n.kind === 'component' && n.feClass && n.feClass !== 'view') a = { family: 'feclass', value: n.feClass }; else if (n.kind === 'module' && n.mclass) a = { family: 'mclass', value: n.mclass };
       else if (n.kind === 'hook' && n.hrole) a = { family: 'hrole', value: n.hrole }; else if (n.kind === 'provider' && n.pclass) a = { family: 'pclass', value: n.pclass };
       if (n.kind === 'endpoint' && n.stream) b = { family: 'delivery', value: 'stream' }; return [a, b]; }
-    function wireColor(l, e) { var n = byId[e ? l.target : l.source], cfg = F.conn[l.kind] || F.conn.calls, band = F.bandOf(l); if (band) return band.color; if (cfg.gmode === 'type' || cfg.gmode === 'type-ent') { if (n && n.kind === 'endpoint' && n.m) return F.method[n.m]; } return (n && F.entColor[n.ent]) || cfg.color; }
+    function wireColor(l, e) { var cfg = F.conn[l.kind] || F.conn.calls, band = F.bandOf(l); if (band) return band.color; if (!cfg.grad) return cfg.color;   /* the station draws every kind flat except fk · rollup (grad) */
+      var n = byId[e ? l.target : l.source]; if (cfg.gmode === 'type' || cfg.gmode === 'type-ent') { if (n && n.kind === 'endpoint' && n.m) return F.method[n.m]; } return (n && F.entColor[n.ent]) || cfg.color; }
     var glyph = TK.glyphLayers(nodes, F.colorOf, function (n) { return (F.kinds[n.kind] || {}).form || 'sphere'; }), bub = TK.sphereLayer(N, BUB, 0.10, BR, 12), badges = TK.badgeLayer(nodes, slotsOf);
     var labels = LABELS ? TK.labelLayer(nodes, function (n) { return n.label; }, 4000) : { mesh: null, set: function () {}, hide: function () {}, flush: function () {}, slotOf: {}, pick: [] };
     var wires = TK.wireLayers(links, F, wireColor), cross = []; links.forEach(function (l, i) { if (l.cross) cross.push(i); });
@@ -35,15 +36,19 @@
     var hullGroup = new T.Group(), HULLS = []; scene.add(hullGroup);
     var hulls = { build: function () { while (hullGroup.children.length) { var h = hullGroup.children.pop(); if (h.geometry) h.geometry.dispose(); } HULLS = [];
         var byEnt = {}, bySub = {}; nodes.forEach(function (n) { if (!visible(n)) return; (byEnt[n.ent] = byEnt[n.ent] || []).push(n); var k = n.ent + '|' + n.sub; (bySub[k] = bySub[k] || []).push(n); });
-        Object.keys(byEnt).forEach(function (e) { var m = TK.hullMesh(F.entColor[e], 0.08), lbl = TK.labelSprite(F.entKind[e] === 'entity' ? e : ('fe · ' + e.replace(/^fe·/, '')), 34, F.entColor[e]); hullGroup.add(m); hullGroup.add(lbl); HULLS.push({ mesh: m, lbl: lbl, members: byEnt[e], pad: 26 }); });
-        Object.keys(bySub).forEach(function (k) { if (bySub[k].length < 2) return; var e = k.split('|')[0], m = TK.hullMesh(F.entColor[e], 0.12); hullGroup.add(m); HULLS.push({ mesh: m, members: bySub[k], pad: 10 }); }); },
+        Object.keys(byEnt).forEach(function (e) { var m = TK.hullMesh(F.entColor[e], HULL_OP.ent), lbl = TK.labelSprite(F.entKind[e] === 'entity' ? e : ('fe · ' + e.replace(/^fe·/, '')), 34, F.entColor[e]); hullGroup.add(m); hullGroup.add(lbl); HULLS.push({ mesh: m, lbl: lbl, members: byEnt[e], pad: 26, level: 'ent' }); });
+        Object.keys(bySub).forEach(function (k) { if (bySub[k].length < 2) return; var e = k.split('|')[0], sub = k.split('|')[1], m = TK.hullMesh(TK.subColor(F.entColor[e], sub), HULL_OP.sub), lbl = TK.labelSprite(sub, 24, '#c9d3e6'); hullGroup.add(m); hullGroup.add(lbl); HULLS.push({ mesh: m, lbl: lbl, members: bySub[k], pad: 10, level: 'sub' }); }); },
       update: function () { HULLS.forEach(function (h) { var pts = h.members.map(function (n) { return [n.x, n.y, n.z]; }); var g = TK.hullGeometry(pts, h.pad); if (g) { h.mesh.geometry.dispose(); h.mesh.geometry = g; h.mesh.visible = true; } else h.mesh.visible = false;
-        if (h.lbl) { var cx = 0, cz = 0, top = -1e9; pts.forEach(function (p) { cx += p[0]; cz += p[2]; if (p[1] > top) top = p[1]; }); h.lbl.position.set(cx / pts.length, top + 26, cz / pts.length); } }); } };
+        if (h.lbl) { var cx = 0, cy = 0, cz = 0, top = -1e9; pts.forEach(function (p) { cx += p[0]; cy += p[1]; cz += p[2]; if (p[1] > top) top = p[1]; }); if (h.level === 'ent') h.lbl.position.set(cx / pts.length, top + 26, cz / pts.length); else h.lbl.position.set(cx / pts.length - 28, cy / pts.length, cz / pts.length); } }); } };
     var posOf = function (id) { var n = byId[id]; return (n && visible(n)) ? [n.x, n.y, n.z] : null; };
     function sync(t) {
       for (var i = 0; i < N; i++) { var n = nodes[i], on = visible(n); glyph.setVisible(i, on); if (on) { glyph.setPos(i, n.x, n.y, n.z); bub.set(i, n.x, n.y, n.z); var ls = labels.slotOf[i]; if (ls != null) labels.set(ls, n.x, n.y - (BR + 4.5), n.z); } else { bub.hide(i); var ls2 = labels.slotOf[i]; if (ls2 != null) labels.hide(ls2); } }
-      badges.items.forEach(function (it, q) { var n = nodes[it.i]; if (visible(n)) badges.set(q, n.x + BR * 0.9, n.y + (it.slot ? BR * 0.9 : -BR * 0.9), n.z + 3); else badges.hide(q); });
-      glyph.flush(); bub.flush(); badges.flush(); labels.flush(); wires.update(posOf); if (parts) parts.update(t || 0, posOf, links); }
+      placeBadges();
+      glyph.flush(); bub.flush(); labels.flush(); wires.update(posOf); if (parts) parts.update(t || 0, posOf, links); }
+    var camSig = '';
+    function placeBadges() { var e = cam.matrixWorld.elements, ox = 2, oy = -2.5, sz = 3.5; camSig = e[0].toFixed(3) + e[4].toFixed(3) + e[8].toFixed(3) + e[1].toFixed(3) + e[5].toFixed(3);
+      badges.items.forEach(function (it, q) { var n = nodes[it.i]; if (!visible(n)) { badges.hide(q); return; } var sx = ox + it.slot * (sz * 0.72), sy = oy;   /* the station's _mbTick: pinned to the camera's right/up, slot B one badge-width camera-right */
+        badges.set(q, n.x + e[0] * sx + e[4] * sy + e[8] * 3, n.y + e[1] * sx + e[5] * sy + e[9] * 3, n.z + e[2] * sx + e[6] * sy + e[10] * 3); }); badges.flush(); }
     function syncVisibility() { links.forEach(function (l, li) { var a = byId[l.source], b = byId[l.target]; wires.setVisible(li, !!(a && b && visible(a) && visible(b))); }); }
     /* picking: nodes with the wires hidden, then the wires alone */
     var picker = TK.picker(renderer, cam), base = 0; glyph.meshes.forEach(function (m) { picker.add(m, base); base += m.count; }); wires.meshes.forEach(function (m) { picker.add(m, base); base += m.geometry.attributes.position.count / 2; });
@@ -60,7 +65,13 @@
     if (WALK) { var keys = {}, yaw = 0, pitch = 0, pos = new T.Vector3(F.anchors.EX[F.ents[0]] || 0, 0, 120), grid = null, CELL = 40;
       var rebuildGrid = function () { grid = Object.create(null); for (var i = 0; i < N; i++) { var n = nodes[i]; if (!visible(n)) continue; var k = ((n.x / CELL) | 0) + ',' + ((n.y / CELL) | 0) + ',' + ((n.z / CELL) | 0); (grid[k] = grid[k] || []).push(i); } };
       var collide = function (p) { var cx = (p.x / CELL) | 0, cy = (p.y / CELL) | 0, cz = (p.z / CELL) | 0, RR = BR + 3; for (var a = -1; a <= 1; a++) for (var b = -1; b <= 1; b++) for (var c = -1; c <= 1; c++) { var cell = grid[(cx + a) + ',' + (cy + b) + ',' + (cz + c)]; if (!cell) continue; for (var q = 0; q < cell.length; q++) { var n = nodes[cell[q]], dx = p.x - n.x, dy = p.y - n.y, dz = p.z - n.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz); if (d < RR && d > 1e-6) { var push = (RR - d) / d; p.x += dx * push; p.y += dy * push; p.z += dz * push; } } } };
-      renderer.domElement.addEventListener('click', function () { renderer.domElement.requestPointerLock(); });
+      /* the pointer lock is taken from the WALK button only — a canvas click must never re-grab the mouse after Esc (operator 2026-09-07: the cursor vanished in every Chrome window) */
+      var wbtn = document.createElement('button'); wbtn.className = 'btn walkbtn'; wbtn.textContent = '⌖ walk — click to take the mouse · Esc releases it'; wbtn.style.cssText = 'position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:40;font:12px ui-sans-serif,system-ui,sans-serif;background:#11161d;border:1px solid #3b82f6;color:#e6edf3;border-radius:999px;padding:6px 14px;cursor:pointer'; document.body.appendChild(wbtn);
+      var whint = document.createElement('div'); whint.textContent = 'WALK · WASD / QE · press Esc to release the mouse'; whint.style.cssText = 'position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:40;font:12px ui-sans-serif,system-ui,sans-serif;background:#3b82f6;color:#0b0e13;border-radius:999px;padding:6px 14px;display:none;pointer-events:none'; document.body.appendChild(whint);
+      wbtn.addEventListener('click', function (e) { e.stopPropagation(); renderer.domElement.requestPointerLock(); });
+      document.addEventListener('pointerlockchange', function () { var on = document.pointerLockElement === renderer.domElement; whint.style.display = on ? 'block' : 'none'; wbtn.style.display = on ? 'none' : 'block'; });
+      addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.pointerLockElement) document.exitPointerLock(); });   /* belt and braces beside Chrome's own Esc */
+      document.addEventListener('visibilitychange', function () { if (document.hidden && document.pointerLockElement) document.exitPointerLock(); });
       addEventListener('mousemove', function (e) { if (document.pointerLockElement !== renderer.domElement) return; yaw -= e.movementX * 0.0025; pitch = Math.max(-1.5, Math.min(1.5, pitch - e.movementY * 0.0025)); });
       addEventListener('keydown', function (e) { keys[e.code] = true; }); addEventListener('keyup', function (e) { keys[e.code] = false; });
       walk = { step: function (dt) { if (!grid) rebuildGrid(); var sp = (keys.ShiftLeft ? 90 : 45) * dt, fwd = new T.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), right = new T.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
@@ -73,6 +84,8 @@
     var G = LAB.graph({ nodes: nodes, links: links, byId: byId, settled: false,
       setTier: function (t) { TIER = Math.max(0, Math.min(3, t | 0)); syncVisibility(); sync(0); hulls.build(); hulls.update(); if (walk) walk.rebuild(); return G.visible(); },
       visible: function () { var c = 0; for (var i = 0; i < N; i++) if (visible(nodes[i])) c++; return c; },
+      drawn: function () { var c = 0; glyph.meshes.forEach(function (m) { var a = m.instanceMatrix.array; for (var k = 0; k < m.count; k++) if (a[k * 16] !== 0 || a[k * 16 + 1] !== 0 || a[k * 16 + 2] !== 0) c++; }); return c; },   /* instances with a non-zero scale — read from the GPU-bound buffer, not the adapter */
+      setHeat: function (be, fe) { F.setHeat(be, fe); wires.recolor(wireColor); return F.heat; },
       visibleIds: function () { return nodes.filter(visible).map(function (n) { return n.id; }); },
       positions: function () { var o = {}; for (var i = 0; i < N; i++) { var n = nodes[i]; if (visible(n)) o[n.id] = [n.x, n.y, n.z]; } return o; },
       screenOf: function (id) { var n = byId[id]; return n ? TK.screenOf(cam, renderer, n.x, n.y, n.z) : null; },
@@ -85,7 +98,7 @@
       surface: function (extra) { Object.assign(G, extra || {}); },
       run: function (onFrame) { (function loop() { requestAnimationFrame(loop); var now = performance.now(), dt = Math.min(0.05, (now - lastFrame) / 1000); lastFrame = now;
         var moved = onFrame ? onFrame(now, dt, frames) : false;
-        if (moved || !settled) sync(now * 0.001); else if (parts) parts.update(now * 0.001, posOf, links);
+        if (moved || !settled) sync(now * 0.001); else { if (parts) parts.update(now * 0.001, posOf, links); var e = cam.matrixWorld.elements, sig = e[0].toFixed(3) + e[4].toFixed(3) + e[8].toFixed(3) + e[1].toFixed(3) + e[5].toFixed(3); if (sig !== camSig) placeBadges(); }
         if ((moved || !settled) && frames % 3 === 0) hulls.update(); if (walk) { if (frames % 30 === 0) walk.rebuild(); walk.step(dt); }
         renderer.render(scene, cam); frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms');
         if (frames % 30 === 0) { var i2 = renderer.info; LAB.set('draws', i2.render.calls); LAB.set('tris', i2.render.triangles); LAB.set('geos', i2.memory.geometries); LAB.set('texs', i2.memory.textures); if (V.hud) V.hud(i2); } })(); } };

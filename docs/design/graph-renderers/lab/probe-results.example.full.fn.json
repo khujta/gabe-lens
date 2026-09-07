@@ -1,0 +1,227 @@
+[
+ {
+  "page": "adapter-check.html fn=1",
+  "lib": "adapter selfTest",
+  "ver": "no renderer",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": null,
+  "ok": true,
+  "wall_ms": 529,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T14:33:34.810Z",
+  "nodes": 1632,
+  "links": 4848,
+  "drawn": null,
+  "expected": null,
+  "drawn_ok": true,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": null,
+  "budget_hit": null,
+  "boot_ms": null,
+  "first_frame_ms": null,
+  "settle_ms": null,
+  "settled": true,
+  "ticks": null,
+  "settle_note": null,
+  "fps": null,
+  "frame_ms": null,
+  "draws": null,
+  "tris": null,
+  "geos": null,
+  "texs": null,
+  "pick": {
+   "tries": 0,
+   "hits": 0,
+   "other": 0,
+   "occluded": 0,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": null,
+   "mech": null
+  },
+  "heap_mb": 10.7,
+  "bundle": {
+   "station": 25390,
+   "vendor": 0,
+   "feed": 2354596,
+   "lab": 37462
+  },
+  "ink": null,
+  "r10": null,
+  "injected": null,
+  "purity": null,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "ids unique",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "link law: candidates = drawn + dropped",
+    "state": "free",
+    "how": "4848 + 14 vs 4862"
+   },
+   {
+    "row": "handler wires resolve (det.file#fn)",
+    "state": "free",
+    "how": "81 handler wires"
+   },
+   {
+    "row": "no wire dropped on a clean feed",
+    "state": "free",
+    "how": "14 dropped"
+   },
+   {
+    "row": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
+    "state": "free",
+    "how": "1632 vs 1632 (L2 307 · fe 1077 · absorbed 33 · fn 281)"
+   },
+   {
+    "row": "unknown kind kept, never dropped",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "fe=0 yields no fe node/link",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "method never defaults to GET",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "tier presets hold (no function below T2, no leaf component below T3, a generic kind at T0)",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "deterministic (build twice, identical)",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "seed positions deterministic + finite",
+    "state": "free",
+    "how": ""
+   }
+  ],
+  "notes": {
+   "norender": true,
+   "selftest": {
+    "ok": true,
+    "checks": [
+     {
+      "name": "ids unique",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "link law: candidates = drawn + dropped",
+      "ok": true,
+      "detail": "4848 + 14 vs 4862"
+     },
+     {
+      "name": "handler wires resolve (det.file#fn)",
+      "ok": true,
+      "detail": "81 handler wires"
+     },
+     {
+      "name": "no wire dropped on a clean feed",
+      "ok": true,
+      "detail": "14 dropped"
+     },
+     {
+      "name": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
+      "ok": true,
+      "detail": "1632 vs 1632 (L2 307 · fe 1077 · absorbed 33 · fn 281)"
+     },
+     {
+      "name": "unknown kind kept, never dropped",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "fe=0 yields no fe node/link",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "method never defaults to GET",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "tier presets hold (no function below T2, no leaf component below T3, a generic kind at T0)",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "deterministic (build twice, identical)",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "seed positions deterministic + finite",
+      "ok": true,
+      "detail": ""
+     }
+    ],
+    "counts": {
+     "nodes": 1632,
+     "links": 4848,
+     "ents": 20,
+     "byKind": {
+      "endpoint": 81,
+      "middleware": 3,
+      "element": 5,
+      "model": 57,
+      "external": 2,
+      "schema": 123,
+      "provider": 1,
+      "flag": 2,
+      "component": 351,
+      "module": 108,
+      "store": 5,
+      "type": 508,
+      "hook": 83,
+      "route": 22,
+      "function": 281
+     },
+     "byTier": [
+      197,
+      430,
+      992,
+      1632
+     ],
+     "fe": 1077,
+     "absorbed": 33,
+     "generic": 0,
+     "fn": 281,
+     "handlers": 81,
+     "cross": 343,
+     "feLinks": 3228,
+     "droppedLinks": 14,
+     "unknownRels": {
+      "returns": 16,
+      "takes": 16
+     }
+    },
+    "warnings": [
+     "rel \"returns\" unknown to this adapter — drawn as calls (never dropped)",
+     "rel \"takes\" unknown to this adapter — drawn as calls (never dropped)"
+    ]
+   }
+  },
+  "warnings": [],
+  "baked": null
+ }
+]

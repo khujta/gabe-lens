@@ -23,23 +23,28 @@ sweeps this was cut from: [sweeps/](sweeps/).
 The only variable between two rows of the table is the renderer. Every page draws the same 1,351 nodes (example) or 3,174 (onyx with
 the function layer), from the same seeds, under the same tick law (240 ticks), on the same host (swiftshader — fps is a rank).
 
-## The measured verdict
+## The measured verdict (build p2 — every row re-measured after the review fold)
 
-| page | example draws | onyx draws | purity (ex · onyx) | what it proves |
-|---|---:|---:|---|---|
-| lab-00 wrapper as shipped | 11,530 | — | 0.60 · — | today's cost: one Group per node, one Line per link, wires + hulls rebuilt every third tick — never settles in 400 s here |
-| lab-00 hollow wrapper | 130 | 100 | 0.60 · 0.65 | the middle path: sim + camera stay the wrapper's, rendering is ours and instanced |
-| **lab-01 raw three** | **130** | **102** | 0.60 · 0.65 | every must-survive row built at one draw per layer; 240 ticks in 4.3 s / 11.5 s (Blob worker); 19–31 MB |
-| lab-02 sigma | 4 | 4 | 0.53 · 0.59 | labels de-collide free; glyph roster, badges, dashes, particles need custom GLSL — a reading lane at most |
-| lab-03 cytoscape | canvas | canvas | 0.53 · 0.59 | containment FREE (nested compounds), badges + dashes declarative; Canvas2D at 1 fps and 217 MB on onyx |
-| lab-04 cosmos → three | 130 | 102 | **0.93 · 0.97** | a real cluster force; needs ring anchors (a 2D force collapses onto the adapter's x-line); the GPU is CPU-emulated here |
-| lab-05 Babylon | 62 | 52 | 0.60 · 0.65 | one call per thin layer; 8.3 MB; a total rewrite. The sweep's "1→1,343 draw-call jump" was its cumulative counter read raw |
-| fdp bake | — | — | **0.994 · 0.999** | deterministic, 0 settle, sub-cluster purity 0.97–0.99 — the picture that keeps a reader's spatial memory |
-| lab-01 raw · ×4 (5,404 nodes) | 466 | — | 0.50 · — | 240 ticks in 13 s, 34 MB; the per-cluster HULL meshes are the growth (4× the entities → ~260 hull meshes) — one merged hull geometry per level would flatten it under 30 |
-| lab-00 hollow · ×4 | 466 | — | 0.50 · — | the same draw count as raw three at 89 MB (the wrapper's node objects still exist, empty) |
+| page | example draws | onyx draws | purity (ex · onyx) | picks (hit + nearer) | what it proves |
+|---|---:|---:|---|---|---|
+| lab-00 wrapper as shipped | 11,530 | 24,299 | 0.60 · 0.60 | 8 + 9 | today's cost: one Group per node, one Line per link, wires + hulls rebuilt every third tick; never reaches tick 240 in 400 s (27 / 17 ticks); 203 → 320 MB |
+| lab-00 hollow wrapper | 130 | 102 | 0.60 · 0.60 | 12 + 7 | the middle path: sim + camera stay the wrapper's, rendering is ours and instanced; 22 → 34 MB |
+| **lab-01 raw three** | **156** | **130** | 0.60 · 0.61 | 9 + 11 | every must-survive row built at one draw per layer (+26 sub-cluster label sprites, the station's way); 240 ticks in 4.6 s / 10.9 s (Blob worker); 19 → 25 MB |
+| lab-02 sigma | 4 | 4 | 0.53 · 0.54 | 20 + 0 | labels de-collide free; glyph roster, badges, dashes, gradients, particles need custom GLSL — a reading lane at most |
+| lab-03 cytoscape | canvas | canvas | 0.53 · 0.54 | 20 + 0 | containment FREE (nested compounds), badges + dashes + gradients declarative; Canvas2D at 1 fps, 131 → 123 MB |
+| lab-04 cosmos → three | 156 | 130 | **0.93 · 0.97** | 8 + 12 | a real cluster force on RING anchors (a 2D force collapses onto the adapter's x-line); 74 / 39 ticks in 400 s — the GPU is CPU-emulated here |
+| lab-05 Babylon | 62 | 52 | 0.60 · 0.61 | 11 + 7 | one call per thin layer (the sweep's "1→1,343" was its cumulative counter read raw); 8.3 MB; 72 → 115 MB; a total rewrite |
+| fdp bake | — | — | **0.996 · 0.998** | — | deterministic, 0 settle, sub-cluster purity 0.98–0.99, with the handler wires in |
+| lab-01 raw · ×4 (5,404 nodes) | 570 | — | 0.50 · — | 8 + 12 | 240 ticks in 16.9 s, 33 MB; the per-cluster hull + label meshes are the growth (4× the entities) — one merged geometry per level brings it under 40 |
+| lab-00 hollow · ×4 | 466 | — | 0.50 · — | 7 + 10 | the wrapper's empty node objects still exist: 134 MB against 33 |
+
+`picks`: 20 deterministic ids, a real pointer move each; "nearer" = another node's centre within 8 px of the probed pixel — a correct pick
+of the nearer node, the cost of a dense field, not a miss. Every page's `drawn` is a RENDERER-side count and equalled the adapter's
+expectation on every row; the injected unknown kind was drawn AND warned on lab-01 · 02 · 03 · 05.
 
 Draw calls decide (the station reaches ~39k/frame at T3 today, the wrapper's structural cost). Purity decides where the layout comes
-from. Picking correctness ran 14–20 of 20 on every instanced page; the wrapper's raycast 10 of 20.
+from. The tier press kept every position static on every page that had settled; on a still-ticking page (the wrapper, cosmos) it is
+not measurable and the table says so.
 
 **The kill rule (D5) was met:** lab-01 landed every row at one draw per layer on onyx, so lab-04/05 stayed calibration and lab-06 (pixi)
 was not built.
@@ -100,6 +105,28 @@ npx esbuild entry.js --bundle --minify --format=iife --outfile=../3d-bundle.js
 The bundle carries `three.webgpu.js` + TSL (the wrapper's `useWebGPU` is a no-op, so 832 KB ride for nothing); a raw build with the
 addons the station needs measures ~880 KB. **Owed:** commit this recipe beside the bundle and prove it by a byte-compare rebuild.
 
+## The lab review (beat 11) — 39 claims, 38 confirmed, folded
+
+Three seats (the station maintainer's roast · the adapter · the measurement) and one verifier over the union. Five blockers, all fixed:
+the `drawn` column recounted the adapter's own tier predicate (now every page reports a RENDERER-side count — instance buffers, sigma's
+display data, cytoscape's visibility, Babylon's thin-instance matrices — and the probe compares it with the adapter's expectation); the
+endpoint→handler wires never resolved (the key is `det.file#fn`, the station's — +81 wires on the example, +545 on onyx, the fn bakes redone);
+a relayouting tier press still scored PASS (the equality now rides `ok` and is re-read after a settle wait); a failing adapter self-test
+could not fail the probe (`L.err` is read); and the ink assert's crop held the page chrome (hidden during the shot).
+
+The rest, folded: the wire colour law (flat kind colour except fk · rollup gradients; 85% of wires were entity-tinted), dashes divided by
+density (were multiplied — 3–7× too long), the station's `__BADGE_COL` verbatim (three families wore their host body colour), badges
+pinned to the camera's right/up like `_mbTick`, the label atlas clipped per cell with an ellipsis, the FE write-spine heat DEFAULT OFF
+(`?feheat=1`) and the backend band on calls wires by the target's `d2w` with 4 = green when unknown, generic kinds visible at every tier,
+a bake refused for clone rungs, a bake-staleness warning, unknown rels warned, a link law that can fire (candidates = drawn + dropped)
+and a handler-wire law, the two tautology self-checks replaced, the node-budget law (tier 0 above 1,600 without `?tier`), R10 and
+vendorable rows on every page, the wires row split (dash · thickness · beam · gradient; thickness and the beam toggle LOST on the WebGL
+pages), the settle column on one origin, tick counts on the 2D pages, the pick sample spanning the whole id space with `occluded`
+split from `other`, stamped rows (`p2`), variant-aware result keys, the runner's exit codes and a guard that fails closed.
+
+Two things the fold itself taught: a checklist label that SPELLS the forbidden words trips the R10 grep (rename the row, never the law);
+and a self-test that cannot fail is the same as no self-test — both tautologies were mine.
+
 ## Traps met (each cost a probe run)
 
 `new THREE.Color(<float>)` is the hex-int constructor (black — the sweep's pick was never proven) · sigma's reducers return the FULL
@@ -110,5 +137,5 @@ are gone; the vendored bundles live in the tree).
 
 ## Owed
 
-`?ships=1` (D2) · the review fold (lab review workflow) · merged hull geometry per level (the ×4 growth) · the `3d-bundle.js` recipe
+`?ships=1` (D2) · wire thickness + the per-kind beam toggle on the WebGL pages · merged hull geometry per level (the ×4 growth) · the `3d-bundle.js` recipe
 commit + byte-compare · the D7 decision · the station's `cooldownTime` fix · the capsule machinery deletion pass.

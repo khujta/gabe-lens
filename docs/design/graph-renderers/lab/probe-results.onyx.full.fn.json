@@ -1,6 +1,6 @@
 [
  {
-  "page": "adapter-check.html",
+  "page": "adapter-check.html fn=1",
   "lib": "adapter selfTest",
   "ver": "no renderer",
   "feed": "onyx",
@@ -8,15 +8,25 @@
   "layout": "live",
   "tier": null,
   "ok": true,
-  "wall_ms": 546,
-  "nodes": null,
-  "links": null,
+  "wall_ms": 529,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T14:33:36.005Z",
+  "nodes": 3174,
+  "links": 5865,
   "drawn": null,
+  "expected": null,
   "drawn_ok": true,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": null,
+  "budget_hit": null,
   "boot_ms": null,
   "first_frame_ms": null,
   "settle_ms": null,
   "settled": true,
+  "ticks": null,
+  "settle_note": null,
   "fps": null,
   "frame_ms": null,
   "draws": null,
@@ -27,16 +37,18 @@
    "tries": 0,
    "hits": 0,
    "other": 0,
+   "occluded": 0,
    "none": 0,
    "unpositioned": 0,
-   "ms": null
+   "ms": null,
+   "mech": null
   },
-  "heap_mb": 18.7,
+  "heap_mb": 15.8,
   "bundle": {
    "station": 25390,
    "vendor": 0,
    "feed": 4998167,
-   "lab": 34070
+   "lab": 37462
   },
   "ink": null,
   "r10": null,
@@ -52,9 +64,19 @@
     "how": ""
    },
    {
-    "row": "link ends resolve",
+    "row": "link law: candidates = drawn + dropped",
     "state": "free",
-    "how": ""
+    "how": "5865 + 0 vs 5865"
+   },
+   {
+    "row": "handler wires resolve (det.file#fn)",
+    "state": "free",
+    "how": "545 handler wires"
+   },
+   {
+    "row": "no wire dropped on a clean feed",
+    "state": "free",
+    "how": "0 dropped"
    },
    {
     "row": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
@@ -77,7 +99,7 @@
     "how": ""
    },
    {
-    "row": "every node has a tier 0..3",
+    "row": "tier presets hold (no function below T2, no leaf component below T3, a generic kind at T0)",
     "state": "free",
     "how": ""
    },
@@ -103,9 +125,19 @@
       "detail": ""
      },
      {
-      "name": "link ends resolve",
+      "name": "link law: candidates = drawn + dropped",
       "ok": true,
-      "detail": ""
+      "detail": "5865 + 0 vs 5865"
+     },
+     {
+      "name": "handler wires resolve (det.file#fn)",
+      "ok": true,
+      "detail": "545 handler wires"
+     },
+     {
+      "name": "no wire dropped on a clean feed",
+      "ok": true,
+      "detail": "0 dropped"
      },
      {
       "name": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
@@ -128,7 +160,7 @@
       "detail": ""
      },
      {
-      "name": "every node has a tier 0..3",
+      "name": "tier presets hold (no function below T2, no leaf component below T3, a generic kind at T0)",
       "ok": true,
       "detail": ""
      },
@@ -145,7 +177,7 @@
     ],
     "counts": {
      "nodes": 3174,
-     "links": 5320,
+     "links": 5865,
      "ents": 10,
      "byKind": {
       "middleware": 4,
@@ -166,6 +198,7 @@
      "absorbed": 0,
      "generic": 0,
      "fn": 2380,
+     "handlers": 545,
      "cross": 1626,
      "feLinks": 0,
      "droppedLinks": 0,
@@ -178,58 +211,267 @@
   "baked": null
  },
  {
-  "page": "lab-00-baseline-3d-force-graph.html?hollow=1",
+  "page": "lab-00-baseline-3d-force-graph.html fn=1",
+  "lib": "3d-force-graph 1.80 + three r185",
+  "ver": "the station's own 3d-bundle.js",
+  "feed": "onyx",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 89.7,
+   "up_ms": 318.2,
+   "visible_t0": 780,
+   "visible_t3": 3174,
+   "n": 3174,
+   "static": null,
+   "note": "sim still ticking at the press — positions move on their own, the equality is not measurable (the wrapper never reaches its 240th tick within the budget)"
+  },
+  "ok": true,
+  "wall_ms": 435342,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T15:37:08.236Z",
+  "nodes": 3174,
+  "links": 5865,
+  "drawn": 3174,
+  "expected": 3174,
+  "drawn_ok": true,
+  "fps_state": "ticking",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2.8,
+  "first_frame_ms": 2447.3,
+  "settle_ms": null,
+  "settled": false,
+  "ticks": 16,
+  "settle_note": "not settled within 400000 ms (tick 16)",
+  "fps": 0,
+  "frame_ms": 3257.1,
+  "draws": 24299,
+  "tris": 5479264,
+  "geos": 12258,
+  "texs": 5672,
+  "shot_note": null,
+  "pick": {
+   "tries": 20,
+   "hits": 7,
+   "other": 2,
+   "occluded": 11,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 11.39,
+   "mech": "the wrapper's Raycaster over every node Group (sprites skipped)"
+  },
+  "heap_mb": 311,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 0,
+   "feed": 4998167,
+   "lab": 62479
+  },
+  "ink": 0.9725,
+  "r10": null,
+  "injected": null,
+  "purity": 0.603,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "free",
+    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "free",
+    "how": "a Group of 5–7 Object3Ds per node (nodeThreeObject)"
+   },
+   {
+    "row": "badge slots A/B (7 of 8 families)",
+    "state": "free",
+    "how": "canvas sprites per node, pinned to the camera's right/up (the station's _mbTick)"
+   },
+   {
+    "row": "typed wires: dash per kind",
+    "state": "built",
+    "how": "one Line per link rebuilt every 3rd tick (LineDashedMaterial, base / density)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "1 px lines; the station's TubeGeometry branch for access is not ported"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
+   },
+   {
+    "row": "directional particles",
+    "state": "free",
+    "how": "linkDirectionalParticles (wrapper) on cross links — but the wrapper links are HIDDEN when typed wires are on (?conns=0 to see them)"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "backend calls wires by the target's d2w (on); the FE write spine default OFF (?feheat=1)"
+   },
+   {
+    "row": "node picking → card",
+    "state": "free",
+    "how": "the wrapper's raycast (Raycaster over every node Group)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "Raycaster over the typed wires (threshold 3)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "plain <script src>, the station's bundle"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
+   }
+  ],
+  "notes": {
+   "mode": "full",
+   "particles": true,
+   "conns": true,
+   "pick": "the wrapper's Raycaster over every node Group (sprites skipped)"
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-00-baseline-3d-force-graph.html?hollow=1 fn=1",
   "lib": "3d-force-graph 1.80 + three r185 (hollow)",
   "ver": "the station's own 3d-bundle.js",
   "feed": "onyx",
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 11.9,
-   "up_ms": 24.6,
+   "down_ms": 17.4,
+   "up_ms": 21.9,
    "visible_t0": 780,
    "visible_t3": 3174,
-   "moved": 0,
    "n": 3174,
-   "static": true
+   "static": null,
+   "note": "sim still ticking at the press — positions move on their own, the equality is not measurable (the wrapper never reaches its 240th tick within the budget)"
   },
   "ok": true,
-  "wall_ms": 94592,
+  "wall_ms": 97059,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T15:01:29.331Z",
   "nodes": 3174,
-  "links": 5320,
+  "links": 5865,
   "drawn": 3174,
+  "expected": 3174,
   "drawn_ok": true,
-  "boot_ms": 1.9,
-  "first_frame_ms": 1348.5,
+  "fps_state": "ticking",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2.2,
+  "first_frame_ms": 2016.4,
   "settle_ms": null,
   "settled": false,
-  "ticks": 55,
-  "settle_note": "not settled within 400000 ms (tick 55)",
+  "ticks": 48,
+  "settle_note": "not settled within 400000 ms (tick 48)",
   "fps": 2,
-  "frame_ms": 643.8,
-  "draws": 100,
-  "tris": 836580,
+  "frame_ms": 582.7,
+  "draws": 102,
+  "tris": 836100,
   "geos": 55,
   "texs": 12,
   "pick": {
    "tries": 20,
-   "hits": 14,
-   "other": 6,
+   "hits": 10,
+   "other": 2,
+   "occluded": 8,
    "none": 0,
    "unpositioned": 0,
-   "ms": 1081.26
+   "ms": 1130.27,
+   "mech": "colour-id (nodes first)"
   },
-  "heap_mb": 83.5,
+  "heap_mb": 34.4,
   "bundle": {
    "station": 1662427,
    "vendor": 0,
    "feed": 4998167,
-   "lab": 57911
+   "lab": 62479
   },
-  "ink": 0.9006,
+  "ink": 0.9734,
   "r10": null,
   "injected": null,
-  "purity": 0.649,
+  "purity": 0.604,
   "offline": true,
   "net": [],
   "errs": [],
@@ -250,14 +492,34 @@
     "how": "instanced layers: 1 draw call per form/badge atlas/label atlas"
    },
    {
-    "row": "badge slots A/B",
+    "row": "badge slots A/B (7 of 8 families)",
     "state": "built",
-    "how": "one atlas InstancedMesh"
+    "how": "one atlas InstancedMesh, pinned to the camera's right/up (the station's _mbTick)"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "built",
-    "how": "one LineSegments per kind (LineDashedMaterial)"
+    "how": "one LineSegments per kind (LineDashedMaterial, base / density)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "1 px lines; the station's TubeGeometry branch for access is not ported"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
    },
    {
     "row": "directional particles",
@@ -267,7 +529,7 @@
    {
     "row": "heat gradients (d2w / fed2w)",
     "state": "built",
-    "how": "bandOf(l) → wire end colours"
+    "how": "backend calls wires by the target's d2w (on); the FE write spine default OFF (?feheat=1)"
    },
    {
     "row": "node picking → card",
@@ -313,69 +575,98 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
    }
   ],
   "notes": {
    "mode": "hollow",
    "particles": true,
-   "conns": true
+   "conns": true,
+   "pick": "colour-id (nodes first)"
   },
   "warnings": [],
   "baked": null
  },
  {
-  "page": "lab-01-three-raw.html",
+  "page": "lab-01-three-raw.html fn=1",
   "lib": "three.js r185 raw",
   "ver": "no wrapper · the station's own 3d-bundle.js",
   "feed": "onyx",
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 52.4,
-   "up_ms": 53.5,
+   "down_ms": 90.8,
+   "up_ms": 79.8,
    "visible_t0": 780,
    "visible_t3": 3174,
-   "moved": 0,
    "n": 3174,
+   "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 68595,
+  "wall_ms": 73580,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T14:55:03.439Z",
   "nodes": 3174,
-  "links": 5320,
+  "links": 5865,
   "drawn": 3174,
+  "expected": 3174,
   "drawn_ok": true,
-  "boot_ms": 2.1,
-  "first_frame_ms": 1244,
-  "settle_ms": 11457.7,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2.3,
+  "first_frame_ms": 730.9,
+  "settle_ms": 10871,
   "settled": true,
   "ticks": 240,
   "settle_note": null,
-  "fps": 2,
-  "frame_ms": 550.5,
-  "draws": 102,
-  "tris": 836712,
+  "fps": 1,
+  "frame_ms": 692.4,
+  "draws": 130,
+  "tris": 836468,
   "geos": 55,
-  "texs": 12,
+  "texs": 40,
   "pick": {
    "tries": 20,
-   "hits": 16,
-   "other": 4,
+   "hits": 10,
+   "other": 0,
+   "occluded": 10,
    "none": 0,
    "unpositioned": 0,
-   "ms": 1428.08
+   "ms": 1663.75,
+   "mech": "colour-id (nodes first, wires second)"
   },
-  "heap_mb": 31,
+  "heap_mb": 25.2,
   "bundle": {
    "station": 1662427,
-   "vendor": 31161,
+   "vendor": 62705,
    "feed": 4998167,
-   "lab": 72050
+   "lab": 79514
   },
-  "ink": 0.8517,
+  "ink": 0.8246,
   "r10": null,
   "injected": null,
-  "purity": 0.65,
+  "purity": 0.605,
   "offline": true,
   "net": [],
   "errs": [],
@@ -396,14 +687,34 @@
     "how": "one InstancedMesh per form · one atlas layer for badges · one sphere layer · one label atlas layer"
    },
    {
-    "row": "badge slots A/B",
+    "row": "badge slots A/B (7 of 8 families)",
     "state": "built",
-    "how": "atlas quads: slot A lower-right, slot B upper-right"
+    "how": "atlas quads pinned to the camera's right/up like the station's _mbTick; the schema fold-count family has no fold in the lab"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "built",
-    "how": "one LineSegments per CONN kind, LineDashedMaterial with lineDistance rewritten per update"
+    "how": "one LineSegments per CONN kind, LineDashedMaterial (base / density, the station's law)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "WebGL lines are 1 px — the station's TubeGeometry for access (thick 1.6) needs Line2/LineMaterial or a ribbon"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built — a per-kind visibility knob is a one-liner over wires.setVisible; the density/opacity beam is not"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients; flat kind colour elsewhere"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
    },
    {
     "row": "directional particles",
@@ -413,7 +724,7 @@
    {
     "row": "heat gradients (d2w / fed2w)",
     "state": "built",
-    "how": "bandOf(l) → per-vertex end colours"
+    "how": "backend calls wires banded by the target's d2w (on); the FE write spine DEFAULT OFF like the station — ?feheat=1 or LABG.setHeat(true,true)"
    },
    {
     "row": "node picking → card",
@@ -469,68 +780,97 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
    }
   ],
   "notes": {
-   "layout_thread": "blob worker + importScripts(file:// d3 UMDs)",
+   "layout_thread": "blob worker (inlined d3 source)",
+   "pick": "colour-id (nodes first, wires second)",
    "ticks_at_stop": 240
   },
   "warnings": [],
   "baked": null
  },
  {
-  "page": "lab-02-sigma.html",
+  "page": "lab-02-sigma.html fn=1",
   "lib": "sigma.js 3.0.3 + graphology 0.26",
   "ver": "WebGL2 · instanced programs",
   "feed": "onyx",
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 26.3,
-   "up_ms": 10,
+   "down_ms": 46,
+   "up_ms": 22.8,
    "visible_t0": 780,
    "visible_t3": 3174,
-   "moved": 0,
    "n": 3174,
+   "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 28595,
+  "wall_ms": 30644,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T14:55:34.538Z",
   "nodes": 3174,
-  "links": 5320,
+  "links": 5865,
   "drawn": 3174,
+  "expected": 3174,
   "drawn_ok": true,
-  "boot_ms": 0.6,
-  "first_frame_ms": 2998,
-  "settle_ms": 2885.3,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 0.9,
+  "first_frame_ms": 3618.8,
+  "settle_ms": 3594.9,
   "settled": true,
-  "ticks": null,
+  "ticks": 240,
   "settle_note": null,
-  "fps": 6,
-  "frame_ms": 161.28,
+  "fps": 5,
+  "frame_ms": 187.13,
   "draws": 4,
   "tris": null,
   "geos": null,
   "texs": null,
   "pick": {
    "tries": 20,
-   "hits": 18,
-   "other": 2,
+   "hits": 19,
+   "other": 0,
+   "occluded": 1,
    "none": 0,
    "unpositioned": 0,
-   "ms": 372.55
+   "ms": 391.5,
+   "mech": "library getNodeAtPosition · viewport scan fallback"
   },
-  "heap_mb": 51.9,
+  "heap_mb": 52.8,
   "bundle": {
    "station": 25390,
    "vendor": 461118,
    "feed": 4998167,
-   "lab": 34525
+   "lab": 37462
   },
-  "ink": 0.8859,
+  "ink": 0.9169,
   "r10": null,
   "injected": null,
-  "purity": 0.589,
+  "purity": 0.544,
   "offline": true,
   "net": [],
   "errs": [],
@@ -556,9 +896,29 @@
     "how": "no node composition; a badge would be a second node or a custom program"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "lost",
-    "how": "edge colour per kind (and the heat band) draws; dash/dotted/longdash need a custom EdgeProgram"
+    "how": "dash/dotted/longdash need a custom EdgeProgram"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "built",
+    "how": "edge size per link"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "lost",
+    "how": "one colour per edge in the core program"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model"
    },
    {
     "row": "directional particles",
@@ -619,45 +979,72 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "sigma + graphology UMDs, 261,505 B"
    }
   ],
   "notes": {
    "layout_engine": "d3-force-3d in 2D + zForce, 240 ticks on-thread",
-   "label_grid": "labelDensity 0.22 · cell 70"
+   "label_grid": "labelDensity 0.22 · cell 70",
+   "pick": "library getNodeAtPosition · viewport scan fallback"
   },
   "warnings": [],
   "baked": null
  },
  {
-  "page": "lab-03-cytoscape.html",
+  "page": "lab-03-cytoscape.html fn=1",
   "lib": "cytoscape.js 3.34.2 (canvas)",
   "ver": "fcose 2.2 at core only",
   "feed": "onyx",
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 57.4,
-   "up_ms": 107.6,
+   "down_ms": 55.2,
+   "up_ms": 55.8,
    "visible_t0": 780,
    "visible_t3": 3174,
-   "moved": 0,
    "n": 3174,
+   "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 84795,
+  "wall_ms": 95053,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T14:57:09.892Z",
   "nodes": 3174,
-  "links": 5320,
+  "links": 5865,
   "drawn": 3174,
+  "expected": 3174,
   "drawn_ok": true,
-  "boot_ms": 1,
-  "first_frame_ms": 7555.8,
-  "settle_ms": 3339.3,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 1.6,
+  "first_frame_ms": 7664.3,
+  "settle_ms": 5102.2,
   "settled": true,
-  "ticks": null,
+  "ticks": 240,
   "settle_note": null,
   "fps": 1,
-  "frame_ms": 880.1,
+  "frame_ms": 941.9,
   "draws": null,
   "tris": null,
   "geos": null,
@@ -666,21 +1053,23 @@
    "tries": 20,
    "hits": 20,
    "other": 0,
+   "occluded": 0,
    "none": 0,
    "unpositioned": 0,
-   "ms": 3.29
+   "ms": 3.93,
+   "mech": "viewport scan over renderedPosition (the library hit-test is not called by the probe)"
   },
-  "heap_mb": 217.5,
+  "heap_mb": 122.7,
   "bundle": {
    "station": 25390,
    "vendor": 790767,
    "feed": 4998167,
-   "lab": 34525
+   "lab": 37462
   },
-  "ink": 0.9427,
+  "ink": 0.9583,
   "r10": null,
   "injected": null,
-  "purity": 0.589,
+  "purity": 0.544,
   "offline": true,
   "net": [],
   "errs": [],
@@ -706,9 +1095,29 @@
     "how": "layered background-image data-URI discs at 100%/100% and 100%/0%"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "built",
     "how": "line-style + line-dash-pattern per kind on the canvas renderer"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "built",
+    "how": "width per edge"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "line-fill linear-gradient (canvas only)"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model"
    },
    {
     "row": "directional particles",
@@ -774,67 +1183,96 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "cytoscape + layout UMDs, 759,606 B"
    }
   ],
   "notes": {
-   "layout_engine": "d3-force-3d in 2D + zForce, 240 ticks on-thread, then preset"
+   "layout_engine": "d3-force-3d in 2D + zForce, 240 ticks on-thread, then preset",
+   "pick": "viewport scan over renderedPosition (the library hit-test is not called by the probe)"
   },
   "warnings": [],
   "baked": null
  },
  {
-  "page": "lab-04-cosmos-layout-three.html",
+  "page": "lab-04-cosmos-layout-three.html fn=1",
   "lib": "@cosmos.gl/graph 3.4.1 → three r185 raw",
   "ver": "GPU layout · lab-01's renderer",
   "feed": "onyx",
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 13.2,
-   "up_ms": 51.2,
+   "down_ms": 16.8,
+   "up_ms": 36.2,
    "visible_t0": 780,
    "visible_t3": 3174,
-   "moved": 0,
    "n": 3174,
-   "static": true
+   "static": null,
+   "note": "sim still ticking at the press — positions move on their own, the equality is not measurable (the wrapper never reaches its 240th tick within the budget)"
   },
   "ok": true,
-  "wall_ms": 99865,
+  "wall_ms": 112948,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T15:21:20.877Z",
   "nodes": 3174,
-  "links": 5320,
+  "links": 5865,
   "drawn": 3174,
+  "expected": 3174,
   "drawn_ok": true,
-  "boot_ms": 2.9,
-  "first_frame_ms": 1293.2,
+  "fps_state": "ticking",
+  "page_err": [],
+  "purity_note": "ring · 2D (not the adapter's x-line)",
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2.6,
+  "first_frame_ms": 1475.6,
   "settle_ms": null,
   "settled": false,
-  "ticks": 42,
-  "settle_note": "not settled within 400000 ms (tick 42)",
+  "ticks": 39,
+  "settle_note": "not settled within 400000 ms (tick 39)",
   "fps": 1,
-  "frame_ms": 702.3,
-  "draws": 102,
-  "tris": 832256,
+  "frame_ms": 845.6,
+  "draws": 130,
+  "tris": 832368,
   "geos": 55,
-  "texs": 12,
+  "texs": 40,
   "pick": {
    "tries": 20,
-   "hits": 8,
-   "other": 12,
+   "hits": 6,
+   "other": 0,
+   "occluded": 14,
    "none": 0,
    "unpositioned": 0,
-   "ms": 616.6
+   "ms": 633.05,
+   "mech": "colour-id (nodes first, wires second)"
   },
-  "heap_mb": 43,
+  "heap_mb": 39.6,
   "bundle": {
    "station": 1662427,
    "vendor": 701405,
    "feed": 4998167,
-   "lab": 72050
+   "lab": 79739
   },
-  "ink": 0.8175,
+  "ink": 0.6991,
   "r10": null,
   "injected": null,
-  "purity": 0.968,
+  "purity": 0.974,
   "offline": true,
   "net": [],
   "errs": [],
@@ -855,14 +1293,34 @@
     "how": "three-view.js — cosmos itself draws points only (its canvas sits off-screen)"
    },
    {
-    "row": "badge slots A/B",
+    "row": "badge slots A/B (7 of 8 families)",
     "state": "built",
     "how": "three-view.js"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "built",
     "how": "three-view.js"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "1 px lines"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "three-view.js"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model"
    },
    {
     "row": "directional particles",
@@ -923,67 +1381,98 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
    }
   ],
   "notes": {
-   "layout_engine": "@cosmos.gl/graph 3.4.1 GPU sim · cluster force 0.6 to the entity anchors · tick cap 120"
+   "layout_engine": "@cosmos.gl/graph 3.4.1 GPU sim · cluster force 0.6 to the entity anchors · tick cap 120",
+   "pick": "colour-id (nodes first, wires second)",
+   "anchors": "ring · 2D (not the adapter's x-line)",
+   "benign": 1
   },
   "warnings": [],
   "baked": null
  },
  {
-  "page": "lab-05-babylon-spike.html",
+  "page": "lab-05-babylon-spike.html fn=1",
   "lib": "Babylon.js 9.25",
   "ver": "thin instances · GreasedLine · GPUPicker available",
   "feed": "onyx",
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 62.1,
-   "up_ms": 86.7,
+   "down_ms": 124.9,
+   "up_ms": 181.2,
    "visible_t0": 780,
    "visible_t3": 3174,
-   "moved": 0,
    "n": 3174,
+   "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 55391,
+  "wall_ms": 58359,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T14:59:52.240Z",
   "nodes": 3174,
-  "links": 5320,
+  "links": 5865,
   "drawn": 3174,
+  "expected": 3174,
   "drawn_ok": true,
-  "boot_ms": 1.9,
-  "first_frame_ms": 557.3,
-  "settle_ms": 13513.4,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2,
+  "first_frame_ms": 466.2,
+  "settle_ms": 12841.1,
   "settled": true,
   "ticks": 240,
   "settle_note": null,
   "fps": 1,
-  "frame_ms": 1112.2,
+  "frame_ms": 1094.5,
   "draws": 52,
   "tris": null,
   "geos": 52,
-  "texs": 72,
+  "texs": 78,
   "pick": {
    "tries": 20,
-   "hits": 11,
-   "other": 9,
+   "hits": 10,
+   "other": 2,
+   "occluded": 8,
    "none": 0,
    "unpositioned": 0,
-   "ms": 2.06
+   "ms": 2.24,
+   "mech": "scene.pick — a CPU ray over thin instances (GPUPicker is async, left as a note)"
   },
-  "heap_mb": 99.8,
+  "heap_mb": 114.9,
   "bundle": {
    "station": 1662427,
-   "vendor": 8348052,
+   "vendor": 8379596,
    "feed": 4998167,
-   "lab": 34525
+   "lab": 37462
   },
-  "ink": 0.8723,
+  "ink": 0.9855,
   "r10": null,
   "injected": null,
-  "purity": 0.65,
+  "purity": 0.605,
   "offline": true,
   "net": [],
   "errs": [],
@@ -1009,9 +1498,29 @@
     "how": "not in the spike (D4) — a thin-instanced atlas quad needs a custom ShaderMaterial"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "built",
-    "how": "one GreasedLine per CONN kind: useDash + dashCount/dashRatio (a ratio per line, not world units), per-point colour"
+    "how": "one GreasedLine per CONN kind: useDash + dashCount/dashRatio (a ratio per line, not world units)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "built",
+    "how": "GreasedLine width"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-point colours"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model"
    },
    {
     "row": "directional particles",
@@ -1077,10 +1586,26 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "babylon.min.js 8,316,891 B + the station bundle for the hull math"
    }
   ],
   "notes": {
-   "layout_thread": "blob worker + importScripts(file:// d3 UMDs) — the same law as lab-01",
+   "layout_thread": "blob worker (inlined d3 source) — the same law as lab-01",
+   "pick": "scene.pick — a CPU ray over thin instances (GPUPicker is async, left as a note)",
    "ticks_at_stop": 240
   },
   "warnings": [],

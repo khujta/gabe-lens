@@ -78,13 +78,15 @@
     return { mesh: m, set: function (i, x, y, z) { setAt(m, i, x, y, z, 1); }, hide: function (i) { TK.hide(m, i); }, flush: function () { m.instanceMatrix.needsUpdate = true; } };
   }
   /* badge discs: family colour + 1–2 letters, the 30° hue-clearance is the family's own colour choice (mirrors the station's canvas badges) */
+  /* the station's __BADGE_COL literal (gabe-universe.html), verbatim — a badge never wears its host body's colour */
   var BADGECOL = { method: { GET: '#22c55e', POST: '#3b82f6', PUT: '#f97316', PATCH: '#eab308', DELETE: '#ef4444', BOOT: '#8a8f98', TASK: '#f0abfc' },
-    feclass: { view: '#a855f7', connector: '#0ea5e9', container: '#f59e0b', leaf: '#84cc16', 'private': '#64748b', detached: '#e11d48' },
-    hrole: { streamer: '#06b6d4', fetcher: '#e8590c', store: '#ec4899', orchestrator: '#f59e0b', effect: '#8b5cf6', deriver: '#10b981' },
-    mclass: { 'render-fn': '#f59e0b', logic: '#94a3b8', config: '#64748b', 'default': '#f59e0b' },
-    pclass: { llm: '#ae3ec9', auth: '#5a53a8', payment: '#0f766e', storage: '#0891b2', search: '#b45309', email: '#8e4585', queue: '#f76707', http: '#868e96', 'default': '#e8590c' },
-    delivery: { stream: '#06b6d4' }, role: { accessor: '#14b8a6', caller: '#6366f1', gate: '#7048e8', pure: '#94a3b8' } };
-  TK.badgeColor = function (family, value) { var f = BADGECOL[family] || {}; return f[value] || f['default'] || '#8794ab'; };
+    role: { accessor: '#ef4444', caller: '#3b82f6', gate: '#eab308', pure: '#8794ab' },
+    feclass: { connector: '#f97316', container: '#a855f7', leaf: '#84cc16', 'private': '#8794ab', detached: '#fb7185' },
+    mclass: { api: '#3b82f6', 'render-fn': '#d946ef', model: '#14b8a6', config: '#8794ab', lib: '#84cc16', logic: '#22d3ee' },
+    hrole: { fetcher: '#3b82f6', streamer: '#8b5cf6', store: '#ec4899', orchestrator: '#f59e0b', effect: '#ef4444', deriver: '#8794ab' },
+    pclass: { llm: '#d946ef', embed: '#a3e635', vector: '#14b8a6', agent: '#8b5cf6', infra: '#8794ab', http: '#3b82f6', observability: '#ec4899', payments: '#22c55e' },
+    delivery: { stream: '#06b6d4' }, count: { '*': '#06b6d4' } };
+  TK.badgeColor = function (family, value) { var f = BADGECOL[family] || {}; return f[value] || f['*'] || '#8794ab'; };
   TK.badgeAtlas = function (entries) {   // entries: [{family, value}] → {tex, uv(i)}
     var S = 64, COLS = 8, ROWS = Math.max(1, Math.ceil(entries.length / COLS)), cv = document.createElement('canvas'); cv.width = S * COLS; cv.height = S * ROWS; var c = cv.getContext('2d');
     entries.forEach(function (e, k) { var x = (k % COLS) * S, y = ((k / COLS) | 0) * S; c.fillStyle = TK.badgeColor(e.family, e.value); c.beginPath(); c.arc(x + S / 2, y + S / 2, S * 0.44, 0, 6.2832); c.fill();
@@ -107,7 +109,7 @@
     if (!pick.length) return { mesh: null, pick: pick, set: function () {}, hide: function () {}, flush: function () {} };
     var CW = 256, CH = 32, COLS = 16, ROWS = Math.ceil(pick.length / COLS), cv = document.createElement('canvas'); cv.width = CW * COLS; cv.height = CH * ROWS; var c = cv.getContext('2d');   /* 16 cols × 256 = 4096 px wide; 4,000 labels = 250 rows = 8,000 px tall — the swiftshader texture ceiling; above the cap the rest go unlabelled and the page says so */
     c.font = '600 20px Menlo,Consolas,ui-monospace,monospace'; c.textBaseline = 'middle'; c.fillStyle = opts.color || '#cdd6ea';
-    pick.forEach(function (ni, k) { var x = (k % COLS) * CW, y = ((k / COLS) | 0) * CH; c.fillText(String(labelOf(nodes[ni]) || '').slice(0, 22), x + 4, y + CH / 2); });
+    pick.forEach(function (ni, k) { var x = (k % COLS) * CW, y = ((k / COLS) | 0) * CH, t = String(labelOf(nodes[ni]) || ''); if (t.length > 20) t = t.slice(0, 19) + '…'; c.save(); c.beginPath(); c.rect(x, y, CW, CH); c.clip(); c.fillText(t, x + 4, y + CH / 2); c.restore(); });   /* 20 chars at 12 px/char fit the 256 px cell; a longer label is cut and marked, never bled into its neighbour */
     var tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace;
     var uvs = new Float32Array(pick.length * 4), sizes = new Float32Array(pick.length * 2);
     pick.forEach(function (ni, k) { uvs[k * 4] = (k % COLS) / COLS; uvs[k * 4 + 1] = 1 - (((k / COLS) | 0) + 1) / ROWS; uvs[k * 4 + 2] = 1 / COLS; uvs[k * 4 + 3] = 1 / ROWS; sizes[k * 2] = opts.w || 46; sizes[k * 2 + 1] = opts.h || 6; });
@@ -124,8 +126,9 @@
       var pos = new Float32Array(n * 6), col = new Float32Array(n * 6), geo = new T.BufferGeometry();
       geo.setAttribute('position', new T.BufferAttribute(pos, 3).setUsage(T.DynamicDrawUsage)); geo.setAttribute('color', new T.BufferAttribute(col, 3));
       idx.forEach(function (li, k) { slot[li] = { kind: kind, k: k }; for (var e = 0; e < 2; e++) { tmpC.set(colorOf(links[li], e) || cfg.color); col[k * 6 + e * 3] = tmpC.r; col[k * 6 + e * 3 + 1] = tmpC.g; col[k * 6 + e * 3 + 2] = tmpC.b; } });
-      var mat = cfg.style === 'solid' ? new T.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: Math.min(1, cfg.trust) })
-        : new T.LineDashedMaterial({ vertexColors: true, transparent: true, opacity: Math.min(1, cfg.trust), dashSize: (DASH[cfg.style] || [1.2, 1])[0] * (cfg.density || 1), gapSize: (DASH[cfg.style] || [1.2, 1])[1] * (cfg.density || 1) });
+      var dn = cfg.density || 1, base = DASH[cfg.style] || [1.2, 1], vc = true;   /* per-vertex colour carries the heat band AND the kind colour (colorOf returns cfg.color where the station draws flat) — the station gradients only fk · rollup */
+      var mat = cfg.style === 'solid' ? new T.LineBasicMaterial({ vertexColors: vc, transparent: true, opacity: Math.min(1, cfg.trust) })
+        : new T.LineDashedMaterial({ vertexColors: vc, transparent: true, opacity: Math.min(1, cfg.trust), dashSize: base[0] / dn, gapSize: base[1] / dn });   /* the station: base / density */
       var ls = new T.LineSegments(geo, mat); ls.frustumCulled = false; ls.name = 'wires:' + kind; ls.userData.linkIndex = idx;
       if (cfg.style !== 'solid') geo.setAttribute('lineDistance', new T.BufferAttribute(new Float32Array(n * 2), 1).setUsage(T.DynamicDrawUsage));
       layers[kind] = { mesh: ls, pos: pos, idx: idx, dashed: cfg.style !== 'solid' }; });
@@ -136,6 +139,7 @@
           if (ld) { ld[k * 2] = 0; ld[k * 2 + 1] = Math.sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2])); } });
         L.mesh.geometry.attributes.position.needsUpdate = true; if (ld) L.mesh.geometry.attributes.lineDistance.needsUpdate = true; }); },
       setVisible: function (li, on) { vis[li] = on ? 1 : 0; }, isVisible: function (li) { return !!vis[li]; },
+      recolor: function (colorOf2) { Object.keys(layers).forEach(function (kind) { var L = layers[kind], col = L.mesh.geometry.attributes.color; L.idx.forEach(function (li, k) { for (var e = 0; e < 2; e++) { tmpC.set(colorOf2(links[li], e) || (feed.conn[kind] || feed.conn.calls).color); col.array[k * 6 + e * 3] = tmpC.r; col.array[k * 6 + e * 3 + 1] = tmpC.g; col.array[k * 6 + e * 3 + 2] = tmpC.b; } }); col.needsUpdate = true; }); },
       linkOf: function (mesh, segIndex) { var ix = mesh.userData.linkIndex; return ix ? ix[segIndex] : null; } };
   };
   TK.particleLayer = function (linkIdx, perLink, color, size) {   // directional particles: perLink dots per link travelling source→target
@@ -149,6 +153,8 @@
   /* ── hulls: the station's hull() — icosahedron directions seeded around every member, ConvexGeometry over the cloud ── */
   var DIRS = (function () { var g = new T.IcosahedronGeometry(1, 0), p = g.attributes.position, seen = {}, out = []; for (var i = 0; i < p.count; i++) { var x = +p.getX(i).toFixed(3), y = +p.getY(i).toFixed(3), z = +p.getZ(i).toFixed(3), k = x + ',' + y + ',' + z; if (seen[k]) continue; seen[k] = 1; out.push([x, y, z]); } return out; })();
   TK.hullGeometry = function (points, pad) { var Rr = 9 + (pad || 26), pts = []; points.forEach(function (p) { DIRS.forEach(function (d) { pts.push(new T.Vector3(p[0] + d[0] * Rr, p[1] + d[1] * Rr, p[2] + d[2] * Rr)); }); }); try { return new window.ConvexGeometry(pts); } catch (e) { return null; } };
+  var SUBSHIFT = { endpoints: 0.04, api: -0.08, web: 0.10, frontend: 0.10, data: 0.0 };
+  TK.subColor = function (entHex, sub) { return '#' + new T.Color(entHex).offsetHSL(SUBSHIFT[sub] || 0, 0.05, 0.06).getHexString(); };
   TK.hullMesh = function (color, op, wire) { return new T.Mesh(new T.BufferGeometry(), new T.MeshLambertMaterial({ color: color, emissive: color, emissiveIntensity: 0.10, transparent: true, opacity: op, side: T.DoubleSide, depthWrite: false, wireframe: !!wire })); };
   TK.labelSprite = function (txt, size, col) { var cv = document.createElement('canvas'), c0 = cv.getContext('2d'), fnt = '600 ' + (size || 26) + 'px Menlo,Consolas,ui-monospace,monospace'; c0.font = fnt; var tw = Math.ceil(c0.measureText(txt).width) + 16; cv.width = Math.max(256, tw); cv.height = 64; var c = cv.getContext('2d'); c.font = fnt; c.fillStyle = col || '#cdd6ea'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, cv.width / 2, 32);
     var s = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false })); s.scale.set(34 * (cv.width / 256), 8.5, 1); return s; };
@@ -164,13 +170,13 @@
     return { fit: function (rad) { r = rad; apply(); }, target: tgt, apply: apply, get r() { return r; } };
   };
   /* ── colour-id picking over instanced meshes (nodes) and line segments (links): one 1×1 readback, O(1) in node count ── */
-  var PICKGEO = null;
+  var PICKGEO = {};
   TK.picker = function (renderer, cam) {
-    if (!PICKGEO) PICKGEO = new T.IcosahedronGeometry(R * 0.9, 0);
     var scene = new T.Scene(), target = new T.WebGLRenderTarget(1, 1, { colorSpace: T.LinearSRGBColorSpace }), pixel = new Uint8Array(4), regs = [], W = 0, H = 0;
     function idColor(i) { var v = (i + 1) & 0xffffff; return new T.Color().setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, T.LinearSRGBColorSpace); }   /* exact bytes: linear working space in, linear target out, no colour-space conversion (new Color(<float>) is a HEX-INT constructor — it floors to black) */
     return { add: function (mesh, base, geoOverride) {   // an InstancedMesh (ids base..base+count) or LineSegments (ids per segment, drawn fat via a thin quad? no — lines pick with their own width only)
-        var clone; if (mesh.isInstancedMesh) { clone = new T.InstancedMesh(geoOverride || PICKGEO, new T.MeshBasicMaterial({}), mesh.count);   /* a 20-tri icosahedron stands in for every glyph in the pick pass — the bubble's footprint, a fraction of the vertex work */ clone.frustumCulled = false; for (var i = 0; i < mesh.count; i++) clone.setColorAt(i, idColor(base + i)); clone.instanceColor.needsUpdate = true; clone.instanceMatrix = mesh.instanceMatrix; }
+        var clone; if (mesh.isInstancedMesh) { var pg = geoOverride; if (!pg) { var g0 = mesh.geometry; if (!g0.boundingSphere) g0.computeBoundingSphere(); var rr = +(g0.boundingSphere.radius).toFixed(2); pg = PICKGEO[rr] || (PICKGEO[rr] = new T.IcosahedronGeometry(rr, 0)); }   /* a 20-tri icosahedron at the FORM's bounding radius stands in for every glyph in the pick pass — the same footprint, a fraction of the vertex work */
+          clone = new T.InstancedMesh(pg, new T.MeshBasicMaterial({}), mesh.count); clone.frustumCulled = false; for (var i = 0; i < mesh.count; i++) clone.setColorAt(i, idColor(base + i)); clone.instanceColor.needsUpdate = true; clone.instanceMatrix = mesh.instanceMatrix; }
         else if (mesh.isLineSegments) { var n = mesh.geometry.attributes.position.count / 2, col = new Float32Array(n * 6); for (var k = 0; k < n; k++) { var c = idColor(base + k); for (var e = 0; e < 2; e++) { col[k * 6 + e * 3] = c.r; col[k * 6 + e * 3 + 1] = c.g; col[k * 6 + e * 3 + 2] = c.b; } } var g = new T.BufferGeometry(); g.setAttribute('position', mesh.geometry.attributes.position); g.setAttribute('color', new T.BufferAttribute(col, 3)); clone = new T.LineSegments(g, new T.LineBasicMaterial({ vertexColors: true })); clone.frustumCulled = false; }
         else return; scene.add(clone); regs.push({ src: mesh, clone: clone, base: base, count: mesh.isInstancedMesh ? mesh.count : mesh.geometry.attributes.position.count / 2 }); },
       pick: function (x, y, layer) {   /* layer: 'nodes' (instanced clones only) · 'links' (line clones only) · undefined = all; a wire crossing a node's centre must not steal the node pick */

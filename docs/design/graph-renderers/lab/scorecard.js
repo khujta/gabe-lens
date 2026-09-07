@@ -22,7 +22,7 @@
     nodes: 0, links: 0, drawn: 0, fps: null, frame_ms: null, draws: null, tris: null, geos: null, texs: null,
     err: [], ready: false, notes: {}, matrix: []
   };
-  window.addEventListener('error', function (e) { L.err.push(String(e.message)); });
+  window.addEventListener('error', function (e) { var m = String(e.message); if (/ResizeObserver loop/.test(m)) { L.notes.benign = (L.notes.benign || 0) + 1; return; } L.err.push(m); });   /* Chrome's ResizeObserver 'loop completed' notice is benign (cosmos resizes its own canvas); counted, never an error */
   function el(t, c, x) { var d = document.createElement(t); if (c) d.className = c; if (x != null) d.textContent = x; return d; }
   var ORDER = ['lib', 'ver', 'feed', 'scale', 'layout', 'tier', 'nodes', 'links', 'drawn', 'boot_ms', 'first_frame_ms', 'settle_ms',
     'fps', 'frame_ms', 'draws', 'tris', 'geos', 'texs', 'heap_mb', 'purity', 'pick_ms', 'pick_ok', 'tier_ms', 'tier_static', 'err'];

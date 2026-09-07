@@ -77,7 +77,7 @@ def build(c4, levels=None, fn=False, fe=True):
             if generic:
                 warn.append("kind %r unknown — kept generically" % p["kind"])
             add({"id": p["id"], "kind": p["kind"], "ent": ent, "entClaim": ent, "sub": KINDS.get(p["kind"], "data"), "label": p.get("label") or p["id"],
-                 "fe": False, "fn": p.get("fn"), "screen": None, "feClass": None, "generic": generic, "access": None})
+                 "fe": False, "fn": p.get("fn"), "det": p.get("det") or {}, "screen": None, "feClass": None, "generic": generic, "access": None})
     FE = c4.get("fe") if fe and c4.get("fe") and c4["fe"].get("pieces") else None
     if FE:
         for h in FE.get("homes", []):
@@ -86,7 +86,7 @@ def build(c4, levels=None, fn=False, fe=True):
         for p in FE["pieces"]:
             kind = FE_KIND.get(p["kind"], p["kind"])
             if p.get("home") not in ents:
-                ents.append(p["home"]); ent_kind[p["home"]] = "bucket"
+                ents.append(p["home"]); ent_kind[p["home"]] = "bucket"; warn.append("fe home %r not in fe.homes — added" % p["home"])
             generic = kind not in KINDS
             add({"id": p["id"], "kind": kind, "ent": p["home"], "entClaim": p["home"], "sub": KINDS.get(kind, "data"), "label": p.get("name") or p["id"],
                  "fe": True, "fn": None, "screen": p.get("screen"), "feClass": p.get("feClass"), "generic": generic, "access": None})
@@ -114,7 +114,7 @@ def build(c4, levels=None, fn=False, fe=True):
         for e in FE.get("edges", []):
             a, b = P[e[0]] if e[0] < len(P) else None, P[e[1]] if e[1] < len(P) else None
             if a and b:
-                link(a["id"], b["id"], FE_REL.get(e[2], e[2]), fe=True)
+                link(a["id"], b["id"], FE_REL.get(e[2], e[2]), fe=True, chrome=(len(e) > 3 and e[3] == "chrome"), write=(len(e) > 3 and e[3] == "write"))
         ABS = {n["screen"]: n["id"] for n in nodes if n["fe"] and n.get("screen") and n["screen"] in by_id and by_id[n["screen"]]["kind"] == "web"}
         for l in links:
             if l.get("xp") and l["xp"] in by_id:
@@ -137,8 +137,10 @@ def build(c4, levels=None, fn=False, fe=True):
                 for op in n["access"]["ops"]:
                     if op.get("model") and ("model:" + op["model"]) in by_id:
                         link(n["id"], "model:" + op["model"], "fnwrites" if op.get("rw") == "w" else "fnreads")
-            if n["kind"] == "endpoint" and n.get("fn") and n["fn"] in by_id:
-                link(n["id"], n["fn"], "handler")
+            if n["kind"] == "endpoint" and n.get("fn"):
+                key = str((n.get("det") or {}).get("file") or "").split(":")[0] + "#" + n["fn"]   # the station's key: det.file#fn
+                if key in by_id:
+                    link(n["id"], key, "handler")
     links = [l for l in links if l["source"] in by_id and l["target"] in by_id and l["source"] != l["target"]]
     for n in nodes:
         n["tier"] = tier_of(n["kind"], n["fe"], n.get("feClass"), n["generic"])

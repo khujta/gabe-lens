@@ -1,6 +1,6 @@
 # Plan — graph renderer labs for the Gabe Universe (2026-09-07)
 
-**Status:** IN EXECUTION 2026-09-07 — rulings D1 3D primary · D4 render + walk · D5 Standard · D6 fold (all = the recommendations; D2/D3/D7 as recommended). Beats 0–3 landed (`8d44ab5` fold · `de6a4ba` rails · lab-00 · bake · lab-01 · lab-02 · lab-03 · lab-04 · lab-05 in the lab commit); the measured table lives in [lab/README.md](lab/README.md). Original status: DRAFT — nothing built. Operator ask (2026-09-06): *"explore options of other libraries to display this graph — separate
+**Status:** IN EXECUTION 2026-09-07 — rulings D1 3D primary · D4 render + walk · D5 Standard · D6 fold (all = the recommendations; D2/D3/D7 as recommended). Beats 0–12 landed (`8d44ab5` fold · `de6a4ba` rails · `45e122a` pages · `e89984c` record · the review fold with every row re-measured under probe build p2); the measured table lives in [lab/README.md](lab/README.md), the verdict in [README.md](README.md). Original status: DRAFT — nothing built. Operator ask (2026-09-06): *"explore options of other libraries to display this graph — separate
 html files to try different libraries, see on the internet what could apply in our case, also check if three.js is viable; I know
 it is for games, but we might move in that direction at some point."* Research workflow (four web sweeps · one local inventory ·
 one Fable judge, `wf_ac03853c-5a3`) → this synthesis. Build starts on "land it".

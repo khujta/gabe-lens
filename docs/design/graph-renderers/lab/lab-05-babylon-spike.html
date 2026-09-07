@@ -17,6 +17,7 @@
 <script src="../../../../templates/center/shell/assets/graph-grammar.js"></script>
 <script src="./vendor/d3-dispatch.min.js"></script><script src="./vendor/d3-timer.min.js"></script><script src="./vendor/d3-binarytree.min.js"></script>
 <script src="./vendor/d3-quadtree.min.js"></script><script src="./vendor/d3-octree.min.js"></script><script src="./vendor/d3-force-3d.min.js"></script>
+<script src="./vendor/d3-force-3d.worker.js"></script>
 <script src="./vendor/babylon.min.js"></script>
 <script src="./adapter.js"></script>
 <script src="./scorecard.js"></script>
@@ -39,7 +40,14 @@
   scene.clearColor = new B.Color4(0.043, 0.055, 0.075, 1); scene.ambientColor = new B.Color3(0.6, 0.6, 0.6);
   var light = new B.HemisphericLight('h', new B.Vector3(0.3, 1, 0.5), scene); light.intensity = 1.1;
   var cam;
-  if (WALK) { cam = new B.UniversalCamera('walk', new B.Vector3(F.anchors.EX[F.ents[0]] || 0, 0, 120), scene); cam.speed = 2.5; cam.angularSensibility = 1500; cam.checkCollisions = true; cam.ellipsoid = new B.Vector3(6, 6, 6); cam.keysUp = [87]; cam.keysDown = [83]; cam.keysLeft = [65]; cam.keysRight = [68]; cam.keysUpward = [69]; cam.keysDownward = [81]; scene.collisionsEnabled = true; canvas.addEventListener('click', function () { canvas.requestPointerLock(); }); }
+  if (WALK) { cam = new B.UniversalCamera('walk', new B.Vector3(F.anchors.EX[F.ents[0]] || 0, 0, 120), scene); cam.speed = 2.5; cam.angularSensibility = 1500; cam.checkCollisions = true; cam.ellipsoid = new B.Vector3(6, 6, 6); cam.keysUp = [87]; cam.keysDown = [83]; cam.keysLeft = [65]; cam.keysRight = [68]; cam.keysUpward = [69]; cam.keysDownward = [81]; scene.collisionsEnabled = true;
+    /* the pointer lock is taken from the WALK button only — never from a canvas click (a click after Esc re-grabbed the mouse; operator 2026-09-07) */
+    var wbtn = document.createElement('button'); wbtn.textContent = '⌖ walk — click to take the mouse · Esc releases it'; wbtn.style.cssText = 'position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:40;font:12px ui-sans-serif,system-ui,sans-serif;background:#11161d;border:1px solid #3b82f6;color:#e6edf3;border-radius:999px;padding:6px 14px;cursor:pointer'; document.body.appendChild(wbtn);
+    var whint = document.createElement('div'); whint.textContent = 'WALK · WASD / QE · press Esc to release the mouse'; whint.style.cssText = 'position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:40;font:12px ui-sans-serif,system-ui,sans-serif;background:#3b82f6;color:#0b0e13;border-radius:999px;padding:6px 14px;display:none;pointer-events:none'; document.body.appendChild(whint);
+    wbtn.addEventListener('click', function (e) { e.stopPropagation(); canvas.requestPointerLock(); });
+    document.addEventListener('pointerlockchange', function () { var on = document.pointerLockElement === canvas; whint.style.display = on ? 'block' : 'none'; wbtn.style.display = on ? 'none' : 'block'; });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.pointerLockElement) document.exitPointerLock(); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden && document.pointerLockElement) document.exitPointerLock(); }); }
   else { cam = new B.ArcRotateCamera('orbit', 0.19 + Math.PI / 2, Math.PI / 2 - 0.1, 820, B.Vector3.Zero(), scene); cam.wheelPrecision = 2; cam.minZ = 1; cam.maxZ = 20000; }
   cam.attachControl(canvas, true);
 
@@ -105,14 +113,18 @@
   var ZFORCE = 'function zForce(alpha){var ns=zForce.__n||[];for(var i=0;i<ns.length;i++){var n=ns[i],x=n.x||0,y=n.y||0,z=n.z||0,e=TB.ent[i],sa=(TB.SUB[e]||{})[TB.sub[i]],ax=TB.EX[e]||0,ay=TB.EY[e]||0,az=TB.EZ[e]||0;n.vx+=(ax+(sa?sa.x:0)-x)*0.08*alpha;n.vy+=(ay+(sa?sa.y:0)-y)*0.08*alpha;n.vz+=(az+(sa?sa.z:0)-z)*0.08*alpha;var dx=x-ax,dy=y-ay,dz=z-az,r=Math.sqrt(dx*dx+dy*dy+dz*dz);if(!(r>1e-3)||!isFinite(r))continue;var R0=TB.RENT[e]||60,f=TB.KRADF[TB.kind[i]];if(f){var kr=0.30*alpha*(R0*f-r)/r;n.vx+=dx*kr;n.vy+=dy*kr;n.vz+=dz*kr;}var rmax=R0*1.6;if(r>rmax){var kc=0.6*alpha*(rmax-r)/r;n.vx+=dx*kc;n.vy+=dy*kc;n.vz+=dz*kc;}}}zForce.initialize=function(ns){zForce.__n=ns;};';
   function finish() { if (settled) return; settled = true; G.settled = true; LAB.mark('settle_ms'); LAB.set('layout_ms', window.__LAB.settle_ms); LAB.note('ticks_at_stop', tickN); dirty = true; }
   if (!BAKED) { var base = location.href.replace(/[^/]*$/, '') + 'vendor/';
-    var src = ['importScripts(' + ['d3-dispatch', 'd3-timer', 'd3-binarytree', 'd3-quadtree', 'd3-octree', 'd3-force-3d'].map(function (m) { return JSON.stringify(base + m + '.min.js'); }).join(',') + ');', 'var TB=null,sim=null,N=0,pos=null,tick=0,TICKS=240;', ZFORCE,
+    var pre = window.__D3_WORKER_SRC ? window.__D3_WORKER_SRC : ('importScripts(' + ['d3-dispatch', 'd3-timer', 'd3-binarytree', 'd3-quadtree', 'd3-octree', 'd3-force-3d'].map(function (m) { return JSON.stringify(base + m + '.min.js'); }).join(',') + ');');
+    var src = [pre, 'var TB=null,sim=null,N=0,pos=null,tick=0,TICKS=240;', ZFORCE,
       'self.onmessage=function(e){var m=e.data;if(m.t!=="init")return;TB=m.tables;N=m.n;pos=new Float32Array(N*3);TICKS=m.ticks;var nodes=[];for(var i=0;i<N;i++)nodes.push({i:i,x:TB.seed[i][0],y:TB.seed[i][1],z:TB.seed[i][2]});var links=[];for(var k=0;k<m.e.length;k+=2)links.push({source:m.e[k],target:m.e[k+1]});sim=d3.forceSimulation(nodes,3).force("link",d3.forceLink(links).id(function(d){return d.i;})).force("charge",d3.forceManyBody().strength(-60).distanceMax(150)).force("center",d3.forceCenter()).force("layer",zForce).alphaDecay(0.0228).stop();step();};',
       'function step(){for(var s=0;s<2&&tick<TICKS;s++){sim.tick();tick++;}var ns=sim.nodes();for(var i=0;i<N;i++){pos[i*3]=ns[i].x;pos[i*3+1]=ns[i].y;pos[i*3+2]=ns[i].z;}var cp=pos.slice();postMessage({t:"tick",pos:cp,tick:tick},[cp.buffer]);if(tick<TICKS&&sim.alpha()>sim.alphaMin())setTimeout(step,0);else postMessage({t:"done",tick:tick});}'].join('\n');
     try { worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' }))); var flat = new Int32Array(E);
       worker.onmessage = function (ev) { var m = ev.data; if (m.t === 'tick') { for (var i = 0; i < N; i++) { nodes[i].x = m.pos[i * 3]; nodes[i].y = m.pos[i * 3 + 1]; nodes[i].z = m.pos[i * 3 + 2]; } tickN = m.tick; dirty = true; } else if (m.t === 'done') finish(); };
-      worker.onerror = function (e) { LAB.note('worker_error', String(e.message || e)); finish(); };
-      worker.postMessage({ t: 'init', n: N, e: flat, tables: tables, ticks: TICKS }, [flat.buffer]); LAB.note('layout_thread', 'blob worker + importScripts(file:// d3 UMDs) — the same law as lab-01'); } catch (e) { LAB.note('worker_error', String(e)); finish(); } }
+      worker.onerror = function (e) { LAB.note('worker_error', String(e.message || e)); worker = null; startInline(); };   /* the worker died (a file:// origin that refuses importScripts) → the SAME sim on the main thread, never the seeds */
+      worker.postMessage({ t: 'init', n: N, e: flat, tables: tables, ticks: TICKS }, [flat.buffer]); LAB.note('layout_thread', window.__D3_WORKER_SRC ? 'blob worker (inlined d3 source) — the same law as lab-01' : 'blob worker + importScripts(file:// d3 UMDs) — the same law as lab-01'); } catch (e) { LAB.note('worker_error', String(e)); startInline(); } }
   else LAB.note('layout_thread', 'baked (no sim)');
+  var sim = null;
+  function startInline() { var d3f = window.d3; if (!d3f) { LAB.note('worker_error', 'no d3 on the page either — seeds only'); finish(); return; } var sn = nodes.map(function (n, i) { return { i: i, x: n.x, y: n.y, z: n.z }; }), TB = tables, zf = new Function('TB', ZFORCE + 'return zForce;')(TB), ls = []; for (var k = 0; k < E.length; k += 2) ls.push({ source: E[k], target: E[k + 1] });
+    sim = d3f.forceSimulation(sn, 3).force('link', d3f.forceLink(ls).id(function (d) { return d.i; })).force('charge', d3f.forceManyBody().strength(-60).distanceMax(150)).force('center', d3f.forceCenter()).force('layer', zf).alphaDecay(0.0228).stop(); sim.__n = sn; LAB.note('layout_thread', 'main thread (worker unavailable)'); }
 
   /* ── picking (scene.pick over thin instances · GreasedLine meshes) · cards ─────────────────────────────────── */
   function pickNode(x, y) { var pi = scene.pick(x, y, function (m) { return !!(m.metadata && m.metadata.glyph); }); if (!pi || !pi.hit || pi.thinInstanceIndex == null || pi.thinInstanceIndex < 0) return null; var ix = pi.pickedMesh.metadata.nodeIndex; return ix ? nodes[ix[pi.thinInstanceIndex]].id : null; }
@@ -129,7 +141,9 @@
   var frames = 0, fpsm = LAB.fps, lastDraws = 0, prevTotal = 0;
   /* engine._drawCalls.current ACCUMULATES across frames (a PerfCounter total, not a per-frame count) — the sweep's "1 → 1,343 draw calls at 4,170 solids" was this counter read raw; the per-frame number is the delta */
   scene.onAfterRenderObservable.add(function () { frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms'); try { var cur = engine._drawCalls ? engine._drawCalls.current : null; if (cur != null) { lastDraws = cur - prevTotal; prevTotal = cur; } } catch (e) { lastDraws = null; } });
-  engine.runRenderLoop(function () { var t = performance.now() * 0.001; if (dirty) { syncGlyphs(); buildWires(); if (frames % 3 === 0 || settled) updateHulls(); dirty = !settled; } syncParticles(t); scene.render();
+  engine.runRenderLoop(function () { var t = performance.now() * 0.001;
+    if (sim && !settled) { for (var s = 0; s < 2 && tickN < TICKS; s++) { sim.tick(); tickN++; } var sn = sim.__n; for (var i = 0; i < N; i++) { nodes[i].x = sn[i].x; nodes[i].y = sn[i].y; nodes[i].z = sn[i].z; } dirty = true; if (tickN >= TICKS || sim.alpha() < sim.alphaMin()) finish(); }
+    if (dirty) { syncGlyphs(); buildWires(); if (frames % 3 === 0 || settled) updateHulls(); dirty = !settled; } syncParticles(t); scene.render();
     if (frames % 30 === 0) { LAB.hud({ nodes: G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'draw calls': lastDraws, layout: settled ? 'settled' : ('tick ' + tickN + '/' + TICKS), meshes: scene.meshes.length, 'thin layers': LAYERS.length }); LAB.set('draws', lastDraws); } });
   addEventListener('resize', function () { engine.resize(); });
   if (BAKED) { G && (G.settled = true); LAB.mark('settle_ms'); }
@@ -142,15 +156,16 @@
     positions: function () { var o = {}; for (var i = 0; i < N; i++) { var n = nodes[i]; if (visible(n)) o[n.id] = [n.x, n.y, n.z]; } return o; },
     screenOf: function (id) { var n = byId[id]; if (!n) return null; var p = B.Vector3.Project(new B.Vector3(n.x, n.y, n.z), B.Matrix.Identity(), scene.getTransformMatrix(), cam.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight())); if (p.z > 1 || p.z < 0) return null; return { x: p.x / (engine.getHardwareScalingLevel() ? 1 : 1) / (canvas.width / canvas.clientWidth), y: p.y / (canvas.height / canvas.clientHeight) }; },
     pick: pickNode, pickLink: pickLink, ticks: function () { return tickN; },
+    drawn: function () { var c = 0; LAYERS.forEach(function (L) { for (var k = 0; k < L.idx.length; k++) if (L.mats[k * 16] !== 0 || L.mats[k * 16 + 1] !== 0 || L.mats[k * 16 + 2] !== 0) c++; }); return c; },   /* thin-instance matrices with a non-zero scale */
     stats: function () { return { calls: lastDraws, triangles: null, geometries: scene.meshes.length, textures: scene.textures.length, thinLayers: LAYERS.length, wireLayers: Object.keys(WLAYERS).length, gpuPicker: typeof B.GPUPicker === 'function' }; } });
-  if (BAKED) G.settled = true;
+  if (BAKED) G.settled = true; LAB.note('pick', 'scene.pick — a CPU ray over thin instances (GPUPicker is async, left as a note)'); if (F.budgetHit) LAB.note('budget', F.budgetHit);
   LAB.panel({ lib: 'Babylon.js 9.25' + (WALK ? ' · walk' : ''), ver: 'thin instances · GreasedLine · ' + (typeof B.GPUPicker === 'function' ? 'GPUPicker available' : 'no GPUPicker'), bundle: '8,316,891 B (+ the station\'s three bundle for the hull math)', license: 'Apache-2.0', role: 'THE GAME-ENGINE HOST (spike)',
     checklist: [
       ['entity + sub-cluster hulls', 'built', 'a mesh per entity + sub from three\'s ConvexGeometry math (Babylon ships no convex hull / marching cubes)'],
       ['anchored deterministic layout', 'built', 'the same Blob-worker d3-force-3d + zForce as lab-01'],
       ['composed node: glyph + badges + bubble + label', 'built', 'glyph forms as thin instances (per-instance colour) + a thin-instanced bubble; badges and labels are OUT of the spike (custom ShaderMaterial + per-instance attribute each)'],
       ['badge slots A/B', 'lost', 'not in the spike (D4) — a thin-instanced atlas quad needs a custom ShaderMaterial'],
-      ['7 typed wires with dash', 'built', 'one GreasedLine per CONN kind: useDash + dashCount/dashRatio (a ratio per line, not world units), per-point colour'],
+      ['typed wires: dash per kind', 'built', 'one GreasedLine per CONN kind: useDash + dashCount/dashRatio (a ratio per line, not world units)'], ['typed wires: thickness', 'built', 'GreasedLine width'], ['typed wires: per-kind beam toggle', 'lost', 'not built'], ['typed wires: gradient (fk · rollup)', 'built', 'per-point colours'], ['selected wire draws at beam 0', 'lost', 'no selection model'],
       ['directional particles', 'built', 'a thin-instanced dot per cross link'],
       ['heat gradients (d2w / fed2w)', 'built', 'per-point colours on the GreasedLine'],
       ['node picking → card', 'built', 'scene.pick over thin instances (thinInstanceEnablePicking; CPU ray — GPUPicker is async and left as a note)'],
@@ -163,7 +178,10 @@
       ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it; the generic form is a sphere'],
       ['file:// · no network', 'free', 'one 8.3 MB UMD, no wasm, no fetch (Havok would need an inlined wasm — out by D4)'],
       ['headless provable', 'free', 'WebGL2 under swiftshader'],
-      ['probe surface', 'built', 'LABG registered']],
+      ['probe surface', 'built', 'LABG registered'],
+      ['node budget fold (>1,600) + Sources row', 'built', 'the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field'],
+      ['R10: no deadness word on the page', 'free', 'the probe greps the DOM for the forbidden words; project identifiers keep their own words'],
+      ['vendorable as a pinned committed blob', 'free', 'babylon.min.js 8,316,891 B + the station bundle for the hull math']],
     verdict: 'Batteries included and instanced by default — and a TOTAL rewrite of 6.3k three-shaped lines at 5× the bundle. The sweep\'s 2 → 1,343 draw-call jump was a cumulative counter misread; the per-frame delta is one call per thin layer, like raw three.' });
   setTimeout(function () { LAB.ready({ nodes: N, links: links.length, drawn: G.visible(), tier: TIER }); }, 3000);
 })();

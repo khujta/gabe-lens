@@ -7,51 +7,64 @@
   "scale": "x4",
   "layout": "live",
   "tier": {
-   "down_ms": 20.1,
-   "up_ms": 51.4,
+   "down_ms": 51.1,
+   "up_ms": 81.8,
    "visible_t0": 788,
    "visible_t3": 5404,
-   "moved": 0,
    "n": 5404,
-   "static": true
+   "static": null,
+   "note": "sim still ticking at the press — positions move on their own, the equality is not measurable (the wrapper never reaches its 240th tick within the budget)"
   },
   "ok": true,
-  "wall_ms": 104444,
+  "wall_ms": 129861,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T15:05:36.974Z",
   "nodes": 5404,
   "links": 16266,
   "drawn": 5404,
+  "expected": 5404,
   "drawn_ok": true,
-  "boot_ms": 2,
-  "first_frame_ms": 1845.4,
+  "fps_state": "ticking",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 4.4,
+  "first_frame_ms": 2686.5,
   "settle_ms": null,
   "settled": false,
-  "ticks": 37,
-  "settle_note": "not settled within 500000 ms (tick 37)",
+  "ticks": 25,
+  "settle_note": "not settled within 500000 ms (tick 25)",
   "fps": 1,
-  "frame_ms": 804.6,
+  "frame_ms": 1359.1,
   "draws": 466,
-  "tris": 1404876,
+  "tris": 1404940,
   "geos": 203,
   "texs": 82,
   "pick": {
    "tries": 20,
-   "hits": 11,
-   "other": 8,
-   "none": 1,
+   "hits": 7,
+   "other": 3,
+   "occluded": 10,
+   "none": 0,
    "unpositioned": 0,
-   "ms": 811.37
+   "ms": 1142.26,
+   "mech": "colour-id (nodes first)"
   },
-  "heap_mb": 88.6,
+  "heap_mb": 134.3,
   "bundle": {
    "station": 1662427,
    "vendor": 0,
    "feed": 1216106,
-   "lab": 57911
+   "lab": 62479
   },
-  "ink": 0.8102,
+  "ink": 0.8369,
   "r10": null,
   "injected": null,
-  "purity": 0.499,
+  "purity": 0.496,
   "offline": true,
   "net": [],
   "errs": [],
@@ -72,14 +85,34 @@
     "how": "instanced layers: 1 draw call per form/badge atlas/label atlas"
    },
    {
-    "row": "badge slots A/B",
+    "row": "badge slots A/B (7 of 8 families)",
     "state": "built",
-    "how": "one atlas InstancedMesh"
+    "how": "one atlas InstancedMesh, pinned to the camera's right/up (the station's _mbTick)"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "built",
-    "how": "one LineSegments per kind (LineDashedMaterial)"
+    "how": "one LineSegments per kind (LineDashedMaterial, base / density)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "1 px lines; the station's TubeGeometry branch for access is not ported"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
    },
    {
     "row": "directional particles",
@@ -89,7 +122,7 @@
    {
     "row": "heat gradients (d2w / fed2w)",
     "state": "built",
-    "how": "bandOf(l) → wire end colours"
+    "how": "backend calls wires by the target's d2w (on); the FE write spine default OFF (?feheat=1)"
    },
    {
     "row": "node picking → card",
@@ -135,12 +168,28 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
    }
   ],
   "notes": {
    "mode": "hollow",
    "particles": true,
-   "conns": true
+   "conns": true,
+   "pick": "colour-id (nodes first)"
   },
   "warnings": [],
   "baked": null
@@ -153,48 +202,61 @@
   "scale": "x4",
   "layout": "live",
   "tier": {
-   "down_ms": 106.5,
-   "up_ms": 65.8,
+   "down_ms": 159.9,
+   "up_ms": 250.8,
    "visible_t0": 788,
    "visible_t3": 5404,
-   "moved": 0,
    "n": 5404,
+   "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 92794,
+  "wall_ms": 116562,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T15:03:27.126Z",
   "nodes": 5404,
   "links": 16266,
   "drawn": 5404,
+  "expected": 5404,
   "drawn_ok": true,
-  "boot_ms": 2.4,
-  "first_frame_ms": 1674.6,
-  "settle_ms": 13075.9,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 3.3,
+  "first_frame_ms": 2010.4,
+  "settle_ms": 16861.8,
   "settled": true,
   "ticks": 240,
   "settle_note": null,
   "fps": 1,
-  "frame_ms": 704.4,
-  "draws": 466,
-  "tris": 1404272,
+  "frame_ms": 960.7,
+  "draws": 570,
+  "tris": 1404480,
   "geos": 203,
-  "texs": 82,
+  "texs": 186,
   "pick": {
    "tries": 20,
-   "hits": 10,
-   "other": 10,
+   "hits": 8,
+   "other": 0,
+   "occluded": 12,
    "none": 0,
    "unpositioned": 0,
-   "ms": 2171.59
+   "ms": 2536.86,
+   "mech": "colour-id (nodes first, wires second)"
   },
-  "heap_mb": 33.9,
+  "heap_mb": 33.2,
   "bundle": {
    "station": 1662427,
-   "vendor": 31161,
+   "vendor": 62705,
    "feed": 1216106,
-   "lab": 72050
+   "lab": 79739
   },
-  "ink": 0.738,
+  "ink": 0.7228,
   "r10": null,
   "injected": null,
   "purity": 0.502,
@@ -218,14 +280,34 @@
     "how": "one InstancedMesh per form · one atlas layer for badges · one sphere layer · one label atlas layer"
    },
    {
-    "row": "badge slots A/B",
+    "row": "badge slots A/B (7 of 8 families)",
     "state": "built",
-    "how": "atlas quads: slot A lower-right, slot B upper-right"
+    "how": "atlas quads pinned to the camera's right/up like the station's _mbTick; the schema fold-count family has no fold in the lab"
    },
    {
-    "row": "7 typed wires with dash",
+    "row": "typed wires: dash per kind",
     "state": "built",
-    "how": "one LineSegments per CONN kind, LineDashedMaterial with lineDistance rewritten per update"
+    "how": "one LineSegments per CONN kind, LineDashedMaterial (base / density, the station's law)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "WebGL lines are 1 px — the station's TubeGeometry for access (thick 1.6) needs Line2/LineMaterial or a ribbon"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built — a per-kind visibility knob is a one-liner over wires.setVisible; the density/opacity beam is not"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients; flat kind colour elsewhere"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
    },
    {
     "row": "directional particles",
@@ -235,7 +317,7 @@
    {
     "row": "heat gradients (d2w / fed2w)",
     "state": "built",
-    "how": "bandOf(l) → per-vertex end colours"
+    "how": "backend calls wires banded by the target's d2w (on); the FE write spine DEFAULT OFF like the station — ?feheat=1 or LABG.setHeat(true,true)"
    },
    {
     "row": "node picking → card",
@@ -291,11 +373,27 @@
     "row": "probe surface",
     "state": "built",
     "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
    }
   ],
   "notes": {
    "labels_capped": "4000 of 5404",
-   "layout_thread": "blob worker + importScripts(file:// d3 UMDs)",
+   "layout_thread": "blob worker (inlined d3 source)",
+   "pick": "colour-id (nodes first, wires second)",
    "ticks_at_stop": 240
   },
   "warnings": [],

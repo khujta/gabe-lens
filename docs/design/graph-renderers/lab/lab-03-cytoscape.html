@@ -33,19 +33,19 @@
     .map(function (k) { var u = new URL(location.href), kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : kv[0] === 'layout' ? 'live' : kv[0] === 'scale' ? 'full' : '0') : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
 
   /* ── positions (the same law as lab-01/02: seeds → d3 2D + zForce · the bake · fcose at core) ────────────────── */
-  F.seedPositions(1); var BAKED = F.layout === 'baked', FCOSE = LAYOUT === 'fcose' && !BAKED, settleMs = null, t0 = performance.now();
+  F.seedPositions(1); var BAKED = F.layout === 'baked', FCOSE = LAYOUT === 'fcose' && !BAKED, settleMs = null, t0 = performance.now(), ticksRun = BAKED ? 0 : null;
   if (FCOSE && F.scale !== 'core') { FCOSE = false; LAB.note('fcose_refused', 'fcose only at ?scale=core (7.6–9.3 s at 1.4k nodes, 141 s at 4k — measured by the scale sweep); live layout used'); }
   nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.bx; n.y = n.by; } else { n.x = n.sx; n.y = n.sy; } });
   if (!BAKED && !FCOSE) { var d3f = window.d3, idx = Object.create(null); nodes.forEach(function (n, i) { idx[n.id] = i; });
     var sn = nodes.map(function (n, i) { return { i: i, x: n.x, y: n.y, ent: n.ent, sub: n.sub, kind: n.kind }; }), ls = links.map(function (l) { return { source: idx[l.source], target: idx[l.target] }; });
     var sim = d3f.forceSimulation(sn, 2).force('link', d3f.forceLink(ls).id(function (d) { return d.i; })).force('charge', d3f.forceManyBody().strength(-60).distanceMax(150)).force('center', d3f.forceCenter()).force('layer', F.force).alphaDecay(0.0228).stop();
-    for (var t = 0; t < 240; t++) sim.tick(); sn.forEach(function (s, i) { nodes[i].x = s.x; nodes[i].y = s.y; }); settleMs = performance.now() - t0; LAB.note('layout_engine', 'd3-force-3d in 2D + zForce, 240 ticks on-thread, then preset'); }
+    for (var t = 0; t < 240; t++) sim.tick(); sn.forEach(function (s, i) { nodes[i].x = s.x; nodes[i].y = s.y; }); settleMs = performance.now() - t0; ticksRun = 240; LAB.note('layout_engine', 'd3-force-3d in 2D + zForce, 240 ticks on-thread, then preset'); }
   else LAB.note('layout_engine', BAKED ? 'baked fdp (preset)' : 'fcose (compound-aware)');
 
   /* ── elements: compound parents (entity > sub) + typed children + typed edges ───────────────────────────────── */
   var SHAPE = { endpoint: 'ellipse', 'function': 'rectangle', model: 'barrel', schema: 'diamond', route: 'triangle', component: 'round-rectangle', hook: 'star', store: 'barrel', type: 'rectangle', module: 'rectangle', middleware: 'rectangle', flag: 'vee', provider: 'round-rectangle', prompt: 'round-rectangle', external: 'hexagon', element: 'round-rectangle', web: 'round-rectangle' };
   var SIZE = { endpoint: 12, model: 13, schema: 9, web: 11, external: 10, element: 9, middleware: 9, flag: 8, provider: 10, component: 9, hook: 9, store: 11, route: 10, module: 8, type: 6, 'function': 7 };
-  var BADGECOL = { method: { GET: '#22c55e', POST: '#3b82f6', PUT: '#f97316', PATCH: '#eab308', DELETE: '#ef4444', BOOT: '#8a8f98', TASK: '#f0abfc' }, feclass: { connector: '#0ea5e9', container: '#f59e0b', leaf: '#84cc16', 'private': '#64748b', detached: '#e11d48' }, hrole: { streamer: '#06b6d4', fetcher: '#e8590c', store: '#ec4899', orchestrator: '#f59e0b', effect: '#8b5cf6', deriver: '#10b981' }, mclass: { 'render-fn': '#f59e0b', logic: '#94a3b8', config: '#64748b' }, pclass: { llm: '#ae3ec9' }, delivery: { stream: '#06b6d4' }, role: { accessor: '#14b8a6', caller: '#6366f1', gate: '#7048e8', pure: '#94a3b8' } };
+  var BADGECOL = { method: { GET: '#22c55e', POST: '#3b82f6', PUT: '#f97316', PATCH: '#eab308', DELETE: '#ef4444', BOOT: '#8a8f98', TASK: '#f0abfc' }, role: { accessor: '#ef4444', caller: '#3b82f6', gate: '#eab308', pure: '#8794ab' }, feclass: { connector: '#f97316', container: '#a855f7', leaf: '#84cc16', 'private': '#8794ab', detached: '#fb7185' }, mclass: { api: '#3b82f6', 'render-fn': '#d946ef', model: '#14b8a6', config: '#8794ab', lib: '#84cc16', logic: '#22d3ee' }, hrole: { fetcher: '#3b82f6', streamer: '#8b5cf6', store: '#ec4899', orchestrator: '#f59e0b', effect: '#ef4444', deriver: '#8794ab' }, pclass: { llm: '#d946ef', embed: '#a3e635', vector: '#14b8a6', agent: '#8b5cf6', infra: '#8794ab', http: '#3b82f6', observability: '#ec4899', payments: '#22c55e' }, delivery: { stream: '#06b6d4' } };   /* the station's __BADGE_COL, verbatim */
   var badgeCache = {};
   function badgeURI(family, value) { var key = family + ':' + value; if (badgeCache[key]) return badgeCache[key]; var col = (BADGECOL[family] || {})[value] || '#8794ab', txt = String(value).slice(0, 2).toUpperCase();
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="' + col + '"/><text x="16" y="21" font-size="13" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#0b0e13">' + txt + '</text></svg>';
@@ -87,8 +87,9 @@
   LAB.mark('build_done_ms');
   cy.on('render', function () { frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms'); });
   if (FCOSE) { var lt = performance.now(); var lay = cy.layout({ name: 'fcose', quality: 'default', randomize: false, animate: false, nodeRepulsion: 9000, idealEdgeLength: 48, nestingFactor: 0.1, gravity: 0.3, gravityRangeCompound: 1.4, gravityCompound: 1.6, numIter: 900, packComponents: true, tile: true });
-    lay.one('layoutstop', function () { settleMs = performance.now() - lt; cy.nodes('[sz]').forEach(function (nd) { var n = byId[nd.id()]; if (n) { var p = nd.position(); n.x = p.x; n.y = p.y; } }); G.settled = true; LAB.set('settle_ms', +settleMs.toFixed(1)); LAB.set('layout_ms', +settleMs.toFixed(1)); cy.fit(undefined, 30); }); lay.run(); }
-  else { cy.fit(undefined, 30); if (settleMs != null) { LAB.set('settle_ms', +settleMs.toFixed(1)); LAB.set('layout_ms', +settleMs.toFixed(1)); } else LAB.set('settle_ms', 0); }
+    lay.one('layoutstop', function () { settleMs = performance.now() - lt; cy.nodes('[sz]').forEach(function (nd) { var n = byId[nd.id()]; if (n) { var p = nd.position(); n.x = p.x; n.y = p.y; } }); G.settled = true; LAB.mark('settle_ms'); LAB.set('layout_ms', +settleMs.toFixed(1)); cy.fit(undefined, 30); }); lay.run(); }
+  else { cy.fit(undefined, 30); LAB.mark('settle_ms'); LAB.set('layout_ms', settleMs != null ? +settleMs.toFixed(1) : 0); }   /* settle = elapsed since boot (one origin on every page); layout_ms = the engine's duration */
+  LAB.note('pick', 'viewport scan over renderedPosition (the library hit-test is not called by the probe)'); if (F.budgetHit) LAB.note('budget', F.budgetHit);
   if (REDRAW) (function loop() { requestAnimationFrame(loop); var t = performance.now(); cy.forceRender(); renderMs = performance.now() - t; })();   // a frame per rAF so the paint cost is measured like the 3D pages'
 
   /* ── cards + picking (tap events for the human; a rendered-position scan for the probe) ─────────────────────── */
@@ -110,7 +111,8 @@
     visibleIds: function () { return nodes.filter(function (n) { return n.tier <= TIER; }).map(function (n) { return n.id; }); },
     positions: function () { var o = {}; cy.nodes('[sz]').forEach(function (nd) { if (nd.data('tier') <= TIER) { var p = nd.position(); o[nd.id()] = [p.x, p.y, 0]; } }); return o; },
     screenOf: function (id) { var nd = cy.getElementById(id); if (!nd || !nd.length) return null; var p = nd.renderedPosition(); return { x: p.x, y: p.y }; },
-    pick: pickNode, pickLink: pickLink,
+    pick: pickNode, pickLink: pickLink, ticks: function () { return FCOSE ? null : ticksRun; },
+    drawn: function () { return cy.nodes('[sz]').filter(function (nd) { return nd.visible(); }).length; },   /* cytoscape's own visibility (display:none respected) */
     stats: function () { return { calls: null, triangles: null, geometries: null, textures: null, renderMs: +renderMs.toFixed(2), elements: cy.elements().length, compounds: cy.nodes('[lvl]').length }; } });
   LAB.panel({ lib: 'cytoscape.js 3.34.2' + (WEBGL ? ' (webgl preview)' : ' (canvas)'), ver: 'fcose 2.2 at core only', bundle: '435,503 (+324 KB layout deps) B', license: 'MIT', role: '2D · NATIVE containment',
     checklist: [
@@ -118,7 +120,7 @@
       ['anchored deterministic layout', 'built', 'preset from d3-force-3d 2D + zForce (the SAME law as lab-01) or the fdp bake; fcose only at core'],
       ['composed node: glyph + badges + bubble + label', 'built', 'shape by selector (ellipse · rectangle · barrel · diamond · triangle · star · hexagon · vee); the bubble is the endpoint ring border'],
       ['badge slots A/B', 'built', 'layered background-image data-URI discs at 100%/100% and 100%/0%'],
-      ['7 typed wires with dash', WEBGL ? 'lost' : 'built', WEBGL ? 'the WebGL preview renderer drops line-style/dash and gradients (recorded)' : 'line-style + line-dash-pattern per kind on the canvas renderer'],
+      ['typed wires: dash per kind', WEBGL ? 'lost' : 'built', WEBGL ? 'the WebGL preview renderer drops line-style/dash (recorded)' : 'line-style + line-dash-pattern per kind on the canvas renderer'], ['typed wires: thickness', 'built', 'width per edge'], ['typed wires: per-kind beam toggle', 'lost', 'not built'], ['typed wires: gradient (fk · rollup)', WEBGL ? 'lost' : 'built', 'line-fill linear-gradient (canvas only)'], ['selected wire draws at beam 0', 'lost', 'no selection model'],
       ['directional particles', 'lost', 'no per-edge animation primitive (a per-frame style write would repaint the scene)'],
       ['heat gradients (d2w / fed2w)', WEBGL ? 'lost' : 'built', 'line-fill linear-gradient with the band colour (canvas only)'],
       ['node picking → card', 'free', 'tap/mouseover on the element model; the probe uses a rendered-position scan'],
@@ -131,7 +133,10 @@
       ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it; the generic shape is an ellipse'],
       ['file:// · no network', 'free', 'four UMDs, no worker, no wasm'],
       ['headless provable', 'free', 'Canvas2D under swiftshader (WebGL preview with ?webgl=1)'],
-      ['probe surface', 'built', 'LABG registered']],
+      ['probe surface', 'built', 'LABG registered'],
+      ['node budget fold (>1,600) + Sources row', 'built', 'the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field'],
+      ['R10: no deadness word on the page', 'free', 'the probe greps the DOM for the forbidden words; project identifiers keep their own words'],
+      ['vendorable as a pinned committed blob', 'free', 'cytoscape + layout UMDs, 759,606 B']],
     verdict: 'The only page where CONTAINMENT is a first-class object and the badge grammar survives declaratively. Canvas2D pays per element per frame; the WebGL path is a preview that drops the dashes.' });
   var hud = setInterval(function () { LAB.hud({ nodes: G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'render ms': renderMs.toFixed(1), elements: cy.elements().length, compounds: cy.nodes('[lvl]').length, layout: (window.__LAB.notes.layout_engine || '').split(' ')[0] }); }, 500);
   setTimeout(function () { LAB.ready({ nodes: N, links: links.length, drawn: G.visible(), tier: TIER }); }, FCOSE ? 12000 : 2500);

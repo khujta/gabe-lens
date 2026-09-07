@@ -109,7 +109,7 @@
           write: !!p.write, cache: !!p.cache, sse: !!p.sse, candidate: !!p.candidate, area: p.area || null, deg: 0 });
       });
     }
-    var fnN = 0;
+    var fnN = 0, handlers = 0;
     if (o.fn && LV && LV.fn_nodes && LV.fn_nodes.length) {
       LV.fn_nodes.forEach(function (f) { var kd = kindOf('function'); var ent = f.slug || '__unclaimed__'; if (ents.indexOf(ent) < 0) { ents.push(ent); ENT[ent] = COL[ent] || '#0d9488'; entKind[ent] = 'entity'; }
         if (add({ id: f.id, kind: 'function', ent: ent, entClaim: ent, sub: kd.layer, label: f.name || f.id.replace(/.*#/, ''), m: null, det: { file: f.id.split('#')[0], layer: f.layer || null, role: f.role || null },
@@ -120,7 +120,7 @@
 
     /* ── links ──────────────────────────────────────────────────────────────────────────────────────────────────── */
     var links = [];
-    function link(s, t, rel, extra) { var l = { source: s, target: t, rel: rel, kind: REL2KIND[rel] }; if (!l.kind) { l.kind = 'calls'; unknownRels[rel] = (unknownRels[rel] || 0) + 1; } if (extra) Object.keys(extra).forEach(function (k) { l[k] = extra[k]; }); links.push(l); return l; }
+    function link(s, t, rel, extra) { var l = { source: s, target: t, rel: rel, kind: REL2KIND[rel] }; if (!l.kind) { l.kind = 'calls'; if (!unknownRels[rel]) warn.push('rel "' + rel + '" unknown to this adapter — drawn as calls (never dropped)'); unknownRels[rel] = (unknownRels[rel] || 0) + 1; } if (extra) Object.keys(extra).forEach(function (k) { l[k] = extra[k]; }); links.push(l); return l; }
     Object.keys(C4.l2 || {}).forEach(function (ent) { ((C4.l2[ent] || {}).edges || []).forEach(function (e) { link(e.source, e.target, e.kind || 'calls'); }); });
     (C4.cross_edges || []).forEach(function (e) { link(e.from, e.to, e.kind || 'fk', { cross: true, xp: e['export'] || null }); });
     var absorbed = 0;
@@ -134,7 +134,7 @@
       (LV.fn_edges || []).forEach(function (e) { link(e.s, e.t, e.rel || 'calls', { conf: e.conf || null }); });
       (LV.schema_edges || []).forEach(function (e) { link(e.s, e.t, e.rel || 'uses'); });
       nodes.forEach(function (n) { if (n.kind === 'function' && n.access && n.access.ops) { (n.access.ops || []).forEach(function (op) { if (op.model && byId['model:' + op.model]) link(n.id, 'model:' + op.model, op.rw === 'w' ? 'fnwrites' : 'fnreads'); }); } });
-      nodes.forEach(function (n) { if (n.kind === 'endpoint' && n.fn && byId[n.fn]) link(n.id, n.fn, 'handler'); });
+      nodes.forEach(function (n) { if (n.kind !== 'endpoint' || !n.fn) return; var key = String((n.det || {}).file || '').split(':')[0] + '#' + n.fn; if (byId[key]) { link(n.id, key, 'handler'); handlers++; } });   /* the station composes det.file#fn — a bare fn name resolves nothing (review 2026-09-07) */
     }
     if (o.inject) { var ep = nodes.filter(function (n) { return n.kind === 'endpoint'; })[0]; if (ep) link(ep.id, 'zz:lab-injected', 'calls'); }
     var dropped = 0; links = links.filter(function (l) { var ok = byId[l.source] && byId[l.target] && l.source !== l.target; if (!ok) dropped++; return ok; });
@@ -161,21 +161,24 @@
         var SR = Math.min(RENT[e] * 0.78, 44 + 13 * ks.length); ks.forEach(function (kk, i) { var a = ei * 0.7 + i * (Math.PI * 2 / ks.length); m[kk] = { x: Math.cos(a) * SR, y: ((i % 2) ? 1 : -1) * SR * 0.22, z: Math.sin(a) * SR }; }); }); })();
 
     /* ── tiers · bands · colours ─────────────────────────────────────────────────────────────────────────────────── */
-    function tierOf(n) { var kind = n.generic ? 'unknown' : n.kind; for (var t = 0; t < 4; t++) { if (TIERS[t].koff.indexOf(kind) >= 0) continue; if (n.fe && n.feClass && TIERS[t].fcoff.indexOf(n.feClass) >= 0) continue; return t; } return 3; }
+    function tierOf(n) { var kind = n.kind;   /* a generic (unregistered) kind is never in a koff list → visible at every tier, the station's behaviour */ for (var t = 0; t < 4; t++) { if (TIERS[t].koff.indexOf(kind) >= 0) continue; if (n.fe && n.feClass && TIERS[t].fcoff.indexOf(n.feClass) >= 0) continue; return t; } return 3; }
     nodes.forEach(function (n) { n.tier = tierOf(n); });
-    function bandOf(l) { var s = byId[l.source], t = byId[l.target]; if (!s || !t) return null;
-      if (l.fe) { if (!l.write) return null; var f = (t.fed2w != null) ? t.fed2w : s.fed2w; return f == null ? null : { pal: 'fe', i: Math.max(0, Math.min(4, f | 0)), color: FEBAND[Math.max(0, Math.min(4, f | 0))] }; }
-      var d = (t.d2w != null) ? t.d2w : s.d2w; if (d == null) return null; var i = Math.max(0, Math.min(4, d | 0)); return { pal: 'be', i: i, color: BANDPAL[i] }; }
+    var heat = { be: o.heat, fe: o.feHeat };   /* the station: backend heat on, FE write-spine heat DEFAULT OFF (operator D4) */
+    function bandOf(l) { var t = byId[l.target]; if (!t) return null;
+      if (l.fe) { if (!heat.fe || !l.write) return null; var f = t.fed2w; if (f == null) return null; var fi = Math.max(0, Math.min(4, f | 0)); return { pal: 'fe', i: fi, color: FEBAND[fi] }; }
+      if (!heat.be || l.rel !== 'calls') return null; var d = t.d2w; var i = (d == null) ? 4 : Math.min(d | 0, 3); return { pal: 'be', i: i, color: BANDPAL[i] }; }   /* the station's __d2wBand: calls wires, the target's d2w, 4 = green when unknown */
     function colorOf(n) { return (K[n.kind] || GENERIC).col; }
     var byKind = {}, byTier = [0, 0, 0, 0]; nodes.forEach(function (n) { byKind[n.kind] = (byKind[n.kind] || 0) + 1; for (var t = n.tier; t < 4; t++) byTier[t]++; });
-    var counts = { nodes: nodes.length, links: links.length, ents: ents.length, byKind: byKind, byTier: byTier, fe: nodes.filter(function (n) { return n.fe; }).length, absorbed: absorbed, generic: generic, fn: fnN,
+    var counts = { nodes: nodes.length, links: links.length, ents: ents.length, byKind: byKind, byTier: byTier, fe: nodes.filter(function (n) { return n.fe; }).length, absorbed: absorbed, generic: generic, fn: fnN, handlers: handlers,
       cross: links.filter(function (l) { return l.cross; }).length, feLinks: links.filter(function (l) { return l.fe; }).length, droppedLinks: dropped, unknownRels: unknownRels };
 
     /* ── positions: deterministic seed · baked · the station's zForce ────────────────────────────────────────────── */
     function seedPositions(spread) { spread = spread || 1; nodes.forEach(function (n) { var h = hash(n.id), th = (h % 3600) / 3600 * Math.PI * 2, ph = ((h >>> 12) % 1000) / 1000 * Math.PI - Math.PI / 2;
       var R = (RENT[n.ent] || 60) * (KRADF[n.kind] || 1.0) * spread, sa = (SUB[n.ent] || {})[n.sub] || { x: 0, y: 0, z: 0 };
       n.sx = EX[n.ent] + sa.x + Math.cos(th) * Math.cos(ph) * R; n.sy = EY[n.ent] + sa.y + Math.sin(ph) * R * 0.6; n.sz = EZ[n.ent] + sa.z + Math.sin(th) * Math.cos(ph) * R; }); return nodes; }
-    function applyBaked() { var BB = window.GABE_BAKED || {}, B = BB[o.fixture + (o.fn ? ':fn' : '')] || BB[o.fixture]; var hit = 0;   /* the fn bake has its own key; without it the plain bake places the pieces and the functions stay live */ nodes.forEach(function (n) { var p = B && B.pos && B.pos[n.id.replace(/#c\d+$/, '')]; if (p) { hit++; n.bx = p[0]; n.by = p[1]; n.bz = p.length > 2 ? p[2] : 0; } else { n.bx = n.by = n.bz = null; } }); return { hit: hit, of: nodes.length, meta: B && B.meta || null }; }
+    function applyBaked() { var BB = window.GABE_BAKED || {}, B = BB[o.fixture + (o.fn ? ':fn' : '')] || BB[o.fixture]; var hit = 0;   /* the fn bake has its own key; without it the plain bake places the pieces and the functions stay live */
+      if (/^x\d+$/.test(o.scale || '')) { nodes.forEach(function (n) { n.bx = n.by = n.bz = null; }); return { hit: 0, of: nodes.length, meta: null, why: 'a bake has no positions for cloned nodes (?scale=' + o.scale + ') — live layout' }; }
+      if (B && B.meta && B.meta.head && C4.head && B.meta.head !== C4.head) warn.push('baked layout is STALE: layouts head ' + B.meta.head + ' ≠ feed head ' + C4.head + ' — re-run bake-fdp.py'); nodes.forEach(function (n) { var p = B && B.pos && B.pos[n.id.replace(/#c\d+$/, '')]; if (p) { hit++; n.bx = p[0]; n.by = p[1]; n.bz = p.length > 2 ? p[2] : 0; } else { n.bx = n.by = n.bz = null; } }); return { hit: hit, of: nodes.length, meta: B && B.meta || null }; }
     function force(alpha) { var ns = force.__n || []; for (var i = 0; i < ns.length; i++) { var n = ns[i], x = n.x || 0, y = n.y || 0, z = n.z || 0, has3 = typeof n.vz === 'number';
       var sa = (SUB[n.ent] || {})[n.sub], ax = EX[n.ent] || 0, ay = EY[n.ent] || 0, az = EZ[n.ent] || 0;
       n.vx += (ax + (sa ? sa.x : 0) - x) * 0.08 * alpha; n.vy += (ay + (sa ? sa.y : 0) - y) * 0.08 * alpha; if (has3) n.vz += (az + (sa ? sa.z : 0) - z) * 0.08 * alpha;
@@ -186,8 +189,9 @@
 
     var feed = { nodes: nodes, links: links, ents: ents, byId: byId, entColor: ENT, entKind: entKind, entPair: entPair, anchors: { EX: EX, EY: EY, EZ: EZ, RENT: RENT, SUB: SUB },
       kinds: K, conn: CONN, connKinds: CONN_KINDS, rel2kind: REL2KIND, dashmap: DASHMAP, method: METHOD, bandpal: BANDPAL, feband: FEBAND, kradf: KRADF, tiers: TIERS,
-      counts: counts, fixture: o.fixture, head: C4.head || null, budget: BUDGET, scale: o.scale, layout: o.layout, tier: o.tier, warnings: warn,
-      tierOf: tierOf, bandOf: bandOf, colorOf: colorOf, seedPositions: seedPositions, applyBaked: applyBaked, force: force, qs: qs, methodOf: methodOf };
+      counts: counts, fixture: o.fixture, head: C4.head || null, budget: BUDGET, scale: o.scale, layout: o.layout, tier: (o.tier == null ? (nodes.length > BUDGET ? 0 : 3) : o.tier), budgetHit: (o.tier == null && nodes.length > BUDGET) ? { nodes: nodes.length, budget: BUDGET } : null, heat: heat, warnings: warn,
+      tierOf: tierOf, bandOf: bandOf, colorOf: colorOf, seedPositions: seedPositions, applyBaked: applyBaked, force: force, qs: qs, methodOf: methodOf,
+      setHeat: function (be, fe) { heat.be = !!be; heat.fe = !!fe; }, handlers: handlers };
     return feed;
   }
   function tint(hex, t) { var c = parseInt(hex.slice(1), 16), r = c >> 16 & 255, g = c >> 8 & 255, b = c & 255; r += (255 - r) * t; g += (255 - g) * t; b += (255 - b) * t; return '#' + ((1 << 24) + ((r | 0) << 16) + ((g | 0) << 8) + (b | 0)).toString(16).slice(1); }
@@ -198,7 +202,14 @@
     function chk(name, ok, detail) { checks.push({ name: name, ok: !!ok, detail: detail || '' }); }
     var ids = {}; feed.nodes.forEach(function (n) { ids[n.id] = (ids[n.id] || 0) + 1; }); var dup = Object.keys(ids).filter(function (i) { return ids[i] > 1; });
     chk('ids unique', dup.length === 0, dup.slice(0, 3).join(', '));
-    chk('link ends resolve', feed.links.every(function (l) { return feed.byId[l.source] && feed.byId[l.target]; }));
+    var P0 = (o.fe && C4.fe && C4.fe.pieces) ? C4.fe.pieces : [], cand = 0;   /* the LINK LAW: every candidate wire either drew or was counted dropped */
+    Object.keys(C4.l2 || {}).forEach(function (e) { cand += ((C4.l2[e] || {}).edges || []).length; }); cand += (C4.cross_edges || []).length;
+    if (o.fe) (C4.fe && C4.fe.edges || []).forEach(function (e) { if (P0[e[0]] && P0[e[1]]) cand++; });
+    if (o.fn && LV && LV.fn_nodes) { cand += (LV.fn_edges || []).length + (LV.schema_edges || []).length; feed.nodes.forEach(function (n) { if (n.kind === 'function' && n.access && n.access.ops) n.access.ops.forEach(function (op) { if (op.model && feed.byId['model:' + op.model]) cand++; }); if (n.kind === 'endpoint' && n.fn && feed.byId[String((n.det || {}).file || '').split(':')[0] + '#' + n.fn]) cand++; }); }
+    if (o.inject) cand++;
+    if (!/^x\d+$/.test(o.scale || '')) chk('link law: candidates = drawn + dropped', feed.links.length + feed.counts.droppedLinks === cand, feed.links.length + ' + ' + feed.counts.droppedLinks + ' vs ' + cand);
+    if (o.fn && LV && LV.fn_nodes && LV.fn_nodes.length) chk('handler wires resolve (det.file#fn)', feed.counts.handlers > 0 && feed.links.filter(function (l) { return l.rel === 'handler'; }).length === feed.counts.handlers, feed.counts.handlers + ' handler wires');
+    chk('no wire dropped on a clean feed', o.fn || o.inject || /^x\d+$/.test(o.scale || '') || feed.counts.droppedLinks === 0, feed.counts.droppedLinks + ' dropped');
     if (o.scale === 'core') o = Object.assign({}, o, { fe: false, fn: false });
     if (!/^x\d+$/.test(o.scale || '')) {
       var l2 = {}; Object.keys(C4.l2 || {}).forEach(function (e) { ((C4.l2[e] || {}).nodes || []).forEach(function (p) { l2[p.id] = 1; }); });
@@ -211,7 +222,7 @@
     chk('unknown kind kept, never dropped', !o.inject || (feed.byId['zz:lab-injected'] && feed.byId['zz:lab-injected'].generic && feed.byId['zz:lab-injected'].kind === 'zz-unknown-kind'));
     chk('fe=0 yields no fe node/link', o.fe || (feed.nodes.every(function (n) { return !n.fe; }) && feed.links.every(function (l) { return !l.fe; })));
     chk('method never defaults to GET', feed.nodes.every(function (n) { return n.kind !== 'endpoint' || n.m === null || /^(GET|POST|PUT|PATCH|DELETE|BOOT|TASK)$/.test(n.m); }));
-    chk('every node has a tier 0..3', feed.nodes.every(function (n) { return n.tier >= 0 && n.tier <= 3; }));
+    chk('tier presets hold (no function below T2, no leaf component below T3, a generic kind at T0)', feed.nodes.every(function (n) { return (n.kind !== 'function' || n.tier >= 2) && !(n.fe && n.feClass === 'leaf' && n.tier < 3) && (!n.generic || n.tier === 0); }));
     var again = build(C4, LV, o); var sig = function (f) { return f.nodes.map(function (n) { return n.id + '|' + n.ent + '|' + n.tier; }).join(';') + '#' + f.links.map(function (l) { return l.source + '>' + l.target + '|' + l.rel; }).join(';'); };
     chk('deterministic (build twice, identical)', sig(again) === sig(feed));
     feed.seedPositions(1); var s1 = feed.nodes.map(function (n) { return n.sx + ',' + n.sy + ',' + n.sz; }).join(';'); feed.seedPositions(1); var s2 = feed.nodes.map(function (n) { return n.sx + ',' + n.sy + ',' + n.sz; }).join(';');
@@ -222,9 +233,10 @@
   var C4 = window.GABE_C4, LV = window.GABE_LEVELS || null;
   if (!C4) { window.GABE_FEED_ERR = 'window.GABE_C4 missing — feed-loader.js must run first'; return; }
   var FX = window.GABE_FIXTURE || { name: 'example', fn: false };
-  var o = { fixture: FX.name, fn: qs('fn', FX.fn ? '1' : '0') === '1', fe: qs('fe', '1') !== '0', scale: qs('scale', 'full'), layout: qs('layout', 'live'), tier: Math.max(0, Math.min(3, +qs('tier', '3') | 0)), inject: qs('inject', '0') === '1' };
+  var _tq = qs('tier', null);
+  var o = { fixture: FX.name, fn: qs('fn', FX.fn ? '1' : '0') === '1', fe: qs('fe', '1') !== '0', scale: qs('scale', 'full'), layout: qs('layout', 'live'), tier: _tq == null ? null : Math.max(0, Math.min(3, +_tq | 0)), inject: qs('inject', '0') === '1', heat: qs('heat', '1') !== '0', feHeat: qs('feheat', '0') === '1' };
   var feed = build(C4, LV, o);
-  if (o.layout === 'baked') { var bk = feed.applyBaked(); feed.baked = bk; if (!bk.hit) { feed.layout = 'live'; feed.warnings.push('?layout=baked asked but no window.GABE_BAKED[' + o.fixture + '] positions — live layout used (say so on the page)'); } }
+  if (o.layout === 'baked') { var bk = feed.applyBaked(); feed.baked = bk; if (!bk.hit) { feed.layout = 'live'; feed.warnings.push(bk.why || ('?layout=baked asked but no window.GABE_BAKED[' + o.fixture + '] positions — live layout used (say so on the page)')); } }
   feed.selfTest = function () { return selfTest(feed, C4, LV, o); };
   feed.opts = o;
   window.GABE_FEED = feed;

@@ -1,395 +1,5 @@
 [
  {
-  "page": "lab-00-baseline-3d-force-graph.html",
-  "lib": "3d-force-graph 1.80 + three r185",
-  "ver": "the station's own 3d-bundle.js",
-  "feed": "example",
-  "scale": "full",
-  "layout": "live",
-  "tier": {
-   "down_ms": 78.9,
-   "up_ms": 136.8,
-   "visible_t0": 197,
-   "visible_t3": 1351,
-   "n": 1351,
-   "static": null,
-   "note": "sim still ticking at the press — positions move on their own, the equality is not measurable (the wrapper never reaches its 240th tick within the budget)"
-  },
-  "ok": true,
-  "wall_ms": 227028,
-  "probe_build": "p2 2026-09-07",
-  "when": "2026-09-07T15:09:47.831Z",
-  "nodes": 1351,
-  "links": 4053,
-  "drawn": 1351,
-  "expected": 1351,
-  "drawn_ok": true,
-  "fps_state": "ticking",
-  "page_err": [],
-  "purity_note": null,
-  "heat": {
-   "be": true,
-   "fe": false
-  },
-  "budget_hit": null,
-  "boot_ms": 5.5,
-  "first_frame_ms": 935.6,
-  "settle_ms": null,
-  "settled": false,
-  "ticks": 27,
-  "settle_note": "not settled within 400000 ms (tick 27)",
-  "fps": 1,
-  "frame_ms": 1553.6,
-  "draws": 11530,
-  "tris": 2330114,
-  "geos": 6810,
-  "texs": 1981,
-  "pick": {
-   "tries": 20,
-   "hits": 8,
-   "other": 3,
-   "occluded": 9,
-   "none": 0,
-   "unpositioned": 0,
-   "ms": 4.4,
-   "mech": "the wrapper's Raycaster over every node Group (sprites skipped)"
-  },
-  "heap_mb": 203,
-  "bundle": {
-   "station": 1662427,
-   "vendor": 0,
-   "feed": 1216106,
-   "lab": 62479
-  },
-  "ink": 0.6508,
-  "r10": null,
-  "injected": null,
-  "purity": 0.598,
-  "offline": true,
-  "net": [],
-  "errs": [],
-  "matrix": [
-   {
-    "row": "entity + sub-cluster hulls",
-    "state": "built",
-    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
-   },
-   {
-    "row": "anchored deterministic layout",
-    "state": "free",
-    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
-   },
-   {
-    "row": "composed node: glyph + badges + bubble + label",
-    "state": "free",
-    "how": "a Group of 5–7 Object3Ds per node (nodeThreeObject)"
-   },
-   {
-    "row": "badge slots A/B (7 of 8 families)",
-    "state": "free",
-    "how": "canvas sprites per node, pinned to the camera's right/up (the station's _mbTick)"
-   },
-   {
-    "row": "typed wires: dash per kind",
-    "state": "built",
-    "how": "one Line per link rebuilt every 3rd tick (LineDashedMaterial, base / density)"
-   },
-   {
-    "row": "typed wires: thickness",
-    "state": "lost",
-    "how": "1 px lines; the station's TubeGeometry branch for access is not ported"
-   },
-   {
-    "row": "typed wires: per-kind beam toggle",
-    "state": "lost",
-    "how": "not built"
-   },
-   {
-    "row": "typed wires: gradient (fk · rollup)",
-    "state": "built",
-    "how": "per-vertex end colours where the station gradients"
-   },
-   {
-    "row": "selected wire draws at beam 0",
-    "state": "lost",
-    "how": "no selection model in the lab"
-   },
-   {
-    "row": "directional particles",
-    "state": "free",
-    "how": "linkDirectionalParticles (wrapper) on cross links — but the wrapper links are HIDDEN when typed wires are on (?conns=0 to see them)"
-   },
-   {
-    "row": "heat gradients (d2w / fed2w)",
-    "state": "built",
-    "how": "backend calls wires by the target's d2w (on); the FE write spine default OFF (?feheat=1)"
-   },
-   {
-    "row": "node picking → card",
-    "state": "free",
-    "how": "the wrapper's raycast (Raycaster over every node Group)"
-   },
-   {
-    "row": "link picking → wire card",
-    "state": "built",
-    "how": "Raycaster over the typed wires (threshold 3)"
-   },
-   {
-    "row": "visibility without relayout (tier press)",
-    "state": "free",
-    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
-   },
-   {
-    "row": "tiers T0–T3",
-    "state": "built",
-    "how": "setTier(t) over the adapter's tier field"
-   },
-   {
-    "row": "depth highlight · journeys · search · legend · Sources rows",
-    "state": "na",
-    "how": "station chrome — deliberately absent from every lab page"
-   },
-   {
-    "row": "honest-empty · unknown kind drawn",
-    "state": "free",
-    "how": "the adapter keeps it; the generic form is a sphere"
-   },
-   {
-    "row": "file:// · no network",
-    "state": "free",
-    "how": "plain <script src>, the station's bundle"
-   },
-   {
-    "row": "headless provable",
-    "state": "free",
-    "how": "WebGL under swiftshader"
-   },
-   {
-    "row": "probe surface",
-    "state": "built",
-    "how": "LABG registered"
-   },
-   {
-    "row": "node budget fold (>1,600) + Sources row",
-    "state": "built",
-    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
-   },
-   {
-    "row": "R10: no deadness word on the page",
-    "state": "free",
-    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
-   },
-   {
-    "row": "vendorable as a pinned committed blob",
-    "state": "free",
-    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
-   }
-  ],
-  "notes": {
-   "mode": "full",
-   "particles": true,
-   "conns": true,
-   "pick": "the wrapper's Raycaster over every node Group (sprites skipped)"
-  },
-  "warnings": [],
-  "baked": null
- },
- {
-  "page": "lab-00-baseline-3d-force-graph.html?hollow=1",
-  "lib": "3d-force-graph 1.80 + three r185 (hollow)",
-  "ver": "the station's own 3d-bundle.js",
-  "feed": "example",
-  "scale": "full",
-  "layout": "live",
-  "tier": {
-   "down_ms": 11,
-   "up_ms": 23.8,
-   "visible_t0": 197,
-   "visible_t3": 1351,
-   "n": 1351,
-   "static": null,
-   "note": "sim still ticking at the press — positions move on their own, the equality is not measurable (the wrapper never reaches its 240th tick within the budget)"
-  },
-  "ok": true,
-  "wall_ms": 65207,
-  "probe_build": "p2 2026-09-07",
-  "when": "2026-09-07T15:10:55.859Z",
-  "nodes": 1351,
-  "links": 4053,
-  "drawn": 1351,
-  "expected": 1351,
-  "drawn_ok": true,
-  "fps_state": "ticking",
-  "page_err": [],
-  "purity_note": null,
-  "heat": {
-   "be": true,
-   "fe": false
-  },
-  "budget_hit": null,
-  "boot_ms": 3.3,
-  "first_frame_ms": 1515.1,
-  "settle_ms": null,
-  "settled": false,
-  "ticks": 83,
-  "settle_note": "not settled within 400000 ms (tick 83)",
-  "fps": 2,
-  "frame_ms": 573.9,
-  "draws": 130,
-  "tris": 352230,
-  "geos": 65,
-  "texs": 22,
-  "pick": {
-   "tries": 20,
-   "hits": 12,
-   "other": 1,
-   "occluded": 7,
-   "none": 0,
-   "unpositioned": 0,
-   "ms": 744.79,
-   "mech": "colour-id (nodes first)"
-  },
-  "heap_mb": 22.1,
-  "bundle": {
-   "station": 1662427,
-   "vendor": 0,
-   "feed": 1216106,
-   "lab": 62479
-  },
-  "ink": 0.6498,
-  "r10": null,
-  "injected": null,
-  "purity": 0.599,
-  "offline": true,
-  "net": [],
-  "errs": [],
-  "matrix": [
-   {
-    "row": "entity + sub-cluster hulls",
-    "state": "built",
-    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
-   },
-   {
-    "row": "anchored deterministic layout",
-    "state": "free",
-    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
-   },
-   {
-    "row": "composed node: glyph + badges + bubble + label",
-    "state": "built",
-    "how": "instanced layers: 1 draw call per form/badge atlas/label atlas"
-   },
-   {
-    "row": "badge slots A/B (7 of 8 families)",
-    "state": "built",
-    "how": "one atlas InstancedMesh, pinned to the camera's right/up (the station's _mbTick)"
-   },
-   {
-    "row": "typed wires: dash per kind",
-    "state": "built",
-    "how": "one LineSegments per kind (LineDashedMaterial, base / density)"
-   },
-   {
-    "row": "typed wires: thickness",
-    "state": "lost",
-    "how": "1 px lines; the station's TubeGeometry branch for access is not ported"
-   },
-   {
-    "row": "typed wires: per-kind beam toggle",
-    "state": "lost",
-    "how": "not built"
-   },
-   {
-    "row": "typed wires: gradient (fk · rollup)",
-    "state": "built",
-    "how": "per-vertex end colours where the station gradients"
-   },
-   {
-    "row": "selected wire draws at beam 0",
-    "state": "lost",
-    "how": "no selection model in the lab"
-   },
-   {
-    "row": "directional particles",
-    "state": "built",
-    "how": "one Points layer on cross links"
-   },
-   {
-    "row": "heat gradients (d2w / fed2w)",
-    "state": "built",
-    "how": "backend calls wires by the target's d2w (on); the FE write spine default OFF (?feheat=1)"
-   },
-   {
-    "row": "node picking → card",
-    "state": "built",
-    "how": "colour-id pass over the glyph layers"
-   },
-   {
-    "row": "link picking → wire card",
-    "state": "built",
-    "how": "Raycaster over the typed wires (threshold 3)"
-   },
-   {
-    "row": "visibility without relayout (tier press)",
-    "state": "free",
-    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
-   },
-   {
-    "row": "tiers T0–T3",
-    "state": "built",
-    "how": "setTier(t) over the adapter's tier field"
-   },
-   {
-    "row": "depth highlight · journeys · search · legend · Sources rows",
-    "state": "na",
-    "how": "station chrome — deliberately absent from every lab page"
-   },
-   {
-    "row": "honest-empty · unknown kind drawn",
-    "state": "free",
-    "how": "the adapter keeps it; the generic form is a sphere"
-   },
-   {
-    "row": "file:// · no network",
-    "state": "free",
-    "how": "plain <script src>, the station's bundle"
-   },
-   {
-    "row": "headless provable",
-    "state": "free",
-    "how": "WebGL under swiftshader"
-   },
-   {
-    "row": "probe surface",
-    "state": "built",
-    "how": "LABG registered"
-   },
-   {
-    "row": "node budget fold (>1,600) + Sources row",
-    "state": "built",
-    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
-   },
-   {
-    "row": "R10: no deadness word on the page",
-    "state": "free",
-    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
-   },
-   {
-    "row": "vendorable as a pinned committed blob",
-    "state": "free",
-    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
-   }
-  ],
-  "notes": {
-   "mode": "hollow",
-   "particles": true,
-   "conns": true,
-   "pick": "colour-id (nodes first)"
-  },
-  "warnings": [],
-  "baked": null
- },
- {
   "page": "lab-01-three-raw.html",
   "lib": "three.js r185 raw",
   "ver": "no wrapper · the station's own 3d-bundle.js",
@@ -397,22 +7,22 @@
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 15.2,
-   "up_ms": 28.5,
-   "visible_t0": 197,
-   "visible_t3": 1351,
-   "n": 1351,
+   "down_ms": 41.8,
+   "up_ms": 44.6,
+   "visible_t0": 198,
+   "visible_t3": 1352,
+   "n": 1352,
    "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 34596,
+  "wall_ms": 37474,
   "probe_build": "p2 2026-09-07",
-  "when": "2026-09-07T14:40:01.780Z",
-  "nodes": 1351,
-  "links": 4053,
-  "drawn": 1351,
-  "expected": 1351,
+  "when": "2026-09-07T14:44:50.966Z",
+  "nodes": 1352,
+  "links": 4054,
+  "drawn": 1352,
+  "expected": 1352,
   "drawn_ok": true,
   "fps_state": "settled",
   "page_err": [],
@@ -422,39 +32,39 @@
    "fe": false
   },
   "budget_hit": null,
-  "boot_ms": 2.9,
-  "first_frame_ms": 916.6,
-  "settle_ms": 4647.9,
+  "boot_ms": 2.2,
+  "first_frame_ms": 943.8,
+  "settle_ms": 4419.1,
   "settled": true,
   "ticks": 240,
   "settle_note": null,
   "fps": 4,
-  "frame_ms": 274.95,
+  "frame_ms": 238.13,
   "draws": 156,
-  "tris": 352434,
+  "tris": 352240,
   "geos": 65,
   "texs": 48,
   "pick": {
    "tries": 20,
-   "hits": 9,
+   "hits": 12,
    "other": 0,
-   "occluded": 11,
+   "occluded": 8,
    "none": 0,
    "unpositioned": 0,
-   "ms": 688.71,
+   "ms": 754.98,
    "mech": "colour-id (nodes first, wires second)"
   },
-  "heap_mb": 18.8,
+  "heap_mb": 18.5,
   "bundle": {
    "station": 1662427,
    "vendor": 31161,
    "feed": 1216106,
    "lab": 77911
   },
-  "ink": 0.4826,
+  "ink": 0.4824,
   "r10": null,
-  "injected": null,
-  "purity": 0.599,
+  "injected": "drawn",
+  "purity": 0.6,
   "offline": true,
   "net": [],
   "errs": [],
@@ -590,7 +200,9 @@
    "pick": "colour-id (nodes first, wires second)",
    "ticks_at_stop": 240
   },
-  "warnings": [],
+  "warnings": [
+   "kind \"zz-unknown-kind\" unknown to this adapter — drawn generically (never dropped)"
+  ],
   "baked": null
  },
  {
@@ -601,22 +213,22 @@
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 18.2,
-   "up_ms": 12.7,
-   "visible_t0": 197,
-   "visible_t3": 1351,
-   "n": 1351,
+   "down_ms": 33.4,
+   "up_ms": 8.8,
+   "visible_t0": 198,
+   "visible_t3": 1352,
+   "n": 1352,
    "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 21793,
+  "wall_ms": 21166,
   "probe_build": "p2 2026-09-07",
-  "when": "2026-09-07T14:40:24.080Z",
-  "nodes": 1351,
-  "links": 4053,
-  "drawn": 1351,
-  "expected": 1351,
+  "when": "2026-09-07T14:45:13.056Z",
+  "nodes": 1352,
+  "links": 4054,
+  "drawn": 1352,
+  "expected": 1352,
   "drawn_ok": true,
   "fps_state": "settled",
   "page_err": [],
@@ -627,13 +239,13 @@
   },
   "budget_hit": null,
   "boot_ms": 0.8,
-  "first_frame_ms": 1237.8,
-  "settle_ms": 1219.6,
+  "first_frame_ms": 1267.8,
+  "settle_ms": 1251.3,
   "settled": true,
   "ticks": 240,
   "settle_note": null,
-  "fps": 8,
-  "frame_ms": 132.5,
+  "fps": 6,
+  "frame_ms": 173.13,
   "draws": 4,
   "tris": null,
   "geos": null,
@@ -645,20 +257,20 @@
    "occluded": 0,
    "none": 0,
    "unpositioned": 0,
-   "ms": 228.48,
+   "ms": 242.94,
    "mech": "library getNodeAtPosition · viewport scan fallback"
   },
-  "heap_mb": 15.1,
+  "heap_mb": 33.2,
   "bundle": {
    "station": 25390,
    "vendor": 461118,
    "feed": 1216106,
    "lab": 37462
   },
-  "ink": 0.9273,
+  "ink": 0.9426,
   "r10": null,
-  "injected": null,
-  "purity": 0.525,
+  "injected": "drawn",
+  "purity": 0.519,
   "offline": true,
   "net": [],
   "errs": [],
@@ -789,7 +401,9 @@
    "label_grid": "labelDensity 0.22 · cell 70",
    "pick": "library getNodeAtPosition · viewport scan fallback"
   },
-  "warnings": [],
+  "warnings": [
+   "kind \"zz-unknown-kind\" unknown to this adapter — drawn generically (never dropped)"
+  ],
   "baked": null
  },
  {
@@ -800,22 +414,22 @@
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 22.6,
-   "up_ms": 23.1,
-   "visible_t0": 197,
-   "visible_t3": 1351,
-   "n": 1351,
+   "down_ms": 46.9,
+   "up_ms": 31.9,
+   "visible_t0": 198,
+   "visible_t3": 1352,
+   "n": 1352,
    "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 67508,
+  "wall_ms": 66323,
   "probe_build": "p2 2026-09-07",
-  "when": "2026-09-07T14:41:31.818Z",
-  "nodes": 1351,
-  "links": 4053,
-  "drawn": 1351,
-  "expected": 1351,
+  "when": "2026-09-07T14:46:20.068Z",
+  "nodes": 1352,
+  "links": 4054,
+  "drawn": 1352,
+  "expected": 1352,
   "drawn_ok": true,
   "fps_state": "settled",
   "page_err": [],
@@ -825,14 +439,14 @@
    "fe": false
   },
   "budget_hit": null,
-  "boot_ms": 0.9,
-  "first_frame_ms": 3273.1,
-  "settle_ms": 2040.2,
+  "boot_ms": 1.8,
+  "first_frame_ms": 3380.7,
+  "settle_ms": 2112,
   "settled": true,
   "ticks": 240,
   "settle_note": null,
-  "fps": 1,
-  "frame_ms": 1677.5,
+  "fps": 0,
+  "frame_ms": 2259,
   "draws": null,
   "tris": null,
   "geos": null,
@@ -844,20 +458,20 @@
    "occluded": 0,
    "none": 0,
    "unpositioned": 0,
-   "ms": 2.16,
+   "ms": 2.53,
    "mech": "viewport scan over renderedPosition (the library hit-test is not called by the probe)"
   },
-  "heap_mb": 131.2,
+  "heap_mb": 122.8,
   "bundle": {
    "station": 25390,
    "vendor": 790767,
    "feed": 1216106,
    "lab": 37462
   },
-  "ink": 0.8752,
+  "ink": 0.8765,
   "r10": null,
-  "injected": null,
-  "purity": 0.525,
+  "injected": "drawn",
+  "purity": 0.519,
   "offline": true,
   "net": [],
   "errs": [],
@@ -992,207 +606,9 @@
    "layout_engine": "d3-force-3d in 2D + zForce, 240 ticks on-thread, then preset",
    "pick": "viewport scan over renderedPosition (the library hit-test is not called by the probe)"
   },
-  "warnings": [],
-  "baked": null
- },
- {
-  "page": "lab-04-cosmos-layout-three.html",
-  "lib": "@cosmos.gl/graph 3.4.1 → three r185 raw",
-  "ver": "GPU layout · lab-01's renderer",
-  "feed": "example",
-  "scale": "full",
-  "layout": "live",
-  "tier": {
-   "down_ms": 29.3,
-   "up_ms": 28.7,
-   "visible_t0": 197,
-   "visible_t3": 1351,
-   "n": 1351,
-   "static": null,
-   "note": "sim still ticking at the press — positions move on their own, the equality is not measurable (the wrapper never reaches its 240th tick within the budget)"
-  },
-  "ok": true,
-  "wall_ms": 69500,
-  "probe_build": "p2 2026-09-07",
-  "when": "2026-09-07T15:12:06.294Z",
-  "nodes": 1351,
-  "links": 4053,
-  "drawn": 1351,
-  "expected": 1351,
-  "drawn_ok": true,
-  "fps_state": "ticking",
-  "page_err": [],
-  "purity_note": "ring · 2D (not the adapter's x-line)",
-  "heat": {
-   "be": true,
-   "fe": false
-  },
-  "budget_hit": null,
-  "boot_ms": 2,
-  "first_frame_ms": 1099,
-  "settle_ms": null,
-  "settled": false,
-  "ticks": 74,
-  "settle_note": "not settled within 400000 ms (tick 74)",
-  "fps": 3,
-  "frame_ms": 394.7,
-  "draws": 156,
-  "tris": 349578,
-  "geos": 65,
-  "texs": 48,
-  "pick": {
-   "tries": 20,
-   "hits": 8,
-   "other": 0,
-   "occluded": 12,
-   "none": 0,
-   "unpositioned": 0,
-   "ms": 547.59,
-   "mech": "colour-id (nodes first, wires second)"
-  },
-  "heap_mb": 26.2,
-  "bundle": {
-   "station": 1662427,
-   "vendor": 701405,
-   "feed": 1216106,
-   "lab": 79739
-  },
-  "ink": 0.4729,
-  "r10": null,
-  "injected": null,
-  "purity": 0.93,
-  "offline": true,
-  "net": [],
-  "errs": [],
-  "matrix": [
-   {
-    "row": "entity + sub-cluster hulls",
-    "state": "built",
-    "how": "three-view.js (ConvexGeometry per entity + sub)"
-   },
-   {
-    "row": "anchored deterministic layout",
-    "state": "built",
-    "how": "cosmos cluster force to RING anchors (setPointClusters + setClusterPositions — the adapter's x-line anchors collapse a 2D force onto a band); the sub rings and the kind rings (KRADF) are NOT expressible — a cluster is one centre"
-   },
-   {
-    "row": "composed node: glyph + badges + bubble + label",
-    "state": "built",
-    "how": "three-view.js — cosmos itself draws points only (its canvas sits off-screen)"
-   },
-   {
-    "row": "badge slots A/B (7 of 8 families)",
-    "state": "built",
-    "how": "three-view.js"
-   },
-   {
-    "row": "typed wires: dash per kind",
-    "state": "built",
-    "how": "three-view.js"
-   },
-   {
-    "row": "typed wires: thickness",
-    "state": "lost",
-    "how": "1 px lines"
-   },
-   {
-    "row": "typed wires: per-kind beam toggle",
-    "state": "lost",
-    "how": "not built"
-   },
-   {
-    "row": "typed wires: gradient (fk · rollup)",
-    "state": "built",
-    "how": "three-view.js"
-   },
-   {
-    "row": "selected wire draws at beam 0",
-    "state": "lost",
-    "how": "no selection model"
-   },
-   {
-    "row": "directional particles",
-    "state": "built",
-    "how": "three-view.js"
-   },
-   {
-    "row": "heat gradients (d2w / fed2w)",
-    "state": "built",
-    "how": "three-view.js"
-   },
-   {
-    "row": "node picking → card",
-    "state": "built",
-    "how": "three-view.js colour-id"
-   },
-   {
-    "row": "link picking → wire card",
-    "state": "built",
-    "how": "three-view.js colour-id"
-   },
-   {
-    "row": "visibility without relayout (tier press)",
-    "state": "built",
-    "how": "three-view.js; the cosmos sim is paused after the tick cap"
-   },
-   {
-    "row": "tiers T0–T3",
-    "state": "built",
-    "how": "setTier(t) over the adapter's tier field"
-   },
-   {
-    "row": "GPU simulation off the main thread",
-    "state": "free",
-    "how": "the force pass runs in shaders (CPU-emulated under swiftshader — the tick cost here is NOT the GPU's)"
-   },
-   {
-    "row": "depth highlight · journeys · search · legend · Sources rows",
-    "state": "na",
-    "how": "station chrome — deliberately absent from every lab page"
-   },
-   {
-    "row": "honest-empty · unknown kind drawn",
-    "state": "free",
-    "how": "the adapter keeps it"
-   },
-   {
-    "row": "file:// · no network",
-    "state": "free",
-    "how": "one UMD; cosmos fetches nothing"
-   },
-   {
-    "row": "headless provable",
-    "state": "free",
-    "how": "WebGL2 under swiftshader (two contexts: cosmos + three)"
-   },
-   {
-    "row": "probe surface",
-    "state": "built",
-    "how": "LABG registered"
-   },
-   {
-    "row": "node budget fold (>1,600) + Sources row",
-    "state": "built",
-    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
-   },
-   {
-    "row": "R10: no deadness word on the page",
-    "state": "free",
-    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
-   },
-   {
-    "row": "vendorable as a pinned committed blob",
-    "state": "free",
-    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
-   }
+  "warnings": [
+   "kind \"zz-unknown-kind\" unknown to this adapter — drawn generically (never dropped)"
   ],
-  "notes": {
-   "layout_engine": "@cosmos.gl/graph 3.4.1 GPU sim · cluster force 0.6 to the entity anchors · tick cap 120",
-   "pick": "colour-id (nodes first, wires second)",
-   "anchors": "ring · 2D (not the adapter's x-line)",
-   "benign": 1
-  },
-  "warnings": [],
   "baked": null
  },
  {
@@ -1203,22 +619,22 @@
   "scale": "full",
   "layout": "live",
   "tier": {
-   "down_ms": 82.8,
-   "up_ms": 57,
-   "visible_t0": 197,
-   "visible_t3": 1351,
-   "n": 1351,
+   "down_ms": 29.5,
+   "up_ms": 50.8,
+   "visible_t0": 198,
+   "visible_t3": 1352,
+   "n": 1352,
    "moved": 0,
    "static": true
   },
   "ok": true,
-  "wall_ms": 31313,
+  "wall_ms": 32252,
   "probe_build": "p2 2026-09-07",
-  "when": "2026-09-07T14:43:06.991Z",
-  "nodes": 1351,
-  "links": 4053,
-  "drawn": 1351,
-  "expected": 1351,
+  "when": "2026-09-07T14:46:54.136Z",
+  "nodes": 1352,
+  "links": 4054,
+  "drawn": 1352,
+  "expected": 1352,
   "drawn_ok": true,
   "fps_state": "settled",
   "page_err": [],
@@ -1228,14 +644,14 @@
    "fe": false
   },
   "budget_hit": null,
-  "boot_ms": 1.5,
-  "first_frame_ms": 326.7,
-  "settle_ms": 4029.6,
+  "boot_ms": 1.4,
+  "first_frame_ms": 507,
+  "settle_ms": 4643.5,
   "settled": true,
   "ticks": 240,
   "settle_note": null,
-  "fps": 3,
-  "frame_ms": 330.97,
+  "fps": 1,
+  "frame_ms": 981.6,
   "draws": 62,
   "tris": null,
   "geos": 62,
@@ -1243,24 +659,24 @@
   "pick": {
    "tries": 20,
    "hits": 11,
-   "other": 0,
-   "occluded": 7,
-   "none": 2,
+   "other": 1,
+   "occluded": 8,
+   "none": 0,
    "unpositioned": 0,
-   "ms": 0.95,
+   "ms": 0.92,
    "mech": "scene.pick — a CPU ray over thin instances (GPUPicker is async, left as a note)"
   },
-  "heap_mb": 72.4,
+  "heap_mb": 89.9,
   "bundle": {
    "station": 1662427,
    "vendor": 8348052,
    "feed": 1216106,
    "lab": 37462
   },
-  "ink": 0.6886,
+  "ink": 0.6879,
   "r10": null,
-  "injected": null,
-  "purity": 0.599,
+  "injected": "drawn",
+  "purity": 0.6,
   "offline": true,
   "net": [],
   "errs": [],
@@ -1396,7 +812,9 @@
    "pick": "scene.pick — a CPU ray over thin instances (GPUPicker is async, left as a note)",
    "ticks_at_stop": 240
   },
-  "warnings": [],
+  "warnings": [
+   "kind \"zz-unknown-kind\" unknown to this adapter — drawn generically (never dropped)"
+  ],
   "baked": null
  }
 ]

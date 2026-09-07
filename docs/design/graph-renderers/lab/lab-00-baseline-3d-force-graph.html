@@ -39,7 +39,9 @@
   /* ── the station's per-node object (full mode): glyph + badges + bubble + label ───────────────────────────── */
   var IS = 10, BR = IS * 0.62, BUB = '#aab4c6';
   function badgeSprite(family, value, slot) { var cv = document.createElement('canvas'); cv.width = cv.height = 64; var c = cv.getContext('2d'); c.fillStyle = TK.badgeColor(family, value); c.beginPath(); c.arc(32, 32, 28, 0, 6.2832); c.fill(); c.fillStyle = '#0b0e13'; c.font = '700 22px ui-sans-serif,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(value).slice(0, 2).toUpperCase(), 32, 33);
-    var s = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false })); s.scale.set(6.5, 6.5, 1); s.position.set(BR * 0.9, slot ? BR * 0.9 : -BR * 0.9, 3); return s; }
+    var s = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false })); s.scale.set(3.5, 3.5, 1); s.__slot = slot; BADGES.push(s); return s; }
+  var BADGES = [];
+  function placeBadgesFull() { if (!cam) return; var e = cam.matrixWorld.elements, ox = 2, oy = -2.5, sz = 3.5; for (var i = 0; i < BADGES.length; i++) { var b = BADGES[i], sx = ox + (b.__slot || 0) * (sz * 0.72); b.position.set(e[0] * sx + e[4] * oy + e[8] * 3, e[1] * sx + e[5] * oy + e[9] * 3, e[2] * sx + e[6] * oy + e[10] * 3); } }   /* the station's _mbTick, verbatim law */
   function slotsOf(n) { var a = null, b = null;
     if (n.kind === 'endpoint' && n.m) a = { family: 'method', value: n.m }; else if (n.kind === 'function' && n.det && n.det.role) a = { family: 'role', value: n.det.role };
     else if (n.kind === 'component' && n.feClass && n.feClass !== 'view') a = { family: 'feclass', value: n.feClass }; else if (n.kind === 'module' && n.mclass) a = { family: 'mclass', value: n.mclass };
@@ -58,12 +60,13 @@
   /* ── typed wires (the station's connectorWire, rebuilt every third tick) ─────────────────────────────────── */
   var DASH = { dashed: [1.7, 1.0], dotted: [0.35, 0.95], sparse: [1.4, 2.8], longdash: [2.6, 1.2] };
   var connGroup = new T.Group(), wireCount = 0;
-  function wireColor(l, e) { var n = byId[e ? lid(l.target) : lid(l.source)], cfg = F.conn[l.kind] || F.conn.calls, band = F.bandOf(l); if (band) return band.color; if (cfg.gmode === 'type' || cfg.gmode === 'type-ent') { if (n && n.kind === 'endpoint' && n.m) return F.method[n.m]; } return (n && F.entColor[n.ent]) || cfg.color; }
+  function wireColor(l, e) { var cfg = F.conn[l.kind] || F.conn.calls, band = F.bandOf(l); if (band) return band.color; if (!cfg.grad) return cfg.color;   /* flat kind colour except fk · rollup, the station's law */
+    var n = byId[e ? lid(l.target) : lid(l.source)]; if (cfg.gmode === 'type' || cfg.gmode === 'type-ent') { if (n && n.kind === 'endpoint' && n.m) return F.method[n.m]; } return (n && F.entColor[n.ent]) || cfg.color; }
   function rebuildConnectors() { while (connGroup.children.length) { var ch = connGroup.children.pop(); if (ch.geometry) ch.geometry.dispose(); if (ch.material) ch.material.dispose(); } wireCount = 0;
     links.forEach(function (l, li) { var a = byId[lid(l.source)], b = byId[lid(l.target)]; if (!a || !b || !visible(a) || !visible(b) || a.x == null || b.x == null) return; var cfg = F.conn[l.kind] || F.conn.calls;
       var A = new T.Vector3(a.x, a.y, a.z), B = new T.Vector3(b.x, b.y, b.z), dir = B.clone().sub(A), len = dir.length() || 1; dir.multiplyScalar(1 / len); A.addScaledVector(dir, 8); B.addScaledVector(dir, -8);
       var geo = new T.BufferGeometry().setFromPoints([A, B]), ca = new T.Color(wireColor(l, 0)), cb = new T.Color(wireColor(l, 1)); geo.setAttribute('color', new T.BufferAttribute(new Float32Array([ca.r, ca.g, ca.b, cb.r, cb.g, cb.b]), 3));
-      var mat = cfg.style === 'solid' ? new T.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: Math.min(1, cfg.trust) }) : new T.LineDashedMaterial({ vertexColors: true, transparent: true, opacity: Math.min(1, cfg.trust), dashSize: (DASH[cfg.style] || [1.2, 1])[0] * (cfg.density || 1), gapSize: (DASH[cfg.style] || [1.2, 1])[1] * (cfg.density || 1) });
+      var dn = cfg.density || 1, base = DASH[cfg.style] || [1.2, 1]; var mat = cfg.style === 'solid' ? new T.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: Math.min(1, cfg.trust) }) : new T.LineDashedMaterial({ vertexColors: true, transparent: true, opacity: Math.min(1, cfg.trust), dashSize: base[0] / dn, gapSize: base[1] / dn });   /* the station: base / density */
       var line = new T.Line(geo, mat); if (cfg.style !== 'solid') line.computeLineDistances(); line.userData.li = li; connGroup.add(line); wireCount++; }); }
 
   /* ── hulls (ConvexGeometry per entity + sub-cluster, recomputed every third tick) ───────────────────────── */
@@ -86,7 +89,8 @@
     return [].concat(glyph.meshes, [bub.mesh], badges.mesh ? [badges.mesh] : [], labels.mesh ? [labels.mesh] : [], wires.meshes, parts ? [parts.mesh] : []); }
   function updateHollow(t) { var posOf = function (id) { var n = byId[lid(id)]; return (n && visible(n) && n.x != null) ? [n.x, n.y, n.z] : null; };
     nodes.forEach(function (n, i) { var on = visible(n) && n.x != null; HL.glyph.setVisible(i, on); if (on) { HL.glyph.setPos(i, n.x, n.y, n.z); HL.bub.set(i, n.x, n.y, n.z); var ls = HL.labels.slotOf[i]; if (ls != null) HL.labels.set(ls, n.x, n.y - (BR + 4.5), n.z); } else { HL.bub.hide(i); var ls2 = HL.labels.slotOf[i]; if (ls2 != null) HL.labels.hide(ls2); } });
-    HL.badges.items.forEach(function (it, q) { var n = nodes[it.i]; if (visible(n) && n.x != null) HL.badges.set(q, n.x + BR * 0.9, n.y + (it.slot ? BR * 0.9 : -BR * 0.9), n.z + 3); else HL.badges.hide(q); });
+    var e = cam ? cam.matrixWorld.elements : [1,0,0,0, 0,1,0,0, 0,0,1,0], ox = 2, oy = -2.5, sz = 3.5;
+    HL.badges.items.forEach(function (it, q) { var n = nodes[it.i]; if (visible(n) && n.x != null) { var sx = ox + it.slot * (sz * 0.72); HL.badges.set(q, n.x + e[0] * sx + e[4] * oy + e[8] * 3, n.y + e[1] * sx + e[5] * oy + e[9] * 3, n.z + e[2] * sx + e[6] * oy + e[10] * 3); } else HL.badges.hide(q); });
     HL.glyph.flush(); HL.bub.flush(); HL.badges.flush(); HL.labels.flush();
     links.forEach(function (l, li) { var a = byId[lid(l.source)], b = byId[lid(l.target)]; HL.wires.setVisible(li, !!(a && b && visible(a) && visible(b))); }); HL.wires.update(posOf);
     if (HL.parts) HL.parts.update(t, posOf, links); }
@@ -113,7 +117,7 @@
 
   /* ── the fps meter rides the wrapper's own render (renderer.render is patched) ───────────────────────────── */
   var renderer = Graph.renderer(), cam = Graph.camera(), frames = 0, fpsm = LAB.fps, lastT = 0;
-  var origRender = renderer.render.bind(renderer); renderer.render = function (s, c) { origRender(s, c); if (s === scene) { var t = performance.now(); if (t - lastT > 2) { lastT = t; frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms'); } } };
+  var origRender = renderer.render.bind(renderer); renderer.render = function (s, c) { if (s === scene) { if (HOLLOW) { if (G.settled) updateHollow(tick * 0.016); } else placeBadgesFull(); } origRender(s, c); if (s === scene) { var t = performance.now(); if (t - lastT > 2) { lastT = t; frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms'); } } };
   try { var comp = Graph.postProcessingComposer && Graph.postProcessingComposer(); if (comp && comp.render) { var origC = comp.render.bind(comp); comp.render = function (d) { origC(d); var t = performance.now(); if (t - lastT > 2) { lastT = t; frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms'); } }; } } catch (e) {}
 
   /* ── picking: the wrapper's own raycast (full) · colour-id over the glyph layers (hollow) ──────────────────── */
@@ -137,6 +141,7 @@
   var G = LAB.graph({ nodes: nodes, links: links, byId: byId, settled: false,
     setTier: function (t) { TIER = Math.max(0, Math.min(3, t | 0)); Graph.nodeVisibility(visible); Graph.linkVisibility(Graph.linkVisibility()); if (HOLLOW) updateHollow(tick * 0.016); else if (CONNS) rebuildConnectors(); buildHulls(); updateHulls(); return G.visible(); },
     visible: function () { var c = 0; nodes.forEach(function (n) { if (visible(n)) c++; }); return c; },
+    drawn: function () { if (HOLLOW) { var c = 0; HL.glyph.meshes.forEach(function (m) { var a = m.instanceMatrix.array; for (var k = 0; k < m.count; k++) if (a[k * 16] !== 0 || a[k * 16 + 1] !== 0 || a[k * 16 + 2] !== 0) c++; }); return c; } var d = 0; nodes.forEach(function (n) { if (n.__threeObj && n.__threeObj.visible) d++; }); return d; },   /* the wrapper's own node objects (full) or the instance buffers (hollow) — never the adapter's tier count */
     visibleIds: function () { return nodes.filter(visible).map(function (n) { return n.id; }); },
     positions: function () { var o = {}; nodes.forEach(function (n) { if (visible(n) && n.x != null) o[n.id] = [n.x, n.y, n.z]; }); return o; },
     screenOf: function (id) { var n = byId[id]; if (!n || n.x == null) return null; return TK.screenOf(cam, renderer, n.x, n.y, n.z); },
@@ -147,10 +152,14 @@
       ['entity + sub-cluster hulls', 'built', 'ConvexGeometry per entity + sub, recomputed every 3rd tick (the station\'s way)'],
       ['anchored deterministic layout', 'free', 'd3Force(\'layer\', zForce) — the adapter\'s port of the station force; seeds shared'],
       ['composed node: glyph + badges + bubble + label', HOLLOW ? 'built' : 'free', HOLLOW ? 'instanced layers: 1 draw call per form/badge atlas/label atlas' : 'a Group of 5–7 Object3Ds per node (nodeThreeObject)'],
-      ['badge slots A/B', HOLLOW ? 'built' : 'free', HOLLOW ? 'one atlas InstancedMesh' : 'canvas sprites per node'],
-      ['7 typed wires with dash', 'built', HOLLOW ? 'one LineSegments per kind (LineDashedMaterial)' : 'one Line per link rebuilt every 3rd tick (LineDashedMaterial)'],
+      ['badge slots A/B (7 of 8 families)', HOLLOW ? 'built' : 'free', (HOLLOW ? 'one atlas InstancedMesh' : 'canvas sprites per node') + ', pinned to the camera\'s right/up (the station\'s _mbTick)'],
+      ['typed wires: dash per kind', 'built', HOLLOW ? 'one LineSegments per kind (LineDashedMaterial, base / density)' : 'one Line per link rebuilt every 3rd tick (LineDashedMaterial, base / density)'],
+      ['typed wires: thickness', 'lost', '1 px lines; the station\'s TubeGeometry branch for access is not ported'],
+      ['typed wires: per-kind beam toggle', 'lost', 'not built'],
+      ['typed wires: gradient (fk · rollup)', 'built', 'per-vertex end colours where the station gradients'],
+      ['selected wire draws at beam 0', 'lost', 'no selection model in the lab'],
       ['directional particles', HOLLOW ? 'built' : 'free', HOLLOW ? 'one Points layer on cross links' : 'linkDirectionalParticles (wrapper) on cross links — but the wrapper links are HIDDEN when typed wires are on (?conns=0 to see them)'],
-      ['heat gradients (d2w / fed2w)', 'built', 'bandOf(l) → wire end colours'],
+      ['heat gradients (d2w / fed2w)', 'built', 'backend calls wires by the target\'s d2w (on); the FE write spine default OFF (?feheat=1)'],
       ['node picking → card', HOLLOW ? 'built' : 'free', HOLLOW ? 'colour-id pass over the glyph layers' : 'the wrapper\'s raycast (Raycaster over every node Group)'],
       ['link picking → wire card', 'built', 'Raycaster over the typed wires (threshold 3)'],
       ['visibility without relayout (tier press)', 'free', 'nodeVisibility/linkVisibility re-evaluated; no reheat'],
@@ -159,12 +168,15 @@
       ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it; the generic form is a sphere'],
       ['file:// · no network', 'free', 'plain <script src>, the station\'s bundle'],
       ['headless provable', 'free', 'WebGL under swiftshader'],
-      ['probe surface', 'built', 'LABG registered']],
+      ['probe surface', 'built', 'LABG registered'],
+      ['node budget fold (>1,600) + Sources row', 'built', 'the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field'],
+      ['R10: no deadness word on the page', 'free', 'the probe greps the DOM for the forbidden words; project identifiers keep their own words'],
+      ['vendorable as a pinned committed blob', 'free', 'the station\'s own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB']],
     verdict: HOLLOW ? 'Sim + camera + reheat plumbing stay the wrapper\'s; rendering is ours and instanced. If this row\'s draw calls sit near lab-01\'s, the migration is a <b>render-path swap</b>, not a rewrite.'
       : 'What ships today, minus the chrome: one <b>Group per node</b> and one <b>Line per link</b> rebuilt on every third tick. Its draw-call count is the number every other page is measured against.' });
   addEventListener('resize', function () { Graph.width(innerWidth).height(innerHeight); });
   var hud = setInterval(function () { var i = renderer.info; LAB.hud({ nodes: G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'draw calls': i.render.calls, tris: (i.render.triangles / 1000).toFixed(0) + 'k', 'geo/tex': i.memory.geometries + '/' + i.memory.textures, settled: G.settled ? 'yes' : 'no', 'obj/node': HOLLOW ? '0' : (objCount / nodes.length).toFixed(1) }); LAB.set('draws', i.render.calls); LAB.set('tris', i.render.triangles); LAB.set('geos', i.memory.geometries); LAB.set('texs', i.memory.textures); }, 500);
-  LAB.note('mode', HOLLOW ? 'hollow' : 'full'); LAB.note('particles', PARTICLES); LAB.note('conns', CONNS);
+  LAB.note('mode', HOLLOW ? 'hollow' : 'full'); LAB.note('particles', PARTICLES); LAB.note('conns', CONNS); LAB.note('pick', HOLLOW ? 'colour-id (nodes first)' : 'the wrapper\'s Raycaster over every node Group (sprites skipped)'); if (F.budgetHit) LAB.note('budget', F.budgetHit);
   setTimeout(function () { LAB.ready({ nodes: nodes.length, links: links.length, drawn: G.visible(), tier: TIER }); }, 2500);
 })();
 </script>

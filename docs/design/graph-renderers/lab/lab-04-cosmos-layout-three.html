@@ -63,7 +63,7 @@
   } else { LAB.note('layout_engine', 'baked fdp (no sim)'); V.setSettled(); }
   function harvest() { if (!graph) return false; var p = graph.getPointPositions(); if (!p || p.length < N * 2) return false; for (var i = 0; i < N; i++) { nodes[i].x = fromSpace(p[i * 2]); nodes[i].y = fromSpace(p[i * 2 + 1]); } harvested = true; return true; }
   function finish() { if (V.isSettled()) return; harvest(); V.setSettled(); LAB.note('ticks_at_stop', tick); }
-  V.surface({ ticks: function () { return tick; } });
+  V.surface({ ticks: function () { return tick; } }); LAB.note('pick', 'colour-id (nodes first, wires second)'); LAB.note('anchors', BAKED ? 'baked' : 'ring · 2D (not the adapter\'s x-line)');
   V.hud = function (i2) { LAB.hud({ nodes: V.G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'draw calls': i2.render.calls, tris: (i2.render.triangles / 1000).toFixed(0) + 'k', layout: V.isSettled() ? 'settled' : ('tick ' + tick + '/' + TICKS), engine: 'cosmos → three' }); };
   V.run(function () { if (!V.isSettled() && graph && !harvested) return harvest(); return false; });
   LAB.panel({ lib: '@cosmos.gl/graph 3.4.1 → three r185 raw', ver: 'GPU layout · lab-01\'s renderer', bundle: '701,405 B cosmos + the station\'s 3d-bundle.js', license: 'MIT (+ MIT)', role: 'THE GPU-LAYOUT OPTION',
@@ -71,8 +71,8 @@
       ['entity + sub-cluster hulls', 'built', 'three-view.js (ConvexGeometry per entity + sub)'],
       ['anchored deterministic layout', 'built', 'cosmos cluster force to RING anchors (setPointClusters + setClusterPositions — the adapter\'s x-line anchors collapse a 2D force onto a band); the sub rings and the kind rings (KRADF) are NOT expressible — a cluster is one centre'],
       ['composed node: glyph + badges + bubble + label', 'built', 'three-view.js — cosmos itself draws points only (its canvas sits off-screen)'],
-      ['badge slots A/B', 'built', 'three-view.js'],
-      ['7 typed wires with dash', 'built', 'three-view.js'],
+      ['badge slots A/B (7 of 8 families)', 'built', 'three-view.js'],
+      ['typed wires: dash per kind', 'built', 'three-view.js'], ['typed wires: thickness', 'lost', '1 px lines'], ['typed wires: per-kind beam toggle', 'lost', 'not built'], ['typed wires: gradient (fk · rollup)', 'built', 'three-view.js'], ['selected wire draws at beam 0', 'lost', 'no selection model'],
       ['directional particles', 'built', 'three-view.js'],
       ['heat gradients (d2w / fed2w)', 'built', 'three-view.js'],
       ['node picking → card', 'built', 'three-view.js colour-id'],
@@ -84,7 +84,10 @@
       ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it'],
       ['file:// · no network', 'free', 'one UMD; cosmos fetches nothing'],
       ['headless provable', 'free', 'WebGL2 under swiftshader (two contexts: cosmos + three)'],
-      ['probe surface', 'built', 'LABG registered']],
+      ['probe surface', 'built', 'LABG registered'],
+      ['node budget fold (>1,600) + Sources row', 'built', 'the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field'],
+      ['R10: no deadness word on the page', 'free', 'the probe greps the DOM for the forbidden words; project identifiers keep their own words'],
+      ['vendorable as a pinned committed blob', 'free', 'the station\'s own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB']],
     verdict: 'One question: does a real cluster force beat the bake (0.994) and the d3 lane (0.60) on k=10 entity purity at the same node count? The purity column answers it; everything else is lab-01\'s.' });
   setTimeout(function () { LAB.ready({ nodes: N, links: links.length, drawn: V.G.visible(), tier: V.tier() }); }, 2500);
 })();
