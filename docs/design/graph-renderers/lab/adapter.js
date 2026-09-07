@@ -176,7 +176,7 @@
     function seedPositions(spread) { spread = spread || 1; nodes.forEach(function (n) { var h = hash(n.id), th = (h % 3600) / 3600 * Math.PI * 2, ph = ((h >>> 12) % 1000) / 1000 * Math.PI - Math.PI / 2;
       var R = (RENT[n.ent] || 60) * (KRADF[n.kind] || 1.0) * spread, sa = (SUB[n.ent] || {})[n.sub] || { x: 0, y: 0, z: 0 };
       n.sx = EX[n.ent] + sa.x + Math.cos(th) * Math.cos(ph) * R; n.sy = EY[n.ent] + sa.y + Math.sin(ph) * R * 0.6; n.sz = EZ[n.ent] + sa.z + Math.sin(th) * Math.cos(ph) * R; }); return nodes; }
-    function applyBaked() { var BB = window.GABE_BAKED || {}, B = BB[o.fixture + (o.fn ? ':fn' : '')] || BB[o.fixture]; var hit = 0;   /* the fn bake has its own key; without it the plain bake places the pieces and the functions stay live */
+    function applyBaked() { var BB = window.GABE_BAKED || {}, B = (o.layout === 'station') ? BB[o.fixture + ':station'] : (BB[o.fixture + (o.fn ? ':fn' : '')] || BB[o.fixture]); var hit = 0;   /* the fn bake has its own key; without it the plain bake places the pieces and the functions stay live */
       if (/^x\d+$/.test(o.scale || '')) { nodes.forEach(function (n) { n.bx = n.by = n.bz = null; }); return { hit: 0, of: nodes.length, meta: null, why: 'a bake has no positions for cloned nodes (?scale=' + o.scale + ') — live layout' }; }
       if (B && B.meta && B.meta.head && C4.head && B.meta.head !== C4.head) warn.push('baked layout is STALE: layouts head ' + B.meta.head + ' ≠ feed head ' + C4.head + ' — re-run bake-fdp.py'); nodes.forEach(function (n) { var p = B && B.pos && B.pos[n.id.replace(/#c\d+$/, '')]; if (p) { hit++; n.bx = p[0]; n.by = p[1]; n.bz = p.length > 2 ? p[2] : 0; } else { n.bx = n.by = n.bz = null; } }); return { hit: hit, of: nodes.length, meta: B && B.meta || null }; }
     function force(alpha) { var ns = force.__n || []; for (var i = 0; i < ns.length; i++) { var n = ns[i], x = n.x || 0, y = n.y || 0, z = n.z || 0, has3 = typeof n.vz === 'number';
@@ -236,7 +236,8 @@
   var _tq = qs('tier', null);
   var o = { fixture: FX.name, fn: qs('fn', FX.fn ? '1' : '0') === '1', fe: qs('fe', '1') !== '0', scale: qs('scale', 'full'), layout: qs('layout', 'live'), tier: _tq == null ? null : Math.max(0, Math.min(3, +_tq | 0)), inject: qs('inject', '0') === '1', heat: qs('heat', '1') !== '0', feHeat: qs('feheat', '0') === '1' };
   var feed = build(C4, LV, o);
-  if (o.layout === 'baked') { var bk = feed.applyBaked(); feed.baked = bk; if (!bk.hit) { feed.layout = 'live'; feed.warnings.push(bk.why || ('?layout=baked asked but no window.GABE_BAKED[' + o.fixture + '] positions — live layout used (say so on the page)')); } }
+  feed.fixed = false;
+  if (o.layout === 'baked' || o.layout === 'station') { var bk = feed.applyBaked(); feed.baked = bk; if (!bk.hit) { feed.layout = 'live'; feed.warnings.push(bk.why || ('?layout=' + o.layout + ' asked but no window.GABE_BAKED positions for ' + o.fixture + ' — live layout used (say so on the page)')); } else { feed.fixed = true; if (bk.hit < feed.nodes.length) feed.warnings.push(o.layout + ' layout positions ' + bk.hit + ' of ' + feed.nodes.length + ' nodes — the rest are HIDDEN (the station holds its fe-types and functions at boot)'); } }
   feed.selfTest = function () { return selfTest(feed, C4, LV, o); };
   feed.opts = o;
   window.GABE_FEED = feed;

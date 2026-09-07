@@ -34,7 +34,7 @@
   LAB.mark('boot_ms');
   document.getElementById('knobs').innerHTML = [['ticks=120', TICKS === 120], ['cluster=0.6', CLUSTER === 0.6], ['layout=baked', F.layout === 'baked'], ['scale=x4', F.scale === 'x4'], ['feed=onyx', F.fixture === 'onyx']]
     .map(function (k) { var u = new URL(location.href), kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : kv[0] === 'layout' ? 'live' : kv[0] === 'scale' ? 'full' : kv[1]) : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
-  F.seedPositions(1); var BAKED = F.layout === 'baked';
+  F.seedPositions(1); var BAKED = !!F.fixed;   /* baked (fdp) or station (the captured picture) */
   var LZ = { endpoints: 75, api: 30, web: 75, data: -75 };
   nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.bx; n.y = n.by; n.z = n.bz; } else { n.x = n.sx; n.y = n.sy; n.z = LZ[n.sub] || 0; } });
   var V = TV.create(F, { labels: LABELS, particles: PARTICLES });

@@ -66,7 +66,8 @@ for (const spec of pages) {
   const L = await p.evaluate(() => window.__LAB || null);
   const G = await p.evaluate(() => {
     const g = window.LABG; if (!g) return null;
-    const F = window.GABE_FEED; const out = { stats: null, visible: null, drawn: null, feedNodes: F ? F.counts.nodes : null, feedLinks: F ? F.counts.links : null, byTier: F ? F.counts.byTier : null, tier: F ? F.tier : null, layout: F ? F.layout : null, baked: F && F.baked ? { hit: F.baked.hit, of: F.baked.of } : null, warnings: F ? F.warnings : [], heat: F ? F.heat : null, budgetHit: F ? F.budgetHit : null };
+    const F = window.GABE_FEED; const fixedByTier = (F && F.fixed) ? [0, 1, 2, 3].map(t => F.nodes.filter(n => n.tier <= t && n.bx != null).length) : null;
+    const out = { stats: null, visible: null, drawn: null, feedNodes: F ? F.counts.nodes : null, feedLinks: F ? F.counts.links : null, byTier: fixedByTier || (F ? F.counts.byTier : null), tier: F ? F.tier : null, layout: F ? F.layout : null, baked: F && F.baked ? { hit: F.baked.hit, of: F.baked.of } : null, warnings: F ? F.warnings : [], heat: F ? F.heat : null, budgetHit: F ? F.budgetHit : null };
     try { out.stats = g.stats ? g.stats() : null; } catch (e) { out.stats = { err: String(e) }; }
     try { out.visible = g.visible ? g.visible() : null; } catch (e) { out.visible = null; }
     try { out.drawn = g.drawn ? g.drawn() : null; } catch (e) { out.drawn = 'err:' + e; }   // the RENDERER's count (instance buffers · display data · visibility) — the adapter's byTier is the expected side

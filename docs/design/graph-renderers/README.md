@@ -53,7 +53,7 @@ was not built.
 
 | # | Ruling | Outcome |
 |---|---|---|
-| D1 | 3D primary; one 2D lane only if alive after lab-02/03 | Neither 2D page keeps the composed-node grammar without custom programs (sigma) or at speed (cytoscape). Recommendation: no 2D lane; if a READING station is wanted, cytoscape preset from the bake (~1 beat). |
+| D1 | 3D primary; one 2D lane only if alive after lab-02/03 | **Ruled 2026-09-07: every 2D option discarded** (operator). lab-02/03 stay as measured records; lab-06 stays unbuilt. |
 | D2 | plain glyphs + `?ships=1` on lab-01 only | The ships row is still owed (one InstancedMesh per GLB); every number above is fleet-free. |
 | D3 | onyx as a gitignored copy | `fixtures/fetch-onyx.sh`; onyx has no fe arm, so the example stays the fe witness. |
 | D4 | Babylon render + walk, no Havok | Built; `?walk=1` on lab-01 and lab-05 (pointer lock + collisions). Badges/labels out of the spike. |
@@ -75,6 +75,49 @@ was not built.
 Two station defects the labs surfaced on the way, both worth their own fix: the wrapper's default `cooldownTime` is 15 s of WALL CLOCK
 (the station ships it — on a slow GPU the layout stops after ~17 ticks and looks settled); and the wrapper's per-tick cost is the
 station's connector + hull rebuild every third tick.
+
+## The station's own layout (`?layout=station`)
+
+The operator's real question is the real page: *the example station gets slow when there is a lot on it.* So the lab draws the picture the
+operator actually sees: `capture-station.mjs` reads the example station's settled positions (settled by ticks, the wall-clock cap lifted) into
+`layouts/example.station.js`, and the 3D pages take `?layout=station` — no simulation, the same nodes the station draws at boot (tier 1,
+fe-types and functions held), the same wires. The rows below are that picture rendered four ways; the station's own frame cost on this host
+is the baseline row.
+
+<!-- station:start -->
+_Captured 2026-09-07 by `capture-station.mjs` from the example station at head `afb646c9`: 237 ticks to the engine stop (121 s, the wall-clock
+cap lifted), 843 nodes positioned (the 508 fe-types held, the 281 functions off), tier 1 at boot. The station DRAWS 389 of those 843 at tier 1
+(read from its own `nodeVisibility` accessor); the lab draws 430 at the same tier — the 41 extra are 20 routes + 21 schemas the station's global
+helper fold (`n.__solo` in `visN`) hides, a station control the adapter does not carry (named here, not ported). Rows: `probe.mjs --feed=example
+--layout=station --tier=1`, swiftshader, no GPU — fps* is a CPU-rasteriser floor and a rank; draw calls and heap are the deciding columns._
+
+| renderer | nodes drawn | draw calls | triangles | frame ms | fps* | heap MB | pick hit + occluded | what it says |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| **the station itself** (the real page) | 389 | **6,232** | 688,786 | **400** | 2.6 | 175 | — | today's cost on this host: 2.6 frames a second at its boot tier |
+| lab-00 · the wrapper as shipped | 430 | 2,236 | 453,362 | 400 | 3 | 99 | 11 + 1 | the same library and per-node object model as the station (glyph · badges · bubble · label per node, connectors, hulls); the station's extra calls are its sub-labels, particles, tubes and chrome |
+| lab-00 · hollow wrapper (`?hollow=1`) | 430 | **68** | 346,138 | 207 | 5 | 20 | 11 + 1 | the wrapper keeps the sim, camera, drag and reheat; every layer draws instanced from `three-kit.js` |
+| lab-01 · raw three | 430 | 91 | 347,212 | 232 | 4 | 16 | 12 + 1 | one call per layer + one mesh per hull and hull label |
+| lab-05 · Babylon | 430 | 39 | — | 258 | 4 | 52 | 8 + 1 (2 wrong) | one call per thin layer; a total rewrite of the station |
+
+**What the table settles.** The slowness the operator sees is the RENDER PATH, not the layout and not the node count: the same picture, the same
+430 nodes, costs 2,236 draw calls the wrapper's way and 68 instanced — 33× — and the real page pays 6,232 for 389 nodes because it draws more per
+node than the lab's replica. Under swiftshader every row is fill-bound (350–690k triangles rasterised on the CPU), so the frame-time gap here
+(400 → 207 ms) UNDERSTATES what a GPU gets from 33× fewer submissions; on an integrated GPU the per-call CPU cost is the bottleneck and the
+draw-call column is the one that moves. Heap follows the same line: 175 MB on the station, 99 MB on the replica, 20 MB hollow — the wrapper's
+per-node object tree (a Group holding a mesh, two bubbles, sprites and a label) is the memory.
+
+Purity reads 0.985 on every row, but over the 430 DRAWN nodes only (the fe-types the station holds are the hardest to keep pure and are
+not in this set), so it is not the lab's 0.60 measured over all 1,351 — a like-for-like read needs a capture at tier 3. What it does say: at
+its boot tier the station's own zForce + EX band + `recomputeSubAnchors` keeps the drawn entities together, so on this estate the render path,
+not the layout engine, is the beat that changes what the operator sees; D7 (the bake) moves down the list.
+
+**The move this licenses** (a station beat, needs "land it"): the hollow render path INSIDE the real station — `nodeThreeObject` returns an
+empty `Object3D`, `linkThreeObject` likewise, and the instanced layers of `three-kit.js` (forms · badge atlas · label atlas · wires per kind ·
+particles) draw into `Graph.scene()` from the wrapper's own node positions each frame; hulls, journeys, depth highlight and the legend keep
+their code because they never went through the wrapper's per-node objects. Behind a knob (`?render=instanced`, default off until the
+gabe-universe battery carries it), measured on the real page with `capture-station.mjs`'s baseline (6,232 calls · 400 ms · 175 MB) as the
+before row. The `cooldownTime` wall-clock fix rides the same beat (one line + one assert).
+<!-- station:end -->
 
 ## D7 — the layout question (owed)
 

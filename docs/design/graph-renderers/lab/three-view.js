@@ -14,7 +14,7 @@
     opts = opts || {};
     var LABELS = opts.labels !== false, PARTICLES = opts.particles !== false, WALK = !!opts.walk;
     var nodes = F.nodes, links = F.links, byId = F.byId, N = nodes.length, TIER = F.tier;
-    var visible = function (n) { return n.tier <= TIER; };
+    var visible = function (n) { return n.tier <= TIER && !(F.fixed && n.bx == null); };   /* a fixed layout (bake · station capture) draws only positioned nodes */
     var IS = 10, BR = IS * 0.62, BUB = '#aab4c6', HULL_OP = { ent: 0.02, sub: 0.035 };   /* the station's OPMAP.polygon ghost · faint */
     var W = innerWidth, H = innerHeight, renderer = new T.WebGLRenderer({ antialias: N < 6000, powerPreference: 'high-performance', preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(W, H); renderer.setClearColor(0x0b0e13, 1); (opts.container || document.getElementById('g')).appendChild(renderer.domElement);

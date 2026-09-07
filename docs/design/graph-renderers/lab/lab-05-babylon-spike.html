@@ -28,11 +28,11 @@
   if (!F) { document.body.insertAdjacentHTML('beforeend', '<pre style="color:#f88;position:absolute;left:340px;top:14px">' + (window.GABE_FEED_ERR || 'no feed') + '</pre>'); LAB.ready({ err: [window.GABE_FEED_ERR || 'no feed'] }); return; }
   if (!B || !B.Engine) { LAB.ready({ err: ['BABYLON global missing'] }); return; }
   var WALK = LAB.qs('walk', '0') === '1', PARTICLES = LAB.qs('particles', '1') === '1', TIER = F.tier, nodes = F.nodes, links = F.links, byId = F.byId, N = nodes.length, idx = Object.create(null); nodes.forEach(function (n, i) { idx[n.id] = i; });
-  var visible = function (n) { return n.tier <= TIER; };
+  var visible = function (n) { return n.tier <= TIER && !(BAKED && n.bx == null); };
   LAB.mark('boot_ms');
   document.getElementById('knobs').innerHTML = [['walk=1', WALK], ['particles=1', PARTICLES], ['layout=baked', F.layout === 'baked'], ['scale=x4', F.scale === 'x4'], ['feed=onyx', F.fixture === 'onyx'], ['fn=1', F.opts.fn]]
     .map(function (k) { var u = new URL(location.href), kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : kv[0] === 'layout' ? 'live' : kv[0] === 'scale' ? 'full' : '0') : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
-  F.seedPositions(1); var BAKED = F.layout === 'baked';
+  F.seedPositions(1); var BAKED = !!F.fixed;   /* baked (fdp) or station (the captured picture) */
   nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.bx; n.y = n.by; n.z = n.bz; } else { n.x = n.sx; n.y = n.sy; n.z = n.sz; } });
 
   /* ── engine · scene · camera ───────────────────────────────────────────────────────────────────────────────── */

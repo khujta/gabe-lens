@@ -1,0 +1,847 @@
+[
+ {
+  "page": "lab-00-baseline-3d-force-graph.html layout=station tier=1",
+  "lib": "3d-force-graph 1.80 + three r185",
+  "ver": "the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "full",
+  "layout": "station",
+  "tier": {
+   "down_ms": 23.5,
+   "up_ms": 40.2,
+   "visible_t0": 197,
+   "visible_t3": 843,
+   "n": 430,
+   "moved": 0,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 20969,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T16:09:35.621Z",
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 430,
+  "expected": 430,
+  "drawn_ok": true,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2.6,
+  "first_frame_ms": 572.5,
+  "settle_ms": 564.9,
+  "settled": true,
+  "ticks": 0,
+  "settle_note": null,
+  "fps": 3,
+  "frame_ms": 399.7,
+  "draws": 2236,
+  "tris": 453362,
+  "geos": 1501,
+  "texs": 483,
+  "shot_note": null,
+  "pick": {
+   "tries": 12,
+   "hits": 11,
+   "other": 0,
+   "occluded": 1,
+   "none": 0,
+   "unpositioned": 8,
+   "ms": 1.77,
+   "mech": "the wrapper's Raycaster over every node Group (sprites skipped)"
+  },
+  "heap_mb": 98.9,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 0,
+   "feed": 1216106,
+   "lab": 135804
+  },
+  "ink": 0.7864,
+  "r10": null,
+  "injected": null,
+  "purity": 0.985,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "free",
+    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "free",
+    "how": "a Group of 5–7 Object3Ds per node (nodeThreeObject)"
+   },
+   {
+    "row": "badge slots A/B (7 of 8 families)",
+    "state": "free",
+    "how": "canvas sprites per node, pinned to the camera's right/up (the station's _mbTick)"
+   },
+   {
+    "row": "typed wires: dash per kind",
+    "state": "built",
+    "how": "one Line per link rebuilt every 3rd tick (LineDashedMaterial, base / density)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "1 px lines; the station's TubeGeometry branch for access is not ported"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
+   },
+   {
+    "row": "directional particles",
+    "state": "free",
+    "how": "linkDirectionalParticles (wrapper) on cross links — but the wrapper links are HIDDEN when typed wires are on (?conns=0 to see them)"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "backend calls wires by the target's d2w (on); the FE write spine default OFF (?feheat=1)"
+   },
+   {
+    "row": "node picking → card",
+    "state": "free",
+    "how": "the wrapper's raycast (Raycaster over every node Group)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "Raycaster over the typed wires (threshold 3)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "plain <script src>, the station's bundle"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
+   }
+  ],
+  "notes": {
+   "mode": "full",
+   "particles": true,
+   "conns": true,
+   "pick": "the wrapper's Raycaster over every node Group (sprites skipped)",
+   "ticks_at_stop": 0
+  },
+  "warnings": [
+   "station layout positions 843 of 1351 nodes — the rest are HIDDEN (the station holds its fe-types and functions at boot)"
+  ],
+  "baked": {
+   "hit": 843,
+   "of": 1351
+  }
+ },
+ {
+  "page": "lab-00-baseline-3d-force-graph.html?hollow=1 layout=station tier=1",
+  "lib": "3d-force-graph 1.80 + three r185 (hollow)",
+  "ver": "the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "full",
+  "layout": "station",
+  "tier": {
+   "down_ms": 11.7,
+   "up_ms": 32.2,
+   "visible_t0": 197,
+   "visible_t3": 843,
+   "n": 430,
+   "moved": 0,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 22322,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T16:09:59.475Z",
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 430,
+  "expected": 430,
+  "drawn_ok": true,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2,
+  "first_frame_ms": 1118.6,
+  "settle_ms": 299.4,
+  "settled": true,
+  "ticks": 0,
+  "settle_note": null,
+  "fps": 5,
+  "frame_ms": 206.93,
+  "draws": 68,
+  "tris": 346138,
+  "geos": 56,
+  "texs": 13,
+  "shot_note": null,
+  "pick": {
+   "tries": 12,
+   "hits": 11,
+   "other": 0,
+   "occluded": 1,
+   "none": 0,
+   "unpositioned": 8,
+   "ms": 488.8,
+   "mech": "colour-id (nodes first)"
+  },
+  "heap_mb": 19.7,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 0,
+   "feed": 1216106,
+   "lab": 135804
+  },
+  "ink": 0.7877,
+  "r10": null,
+  "injected": null,
+  "purity": 0.985,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "free",
+    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "instanced layers: 1 draw call per form/badge atlas/label atlas"
+   },
+   {
+    "row": "badge slots A/B (7 of 8 families)",
+    "state": "built",
+    "how": "one atlas InstancedMesh, pinned to the camera's right/up (the station's _mbTick)"
+   },
+   {
+    "row": "typed wires: dash per kind",
+    "state": "built",
+    "how": "one LineSegments per kind (LineDashedMaterial, base / density)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "1 px lines; the station's TubeGeometry branch for access is not ported"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "one Points layer on cross links"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "backend calls wires by the target's d2w (on); the FE write spine default OFF (?feheat=1)"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "colour-id pass over the glyph layers"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "Raycaster over the typed wires (threshold 3)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "plain <script src>, the station's bundle"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
+   }
+  ],
+  "notes": {
+   "mode": "hollow",
+   "particles": true,
+   "conns": true,
+   "pick": "colour-id (nodes first)",
+   "ticks_at_stop": 0
+  },
+  "warnings": [
+   "station layout positions 843 of 1351 nodes — the rest are HIDDEN (the station holds its fe-types and functions at boot)"
+  ],
+  "baked": {
+   "hit": 843,
+   "of": 1351
+  }
+ },
+ {
+  "page": "lab-01-three-raw.html layout=station tier=1",
+  "lib": "three.js r185 raw",
+  "ver": "no wrapper · the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "full",
+  "layout": "station",
+  "tier": {
+   "down_ms": 17,
+   "up_ms": 38.8,
+   "visible_t0": 197,
+   "visible_t3": 843,
+   "n": 430,
+   "moved": 0,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 22236,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T16:10:22.308Z",
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 430,
+  "expected": 430,
+  "drawn_ok": true,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 2.1,
+  "first_frame_ms": 664.5,
+  "settle_ms": 210,
+  "settled": true,
+  "ticks": 0,
+  "settle_note": null,
+  "fps": 4,
+  "frame_ms": 232.37,
+  "draws": 91,
+  "tris": 347212,
+  "geos": 46,
+  "texs": 21,
+  "shot_note": null,
+  "pick": {
+   "tries": 13,
+   "hits": 12,
+   "other": 0,
+   "occluded": 1,
+   "none": 0,
+   "unpositioned": 7,
+   "ms": 445.46,
+   "mech": "colour-id (nodes first, wires second)"
+  },
+  "heap_mb": 15.5,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 62705,
+   "feed": 1216106,
+   "lab": 153171
+  },
+  "ink": 0.7056,
+  "r10": null,
+  "injected": null,
+  "purity": 0.985,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub (every 3rd tick while settling, then static)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "d3-force-3d + zForce in a Blob worker; ?layout=baked = fdp positions, no sim"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "one InstancedMesh per form · one atlas layer for badges · one sphere layer · one label atlas layer"
+   },
+   {
+    "row": "badge slots A/B (7 of 8 families)",
+    "state": "built",
+    "how": "atlas quads pinned to the camera's right/up like the station's _mbTick; the schema fold-count family has no fold in the lab"
+   },
+   {
+    "row": "typed wires: dash per kind",
+    "state": "built",
+    "how": "one LineSegments per CONN kind, LineDashedMaterial (base / density, the station's law)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "lost",
+    "how": "WebGL lines are 1 px — the station's TubeGeometry for access (thick 1.6) needs Line2/LineMaterial or a ribbon"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built — a per-kind visibility knob is a one-liner over wires.setVisible; the density/opacity beam is not"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-vertex end colours where the station gradients; flat kind colour elsewhere"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model in the lab"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "one Points layer along the cross links"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "backend calls wires banded by the target's d2w (on); the FE write spine DEFAULT OFF like the station — ?feheat=1 or LABG.setHeat(true,true)"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "colour-id pass over the glyph layers with the wires hidden (1×1 readback)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "a second colour-id pass over the wire LineSegments alone (1 px lines — no hover tolerance yet)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "built",
+    "how": "zero-scale instances + wire visibility; positions untouched"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "walk mode (?walk=1)",
+    "state": "na",
+    "how": "pointer lock + WASD/QE, capsule vs the buildings"
+   },
+   {
+    "row": "GLB fleets (?ships=1)",
+    "state": "na",
+    "how": "NOT BUILT YET — the stretch row (one InstancedMesh per GLB)"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "built",
+    "how": "the worker is a Blob URL that importScripts() the vendored d3 UMDs"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "the station's own 3d-bundle.js (1,637,037 B) — a raw build would ship ~880 KB"
+   }
+  ],
+  "notes": {
+   "layout_thread": "baked (no sim)",
+   "baked": {
+    "hit": 843,
+    "of": 1351,
+    "meta": {
+     "feed": "example",
+     "key": "example:station",
+     "source": "the station itself (templates/center/shell/example/codebase-graph-station/gabe-universe.html), settled by ticks",
+     "head": "afb646c9",
+     "tier_at_capture": 1,
+     "ticks": 237,
+     "nodes_positioned": 843,
+     "nodes_unpositioned": 0,
+     "fe_types_held": 508,
+     "fn_off": 281,
+     "station_draw_calls": 6232,
+     "station_triangles": 688786,
+     "station_heap_mb": 175,
+     "station_frame_ms_swiftshader": 399.5,
+     "station_fps_swiftshader": 2.6,
+     "captured": "2026-09-07",
+     "page_errors": []
+    }
+   },
+   "pick": "colour-id (nodes first, wires second)"
+  },
+  "warnings": [
+   "station layout positions 843 of 1351 nodes — the rest are HIDDEN (the station holds its fe-types and functions at boot)"
+  ],
+  "baked": {
+   "hit": 843,
+   "of": 1351
+  }
+ },
+ {
+  "page": "lab-05-babylon-spike.html layout=station tier=1",
+  "lib": "Babylon.js 9.25",
+  "ver": "thin instances · GreasedLine · GPUPicker available",
+  "feed": "example",
+  "scale": "full",
+  "layout": "station",
+  "tier": {
+   "down_ms": 42.6,
+   "up_ms": 36.4,
+   "visible_t0": 197,
+   "visible_t3": 843,
+   "n": 430,
+   "moved": 0,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 19171,
+  "probe_build": "p2 2026-09-07",
+  "when": "2026-09-07T16:10:42.037Z",
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 430,
+  "expected": 430,
+  "drawn_ok": true,
+  "fps_state": "settled",
+  "page_err": [],
+  "purity_note": null,
+  "heat": {
+   "be": true,
+   "fe": false
+  },
+  "budget_hit": null,
+  "boot_ms": 1,
+  "first_frame_ms": 277.7,
+  "settle_ms": 156,
+  "settled": true,
+  "ticks": 0,
+  "settle_note": null,
+  "fps": 4,
+  "frame_ms": 258.4,
+  "draws": 39,
+  "tris": null,
+  "geos": 60,
+  "texs": 12,
+  "shot_note": null,
+  "pick": {
+   "tries": 11,
+   "hits": 8,
+   "other": 2,
+   "occluded": 1,
+   "none": 0,
+   "unpositioned": 9,
+   "ms": 2.23,
+   "mech": "scene.pick — a CPU ray over thin instances (GPUPicker is async, left as a note)"
+  },
+  "heap_mb": 51.9,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 8379596,
+   "feed": 1216106,
+   "lab": 111012
+  },
+  "ink": 0.6581,
+  "r10": null,
+  "injected": null,
+  "purity": 0.985,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "a mesh per entity + sub from three's ConvexGeometry math (Babylon ships no convex hull / marching cubes)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "the same Blob-worker d3-force-3d + zForce as lab-01"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "glyph forms as thin instances (per-instance colour) + a thin-instanced bubble; badges and labels are OUT of the spike (custom ShaderMaterial + per-instance attribute each)"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "lost",
+    "how": "not in the spike (D4) — a thin-instanced atlas quad needs a custom ShaderMaterial"
+   },
+   {
+    "row": "typed wires: dash per kind",
+    "state": "built",
+    "how": "one GreasedLine per CONN kind: useDash + dashCount/dashRatio (a ratio per line, not world units)"
+   },
+   {
+    "row": "typed wires: thickness",
+    "state": "built",
+    "how": "GreasedLine width"
+   },
+   {
+    "row": "typed wires: per-kind beam toggle",
+    "state": "lost",
+    "how": "not built"
+   },
+   {
+    "row": "typed wires: gradient (fk · rollup)",
+    "state": "built",
+    "how": "per-point colours"
+   },
+   {
+    "row": "selected wire draws at beam 0",
+    "state": "lost",
+    "how": "no selection model"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "a thin-instanced dot per cross link"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "per-point colours on the GreasedLine"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "scene.pick over thin instances (thinInstanceEnablePicking; CPU ray — GPUPicker is async and left as a note)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "scene.pick on the GreasedLine ribbon (faceId → segment)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "built",
+    "how": "zero-scale thin instances + wires rebuilt; positions untouched"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "walk mode (?walk=1)",
+    "state": "na",
+    "how": "UniversalCamera + checkCollisions against invisible cluster spheres (ellipsoid 6)"
+   },
+   {
+    "row": "labels",
+    "state": "lost",
+    "how": "not in the spike — a DynamicTexture atlas + thin-instanced quads with a custom material"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "one 8.3 MB UMD, no wasm, no fetch (Havok would need an inlined wasm — out by D4)"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL2 under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   },
+   {
+    "row": "node budget fold (>1,600) + Sources row",
+    "state": "built",
+    "how": "the adapter boots at tier 0 above 1,600 nodes when no ?tier is given and says so (F.budgetHit); the probe pins ?tier=3 to measure the whole field"
+   },
+   {
+    "row": "R10: no deadness word on the page",
+    "state": "free",
+    "how": "the probe greps the DOM for the forbidden words; project identifiers keep their own words"
+   },
+   {
+    "row": "vendorable as a pinned committed blob",
+    "state": "free",
+    "how": "babylon.min.js 8,316,891 B + the station bundle for the hull math"
+   }
+  ],
+  "notes": {
+   "layout_thread": "baked (no sim)",
+   "pick": "scene.pick — a CPU ray over thin instances (GPUPicker is async, left as a note)"
+  },
+  "warnings": [
+   "station layout positions 843 of 1351 nodes — the rest are HIDDEN (the station holds its fe-types and functions at boot)"
+  ],
+  "baked": {
+   "hit": 843,
+   "of": 1351
+  }
+ }
+]

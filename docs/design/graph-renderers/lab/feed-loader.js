@@ -12,5 +12,7 @@
   window.GABE_FIXTURE = { name: feed, c4: base + 'c4-graph.js', levels: fn ? base + 'levels.js' : null, fn: fn };
   document.write('<script src="' + window.GABE_FIXTURE.c4 + '"><\/script>');
   if (fn) document.write('<script src="' + window.GABE_FIXTURE.levels + '"><\/script>');
-  if (qs('layout', 'live') === 'baked') { window.GABE_FIXTURE.baked = './layouts/' + feed.replace(/[^a-z0-9_-]/gi, '') + (fn ? '.fn' : '') + '.fdp.js'; document.write('<script src="' + window.GABE_FIXTURE.baked + '"><\/script>'); }   // absent file → no window.GABE_BAKED → the adapter says so and stays live
+  var lay = qs('layout', 'live');
+  if (lay === 'baked') { window.GABE_FIXTURE.baked = './layouts/' + feed.replace(/[^a-z0-9_-]/gi, '') + (fn ? '.fn' : '') + '.fdp.js'; document.write('<script src="' + window.GABE_FIXTURE.baked + '"><\/script>'); }   // absent file → no window.GABE_BAKED → the adapter says so and stays live
+  if (lay === 'station') { window.GABE_FIXTURE.baked = './layouts/' + feed.replace(/[^a-z0-9_-]/gi, '') + '.station.js'; document.write('<script src="' + window.GABE_FIXTURE.baked + '"><\/script>'); }   // the STATION's own settled positions (capture-station.mjs) — the picture the operator sees
 })();

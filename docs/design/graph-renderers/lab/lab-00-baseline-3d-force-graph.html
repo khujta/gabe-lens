@@ -32,9 +32,9 @@
     .map(function (k) { var u = new URL(location.href); var kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : (kv[0] === 'layout' ? 'live' : (kv[0] === 'scale' ? 'full' : '0'))) : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
 
   /* ── seed positions (the same seeds every page uses) or the bake ───────────────────────────────────────────── */
-  F.seedPositions(1);
-  nodes.forEach(function (n) { if (F.layout === 'baked' && n.bx != null) { n.x = n.fx = n.bx; n.y = n.fy = n.by; n.z = n.fz = n.bz; } else { n.x = n.sx; n.y = n.sy; n.z = n.sz; } });
-  var visible = function (n) { return n.tier <= TIER; };
+  F.seedPositions(1); var BAKED = !!F.fixed;   /* baked (fdp) or station (the captured picture) */
+  nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.fx = n.bx; n.y = n.fy = n.by; n.z = n.fz = n.bz; } else { n.x = n.sx; n.y = n.sy; n.z = n.sz; } });
+  var visible = function (n) { return n.tier <= TIER && !(BAKED && n.bx == null); };   /* under a fixed layout a node without a position is not drawn (the station held it) */
 
   /* ── the station's per-node object (full mode): glyph + badges + bubble + label ───────────────────────────── */
   var IS = 10, BR = IS * 0.62, BUB = '#aab4c6';
@@ -99,7 +99,7 @@
   var Graph = ForceGraph3D({ controlType: 'orbit' })(document.getElementById('g'))
     .backgroundColor('#0b0e13').showNavInfo(false).graphData({ nodes: nodes, links: links })
     .nodeThreeObject(HOLLOW ? function () { return new T.Object3D(); } : buildNode).nodeLabel(function (n) { return n.kind + ' — ' + n.label; })
-    .nodeVisibility(visible).enableNodeDrag(false).numDimensions(3).cooldownTicks(F.layout === 'baked' ? 0 : 240).cooldownTime(1e9).warmupTicks(0)   /* the wrapper's DEFAULT cooldownTime is 15,000 ms WALL CLOCK — at 1 fps that is ~17 ticks, then the engine stops mid-layout (the station has the same default); the lab counts TICKS so every page settles on the same law */
+    .nodeVisibility(visible).enableNodeDrag(false).numDimensions(3).cooldownTicks(BAKED ? 0 : 240).cooldownTime(1e9).warmupTicks(0)   /* the wrapper's DEFAULT cooldownTime is 15,000 ms WALL CLOCK — at 1 fps that is ~17 ticks, then the engine stops mid-layout (the station has the same default); the lab counts TICKS so every page settles on the same law */
     .linkVisibility(function (l) { if (CONNS) return false; var a = byId[lid(l.source)], b = byId[lid(l.target)]; return !!(a && b && visible(a) && visible(b)); })
     .linkColor(function (l) { return (F.conn[l.kind] || F.conn.calls).color; }).linkOpacity(0.5).linkWidth(0.7)
     .linkDirectionalParticles(function (l) { return (PARTICLES && !HOLLOW && l.cross) ? 1 : 0; }).linkDirectionalParticleSpeed(0.004).linkDirectionalParticleWidth(1.6).linkDirectionalParticleColor(function (l) { return (F.conn[l.kind] || F.conn.calls).color; })
