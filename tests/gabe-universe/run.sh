@@ -1130,15 +1130,31 @@ check('function _jrnRouteAnchor(ids){' not in page, "journey anchor REGRESSION: 
 
 # the INSTANCED render path (graph-renderer lab 2026-09-07): the kit rides beside the bundle, ?render=instanced draws one call per layer behind an
 # invisible proxy per node, the settle is by TICKS (the 15 s wall-clock cap froze the layout mid-way on a slow GPU), the Sources row says which path draws
-check('<script src="./assets/three-kit.js"></script>' in page and 'var INST=(function(){' in page and 'function __uniInstBuild(){' in page and 'if(INST){ if(!_INST_PROXY_GEO){' in page
+check('<script src="./assets/three-kit.js"></script>' in page and 'function _instMode(){' in page and 'var INST=_instMode();' in page and 'function __uniInstBuild(){' in page and 'if(INST){ if(!_INST_PROXY_GEO){' in page
       and 'function __uniInstSync(){' in page and 'function _instWireVisible(l){' in page and 'srcRow("info","render"' in page and 'window.__uniSetRender=function(m){' in page,
       "instanced FIRE: the kit script, the INST knob, the layer builder/sync, the proxy node, the wire law or the Sources row is gone")
 check('window.__uniRenderMode=INST?"instanced":"objects";' in page, "instanced FIRE: the render-mode global is gone")
 check('window.__uniRender=INST' not in page, "instanced REGRESSION: the render mode reclaims __uniRender — that name is the naming FORMATTER (form,name); the collision leaves Graph null and the whole page dead")
 check('.cooldownTicks(240).cooldownTime(1e9).onEngineTick(updateClusters)' in page, "settle law FIRE: the wrapper settles by ticks (cooldownTime lifted)")
 check('.cooldownTicks(240).onEngineTick(updateClusters)' not in page, "settle law REGRESSION: the 15 s wall-clock cap is back — a slow GPU freezes the layout at ~17 ticks")
-check('(INST?links.filter(function(l){ return window.__uniSelLink===l||window.__uniHovLink===l; }):links).forEach(' in page and 'if(INST&&window.__uniInst) try{ __uniInstSync(); }catch(e){} if(window.__uniHLTick) __uniHLTick();' in page,
-      "instanced FIRE: under INST only the selected/hovered wire takes the tube path and every cluster update syncs the layers")
+check('(INST?links.filter(function(l){ return window.__uniSelLink===l||window.__uniHovLink===l; }):links).forEach(' in page and 'if(INST&&window.__uniInst) try{ __uniInstSync(); }catch(e){} if(_STARL) _STARL.flush(); if(window.__uniHLTick) __uniHLTick();' in page,
+      "instanced FIRE: under INST only the selected/hovered wire takes the tube path and every cluster update syncs the layers + the star field")
+# INSTANCED IS THE DEFAULT (operator 2026-09-07, measured on their own GPU) — ?render=objects is the way back,
+# and the two per-object GLB swarms that instancing cannot carry are named where they are switched off.
+check('return true; }   /* DEFAULT ON (operator 2026-09-07' in page and "get(\"render\"); if(q) return q!==\"objects\";" in page,
+      "instanced DEFAULT FIRE: the render path no longer defaults ON — a first visit falls back to the objects path")
+check('if(_instMode()){ CFG.warOn=false; CFG.transports=false; }' in page and '6,300 meshes, measured 2026-09-07' in page,
+      "instanced FIRE: the two per-object GLB swarms (per-node fleets · per-route transports) must stay off under INST — transports alone took the page from 202 to 6,524 draw calls, worse than the objects path")
+# the STAR FIELD rides the instanced path as its OWN layer: one draw call for the whole sky, not ~958 sprites
+check('TK.starLayer' in page and 'function __uniStarBuild(){' in page and 'function __uniStarDispose(){' in page
+      and 'c.stars.push({s:null, i:_si, ix:_STARN++, hx:_STARN++})' in page and 'else if(_STARL){ _STARL.set(so.ix,_sx,_sy,_sz); _STARL.set(so.hx,_sx,_sy,_sz); }' in page,
+      "star-field FIRE: the instanced star layer (two slots per star — the dot and its additive-tinted halo) is gone, so instancing would cost the star field")
+check('CFG.stars=false' not in page,
+      "star-field REGRESSION: the instanced path switches the star field OFF again — it is cluster-level and rides its own layer (1 draw call, not ~958 sprites)")
+# the render toggle beside the FLEET title
+check('id="flsrender"' in page and 'window.__uniToggleRender=function(){' in page and '__uniToggleRender(); }; })();' in page
+      and '#flside .flsrender.on{' in page,
+      "render-toggle FIRE: the render-path button beside the FLEET title, its handler or its lit state is gone")
 
 # journey matrix: operation frozen + transitive call-chain reach (indirect cells) (operator 2026-09-03)
 check('TRANSITIVE data reach' in page and '.cell.ind{' in page and 'jdopc{ position:sticky; left:368px' in page and '_HOP={calls:1' in page,
@@ -1490,9 +1506,15 @@ const { chromium } = require(process.argv[3]);
   // triggers an async node rebuild: view=SCREEN glyph (no badge) · connector/container/leaf/private=cube+badge (all four classes badged).
   await p.evaluate(() => { if (window.__uniSetTier) window.__uniSetTier(3); });
   await p.waitForTimeout(1600);
+  // the composed node: a VIEW wears the screen glyph and no feclass badge; every other component class wears
+  // the component glyph WITH one. The law is the same on both render paths, but it is CARRIED differently —
+  // Sprite children on the objects path, the icon key + badge slots on the instanced one — so the probe reads
+  // whichever is live rather than pinning the test to a renderer.
   const fcb = await p.evaluate(() => {
     const inB = new Set(window.__uniBadges || []);
     const s = (fc) => { const n = nodes.find(x => x.kind==='component' && x.feClass===fc && x.__threeObj); if(!n) return null;
+      if (window.INST) { const k=_instIconKey(n), sl=_instSlots(n)||[];
+        return { screen:k==='screen', comp:k==='component', badge:!!sl[0] }; }
       let tex=null, bdg=false; n.__threeObj.children.forEach(ch => { if(ch.type==='Sprite'){ if(ch.material&&ch.material.map&&tex===null) tex=ch.material.map; if(inB.has(ch)) bdg=true; } });
       return { screen:tex===billTex.screen, comp:tex===billTex.component, badge:bdg }; };
     const v=s('view'), cn=s('connector'), ct=s('container'), pv=s('private'), lf=s('leaf');
@@ -1532,15 +1554,28 @@ const { chromium } = require(process.argv[3]);
   // legend pass · Steps 5–6: the stream endpoint wears a SECOND badge slot; a plain endpoint does not; the provider card has a Class section; the reference chips are real / honest dashes; every badge disc clears 30° of its host body
   const legend56 = await p.evaluate(() => { try{
       var st=nodes.find(function(x){ return x.kind==='endpoint' && x.stream && x.__threeObj; }); var pl=nodes.find(function(x){ return x.kind==='endpoint' && !x.stream && x.__threeObj; });
-      var slot1=function(n){ return n.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot===1; }); };
-      var s1=st?slot1(st):[]; var others=st?st.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot!==1; }):[];
-      var xs=others.map(function(ch){ return Math.round(ch.position.x*100)/100; }); var apart=s1.length===1 && xs.indexOf(Math.round(s1[0].position.x*100)/100)<0;
+      // slot B (delivery:stream) sits APART from slot A (the method). The law is the same on both render paths,
+      // but the carrier differs — Sprites with a __slot on the objects path, badge INSTANCES with a slot index
+      // on the instanced one — so the probe reads whichever is live instead of pinning the test to a renderer.
+      var s1, apart, plain1;
+      if (window.INST) {
+        var slotsOf=function(n){ return (_instSlots(n)||[]).filter(Boolean).length ? _instSlots(n) : [null,null]; };
+        var sB=function(n){ return (slotsOf(n)[1]?1:0); };
+        s1=new Array(st?sB(st):0); plain1=pl?sB(pl):null;
+        var sA=st?!!slotsOf(st)[0]:false;
+        apart = (st ? (sB(st)===1 && sA) : false);   /* both slots filled ⇒ the layer places them at different offsets (slot*sz*0.72) */
+      } else {
+        var slot1=function(n){ return n.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot===1; }); };
+        s1=st?slot1(st):[]; var others=st?st.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot!==1; }):[];
+        var xs=others.map(function(ch){ return Math.round(ch.position.x*100)/100; }); apart=s1.length===1 && xs.indexOf(Math.round(s1[0].position.x*100)/100)<0;
+        plain1=pl?slot1(pl).length:null;
+      }
       var gm=NIDS['provider:gemini']; var cls=null; if(gm){ SEL={kind:'node',data:gm}; showPanel(gm); var t=document.getElementById('pbody').textContent; cls=/Class/.test(t)&&/llm/.test(t); }
       var ref={}, refBlank=[]; try{ __uniLegRef(); [].slice.call(document.querySelectorAll('#uni-legref .lrrow')).forEach(function(r){ var k=((r.querySelector('.lrtx b')||{}).textContent||'').trim(); if(['llm','embed','vector','agent','infra','http','observability','payments','stream'].indexOf(k)>=0){ ref[k]=(r.querySelector('.lrnone')||r.querySelector('.lrno'))?'dash':(r.querySelector('.lrex')?'real':'none'); if(!((r.querySelector('.lrdef')||{}).textContent||'').trim()) refBlank.push(k); } }); __uniLegRef(); }catch(e){}
       var hue=function(h){ var r=parseInt(h.slice(1,3),16)/255,g=parseInt(h.slice(3,5),16)/255,b=parseInt(h.slice(5,7),16)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,H=0; if(d){ if(mx===r) H=((g-b)/d)%6; else if(mx===g) H=(b-r)/d+2; else H=(r-g)/d+4; H*=60; if(H<0) H+=360; } return H; };
       var host={method:'endpoint',delivery:'endpoint',role:'function',feclass:'component',mclass:'module',hrole:'hook',pclass:'provider'}; var bad=[], legacy=[]; var sat=function(h){ var r=parseInt(h.slice(1,3),16)/255,g=parseInt(h.slice(3,5),16)/255,b=parseInt(h.slice(5,7),16)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b); return mx?(mx-mn)/mx:0; };
       Object.keys(host).forEach(function(fam){ var fam_=window.__BADGE_COL[fam]||{}; var body=(KINDS[host[fam]]||{}).col; if(!body) return; Object.keys(fam_).forEach(function(k){ if(sat(fam_[k])<0.25||sat(body)<0.25) return; var d=Math.abs(hue(fam_[k])-hue(body)); d=Math.min(d,360-d); if(d<30){ var own=(fam==='delivery'||fam==='pclass'||(fam==='method'&&k==='TASK')); (own?bad:legacy).push(fam+':'+k+'@'+Math.round(d)); } }); });   // the rule binds the families this pass owns; older pairs are REPORTED (contrastLegacy), a recolour of their own
-      return {streamId:st&&st.id, slot1:s1.length, apart:apart, plainSlot1:pl?slot1(pl).length:null, providerClass:cls, ref:ref, refN:Object.keys(ref).length, refBlank:refBlank, contrastBad:bad, contrastLegacy:legacy}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
+      return {streamId:st&&st.id, slot1:s1.length, apart:apart, plainSlot1:plain1, providerClass:cls, ref:ref, refN:Object.keys(ref).length, refBlank:refBlank, contrastBad:bad, contrastLegacy:legacy}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
   console.log('  legend56 '+JSON.stringify(legend56));
   // Part C (2026-09-06): the membership evidence renders — stats.homing on the Sources row, home_ev on at least one node, the card's evidence row
   const homingEv = await p.evaluate(() => { try{
@@ -1832,12 +1867,21 @@ const { chromium } = require(process.argv[3]);
     && modelSw.entCard===true && modelSw.proposed===true && ['FEATURE','SPLIT','MERGE','ASPECT','LAYER'].indexOf(modelSw.badge)>=0 && modelSw.claim===true && modelSw.roundTrip===true && modelSw.noDash && modelSw.absent===true && modelSw.claimRow===true);
   // the INSTANCED render path (2026-09-07): the shipped page's draw calls are the baseline; the same page under ?render=instanced draws one call per
   // layer (< 600 with hulls · stubs · cluster labels), a node click still opens the card through the invisible proxy, and nothing throws.
+  // the OBJECTS path is now the opt-out, so its baseline is measured explicitly; the instanced page is then
+  // loaded with NO query at all, which is what proves the default.
+  await p.goto('file://'+path.resolve(process.argv[2])+'?render=objects'); await p.waitForFunction('window.__spikeKindsReady===true', {timeout:120000}); await p.waitForTimeout(4000);
   const objCalls = await p.evaluate(() => { try{ return Graph.renderer().info.render.calls; }catch(e){ return -1; } }).catch(()=>-1);
-  await p.goto('file://'+path.resolve(process.argv[2])+'?render=instanced'); await p.waitForFunction('window.__spikeKindsReady===true', {timeout:120000}); await p.waitForTimeout(4000);
+  const objMode = await p.evaluate(() => window.__uniRenderMode).catch(()=>null);
+  await p.goto('file://'+path.resolve(process.argv[2])); await p.waitForFunction('window.__spikeKindsReady===true', {timeout:120000}); await p.waitForTimeout(4000);
   const inst = await p.evaluate(() => { try{ var I=window.__uniInst; var n=nodes.find(function(x){ return x.kind==='endpoint' && x.__threeObj; }); var card=false; if(n){ var f=Graph.onNodeClick(); f(n); card=!!document.querySelector('#pbody .sec'); }
       var proxies=nodes.filter(function(x){ return x.__threeObj && x.__threeObj.children.length===1 && x.__threeObj.children[0].material && x.__threeObj.children[0].material.visible===false; }).length;
       var row=''; try{ __uniPanelAll(); row=(document.getElementById('pbody')||{}).textContent||''; }catch(e){ row='err:'+e; }   /* the Sources rows live in the ALL panel — __uniPanelAll (the modelSw idiom at line ~1760), never a bare panelAll() */
-      return {mode:window.__uniRenderMode, fmt:(typeof window.__uniRender), inst:!!I, layers:I?I.objs.length:0, calls:Graph.renderer().info.render.calls, nodes:nodes.length, vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length, drawnIcons:(function(){ if(!I) return 0; var a=I.icons.mesh.instanceMatrix.array, c=0; for(var k=0;k<I.icons.mesh.count;k++) if(a[k*16]!==0||a[k*16+1]!==0||a[k*16+2]!==0) c++; return c; })(), card:card, proxies:proxies, srcRow:/render/.test(row)&&/instanced/.test(row)}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
+      var _stars=(typeof CLUSTERS!=='undefined')?CLUSTERS.reduce(function(a,c){ return a+((c.stars||[]).length); },0):0;
+      var _starSprites=(typeof CLUSTERS!=='undefined')?CLUSTERS.reduce(function(a,c){ return a+((c.stars||[]).filter(function(x){ return !!x.s; }).length); },0):0;
+      var _rb=document.getElementById('flsrender');
+      return {mode:window.__uniRenderMode, fmt:(typeof window.__uniRender), inst:!!I, layers:I?I.objs.length:0,
+      stars:_stars, starSprites:_starSprites, starLayer:!!(typeof _STARL!=='undefined'&&_STARL&&_STARL.mesh), movers:(typeof MOVERS!=='undefined'&&MOVERS)?MOVERS.length:-1,
+      toggle:!!_rb, toggleOn:!!(_rb&&_rb.classList.contains('on')), calls:Graph.renderer().info.render.calls, nodes:nodes.length, vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length, drawnIcons:(function(){ if(!I) return 0; var a=I.icons.mesh.instanceMatrix.array, c=0; for(var k=0;k<I.icons.mesh.count;k++) if(a[k*16]!==0||a[k*16+1]!==0||a[k*16+2]!==0) c++; return c; })(), card:card, proxies:proxies, srcRow:/render/.test(row)&&/instanced/.test(row)}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
   await b.close();
   // the frontend fold, when the feed carries it: pieces drawn · every web node absorbed · bridge wires survive ·
   // types held back (toggle present) — a feed WITHOUT fe must leave all of that at zero (honest-empty)
@@ -1895,11 +1939,14 @@ const { chromium } = require(process.argv[3]);
   const legend56Ok = !!(legend56 && !legend56.err && legend56.slot1===1 && legend56.apart===true && legend56.plainSlot1===0 && legend56.providerClass===true && legend56.ref && legend56.ref.llm==='real' && legend56.ref.payments==='dash' && legend56.ref.stream==='real' && legend56.refN===9 && legend56.refBlank && legend56.refBlank.length===0 && legend56.contrastBad && legend56.contrastBad.length===0);
   const dispOk = !!(dispSel && !dispSel.err && dispSel.drawn===true && dispSel.chip===true && dispSel.ref==='real');
   const scaleOk = !!(scaleDL && !scaleDL.err && scaleDL.hit===true && scaleDL.capOn===false && scaleDL.tier===0 && scaleDL.row===true && scaleDL.jrn && scaleDL.steps>0 && scaleDL.ent==='ent');
-  console.log('  render path: objects '+objCalls+' calls → instanced '+JSON.stringify(inst));
-  const instOk = !!(inst && !inst.err && inst.mode==='instanced' && inst.fmt==='function' && inst.inst && inst.layers>=5 && inst.calls>0 && inst.calls<600 && objCalls>inst.calls*5 && inst.vis>0 && inst.drawnIcons===inst.vis && inst.card && inst.proxies>=inst.vis && inst.srcRow);   /* every VISIBLE node carries an icon instance (a bare >0 accepted a picture missing 90% of its glyphs) and a pick proxy — force-graph KEEPS __threeObj for a hidden node, so proxies >= vis, never equal */
+  console.log('  render path: objects '+objCalls+' calls ('+objMode+') → DEFAULT '+JSON.stringify(inst));
+  // the DEFAULT (no query) must be instanced; the objects path must still be reachable and still cost >5x;
+  // the star field must survive instancing as a LAYER (stars present, zero Sprites); the two GLB swarms stay off.
+  const instOk = !!(inst && !inst.err && inst.mode==='instanced' && objMode==='objects' && inst.fmt==='function' && inst.inst && inst.layers>=5 && inst.calls>0 && inst.calls<600 && objCalls>inst.calls*5
+      && inst.stars>0 && inst.starSprites===0 && inst.starLayer && inst.movers===0 && inst.toggle && inst.toggleOn && inst.vis>0 && inst.drawnIcons===inst.vis && inst.card && inst.proxies>=inst.vis && inst.srcRow);   /* every VISIBLE node carries an icon instance (a bare >0 accepted a picture missing 90% of its glyphs) and a pick proxy — force-graph KEEPS __threeObj for a hidden node, so proxies >= vis, never equal */
   const ok = instOk && r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && dispOk && legend56Ok && homingOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk && modelOk;
   if(ok) console.log(`  render: PASS — ${r.nodes} live nodes, 0 errors, card renders (st-pass=${r.stPass}, faces=${r.face}); frontend ${f.present?`${f.feNodes} pieces · ${f.absorbed} screens absorbed · ${f.typesHeld} types held · FE-write heat off-by-default, bands blue→magenta`:'absent (honest-empty)'}`);
-  else { console.error('  render FAIL:', JSON.stringify(r), 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'modelOk='+modelOk+' '+JSON.stringify(modelSw), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
+  else { console.error('  render FAIL:', JSON.stringify(r), 'instOk='+instOk, 'feOk='+feOk, 'wireSelOk='+wireSelOk, 'scaleOk='+scaleOk, 'dispOk='+dispOk, 'legend56Ok='+legend56Ok, 'homingOk='+homingOk, 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'modelOk='+modelOk+' '+JSON.stringify(modelSw), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
 })();
 JS
   RENDER=$?

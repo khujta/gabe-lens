@@ -458,6 +458,9 @@
   #flside .flsx{ color:var(--muted); background:none; border:none; cursor:pointer;
     font:400 17px/1 var(--font-ui); padding:0 3px; }
   #flside .flsx:hover{ color:var(--ink); }
+  #flside .flsrender{ margin-left:auto; display:inline-flex; align-items:center; justify-content:center; width:19px; height:19px; border-radius:5px; }   /* the render-path toggle sits right of the FLEET title, before the copy/close pair */
+  #flside .flsrender.on{ color:var(--accent, #4f9dff); background:color-mix(in srgb, var(--accent, #4f9dff) 18%, transparent); }
+  #flside .flsrender:not(.on){ color:var(--muted); }
   #flside .flsbody{ padding:8px 10px 10px; overflow-y:auto; overflow-x:hidden; min-height:0; }
   #flside .flsbody .cfgrow{ flex-wrap:wrap; }
   #flside .flsbody .grplbl{ letter-spacing:.06em; }
@@ -1449,16 +1452,18 @@ var CFG={ shape:"polygon", entLayout:"force", coreBy:"layer", coreByBE:null, cor
   warOn:true, warDist:7, shellH:0.6, concave:0.72, lift:0.65,   // war zones baked ALWAYS ON (operator settle 2026-08-19); warDist/shellH/concave/lift are dead (fleets ignore them)
   conns:true, stars:true, transports:true,   // ELEMENTS-LAB fleets · connectors · star field · transports — all baked ALWAYS ON (settled)
   zDef:true, zAtk:true, zCfl:true, zSat:true };   // per-planet-zone visibility (defence · attack · conflict · satellites), toggled in the Planet group
-(function(){ try{ var q=new URLSearchParams(location.search).get("render"), st=null; try{ st=window.localStorage.getItem("gabe:universe:render"); }catch(e){} if((q||st)==="instanced"){ CFG.warOn=false; CFG.transports=false; CFG.stars=false; } }catch(e){} })();   /* INSTANCED (below): the per-node GLB fleets, the shuttles and the star sprites stay on the objects path in this cut */
+(function(){ try{ if(_instMode()){ CFG.warOn=false; CFG.transports=false; } }catch(e){} })();   /* TWO per-object GLB swarms cannot ride the instanced path and are off under it: the per-node FLEETS (fleetZones() is built INSIDE buildNode, which instancing replaces with a proxy) and the per-route TRANSPORTS (790 shuttle Groups of 4 meshes each on the example — 6,300 meshes, measured 2026-09-07: they alone took the instanced page from 202 to 6,524 draw calls, worse than the objects path it replaces). The cluster STAR FIELD is cluster-level and DOES ride along, as its own instanced layer. */
 /* ── the INSTANCED render path (graph-renderer lab, 2026-09-07). The real page drew 6,232 calls a frame at its boot tier because every node
    is a Group of 5–7 objects and every wire its own Line; the SAME picture instanced drew 68. ?render=instanced (URL > localStorage
    gabe:universe:render > objects). Under it: icons · badges · bubbles · labels · wires draw as ONE layer each from assets/three-kit.js; the
    wrapper keeps the simulation, the camera, the node click (an invisible proxy per node still answers the raycaster) and every panel. On the
    OBJECTS path only, in this cut: the fleets · transports · the cluster star field · curved wires · the encoding extras (rings · glow · verts)
    — the Sources row says so. A mode switch reloads (the whole scene is rebuilt either way). ── */
-var INST=(function(){ try{ var q=new URLSearchParams(location.search).get("render"); if(q) return q==="instanced"; return window.localStorage.getItem("gabe:universe:render")==="instanced"; }catch(e){ return false; } })();
+function _instMode(){ try{ var q=new URLSearchParams(location.search).get("render"); if(q) return q!=="objects"; var st=window.localStorage.getItem("gabe:universe:render"); if(st) return st!=="objects"; }catch(e){} return true; }   /* DEFAULT ON (operator 2026-09-07, measured on their own GPU). ?render=objects — or the stored "objects" — is the way back. */
+var INST=_instMode();
 window.__uniRenderMode=INST?"instanced":"objects";   /* NOT __uniRender — that name is the naming FORMATTER (form,name) at the top of this file; the collision left Graph null and the page dead */
-window.__uniSetRender=function(m){ m=(m==="instanced")?"instanced":"objects"; try{ window.localStorage.setItem("gabe:universe:render", m); }catch(e){} try{ var u=new URL(location.href); u.searchParams.delete("render"); location.href=u.toString(); }catch(e2){ location.reload(); } };
+window.__uniSetRender=function(m){ m=(m==="objects")?"objects":"instanced"; try{ window.localStorage.setItem("gabe:universe:render", m); }catch(e){} try{ var u=new URL(location.href); u.searchParams.delete("render"); location.href=u.toString(); }catch(e2){ location.reload(); } };   /* a mode switch RELOADS: the whole scene is rebuilt either way */
+window.__uniToggleRender=function(){ __uniSetRender(INST?"objects":"instanced"); };
 var RADMIN=0.6, RADMAX=1.6;
 var NR=9;   // a node's visual radius (icon + bubble) — the clearance the boundary must clear
 /* metaball (fused-liquid WRAP) tuning — one iso-surface over the whole cluster so you cannot tell
@@ -3406,11 +3411,15 @@ window.__uniBuildFleet=function(){ if(document.getElementById("fleet")) return;
   var side=document.getElementById("flside");                    // the drawer is its OWN container — an add-on beside the fleet, not an extension
   if(!side){ side=document.createElement("div"); side.id="flside";
     side.innerHTML='<div class="flshead"><span class="flstitle" id="flstitle"></span>'
+      +'<button class="flsx flsrender" id="flsrender" title="'+(INST?"INSTANCED — one draw call per layer. Click for the objects path (one three.js object per node): slower, but it carries the per-node fleets.":"OBJECTS — one three.js object per node and per wire. Click for the instanced path: the same picture in a fraction of the draw calls.")+'">'
+        +'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>'
       +'<button class="flsx" id="flscopy" style="display:none" title="copy these settings as JSON — paste them back to adopt an exact configuration">⧉</button>'
       +'<button class="flsx" id="flsclose" title="close — slides back behind the fleet">×</button></div>'
       +'<div class="flsbody" id="flsbody"></div>';
     document.body.appendChild(side);
     document.getElementById("flsclose").onclick=function(){ __uniFlOpen(null); };
+    (function(){ var _rb=document.getElementById("flsrender"); if(!_rb) return; _rb.classList.toggle("on", !!INST);
+      _rb.onclick=function(ev){ ev.stopPropagation(); __uniToggleRender(); }; })();   /* the render path is the one control that reloads — the scene is rebuilt either way */
     document.getElementById("flscopy").onclick=function(){ var b=this;
       try{ var hx=function(v){ return "#"+("000000"+(v>>>0).toString(16)).slice(-6); };
         var out={ pane:"connections", lineStyle:CFG.lineStyle, curveAmt:(window.__uniCurveAmt!=null?window.__uniCurveAmt:1),
@@ -5170,7 +5179,23 @@ var DIRS=(function(){ var g=new T.IcosahedronGeometry(1,0), p=g.attributes.posit
 var SUBSHIFT={ endpoints:0.04, api:-0.08, web:0.10, frontend:0.10, data:0.0 };
 var CLUSTERS=[], clusterObjs=[], _npos={}, _wtick=0;
 function addObj(o){ o.traverse(function(c){ c.raycast=function(){}; }); Graph.scene().add(o); clusterObjs.push(o); return o; }   // decorative → invisible to the click picker (else force-graph reads an undefined node.x)
-function clearClusters(){ clusterObjs.forEach(function(o){ Graph.scene().remove(o); if(o.geometry&&o.geometry.dispose)o.geometry.dispose(); }); clusterObjs=[]; CLUSTERS=[]; }
+function clearClusters(){ clusterObjs.forEach(function(o){ Graph.scene().remove(o); if(o.geometry&&o.geometry.dispose)o.geometry.dispose(); }); clusterObjs=[]; CLUSTERS=[]; __uniStarDispose(); }
+/* ── the INSTANCED STAR FIELD (operator 2026-09-07). The objects path draws a star as a Group of two Sprites
+   per cluster — min(80, members*5) of them per entity, ~960 Groups and ~958 draw calls on the example. Here
+   every star in every cluster is one instance in ONE additive quad layer: one draw call for the whole sky.
+   _STARN counts the slots makeCluster claimed; the layer is built once the clusters are known. ── */
+var _STARN=0, _STARL=null;
+function __uniStarDispose(){ _STARN=0; if(!_STARL) return; try{ Graph.scene().remove(_STARL.mesh); _STARL.mesh.geometry.dispose(); _STARL.mesh.material.dispose(); }catch(e){} _STARL=null; }
+function __uniStarBuild(){ if(!INST||!window.TK||!TK.starLayer||!Graph||!_STARN) return;
+  _STARL=TK.starLayer(_STARN, starTex, STARC.size);
+  if(!_STARL.mesh) { _STARL=null; return; }
+  _STARL.mesh.raycast=function(){};   /* decoration to the picker, exactly like the objects path's sprites */
+  Graph.scene().add(_STARL.mesh);
+  CLUSTERS.forEach(function(c){ (c.stars||[]).forEach(function(so){ if(so.ix==null) return;
+    var _z=STARC.size*(0.55+prand(so.i,10)*0.9);
+    _STARL.setSize(so.ix,_z,_z); _STARL.setColor(so.ix, "#ffffff");                                   /* the dot */
+    _STARL.setSize(so.hx,_z*STARC.glow,_z*STARC.glow); _STARL.setColor(so.hx, "#525252"); }); });      /* the halo: 0.32 white, as additive tint */
+  _STARL.flush(); }
 function memberLinks(memset){ return links.filter(function(l){ return memset[lid(l.source)] && memset[lid(l.target)]; }); }
 function makeCluster(members, color, shape, op, level, label, dash){
   var memset={}; members.forEach(function(id){ memset[id]=1; });
@@ -5192,13 +5217,16 @@ function makeCluster(members, color, shape, op, level, label, dash){
   }
   c.name=label; c.stars=[];   // cluster stars = hidden fns used across the cluster (ent-level only)
   if(level==="ent" && CFG.stars){ var _sn=Math.min(80, members.length*STARC.per);
-    for(var _si=0;_si<_sn;_si++){ c.stars.push({s:addObj(starSprite(STARC.color, STARC.size*(0.55+prand(_si,10)*0.9), STARC.glow)), i:_si}); } }
+    for(var _si=0;_si<_sn;_si++){
+      if(INST){ c.stars.push({s:null, i:_si, ix:_STARN++, hx:_STARN++}); }   /* INSTANCED: two instance slots per star (the dot and its halo) in ONE shared layer — no Sprite, no draw call. The halo rides a DIMMER tint: under additive blending that IS a lower opacity. */
+      else c.stars.push({s:addObj(starSprite(STARC.color, STARC.size*(0.55+prand(_si,10)*0.9), STARC.glow)), i:_si}); } }
   var _lt=(level==="ent"&&window.__uniEntLabel)?__uniEntLabel(label):label, _nmax=((window.__uniNamingBlock&&__uniNamingBlock())||{caps:{}}).caps?((__uniNamingBlock()||{}).caps||{}).name_max||40:40;
   if(level==="ent"&&_lt&&_lt.length>_nmax) _lt=_lt.slice(0,_nmax-1)+"…";   /* the sprite truncates at name_max (an action phrase can run 100+ chars); the fleet, panel and tooltip carry the whole name */
   c.lbl=addObj(labelSprite(_lt, level==="ent"?34:24, null, level==="ent"?color:"#c9d3e6"));
   return c;
 }
-function buildClusters(){ clearClusters();
+function buildClusters(){ clearClusters(); _buildClusters(); try{ __uniStarBuild(); }catch(e){ console.warn("gabe-universe: star layer — "+e); } }
+function _buildClusters(){
   if(CFG.entOn) Object.keys(ENT).forEach(function(e){ if(!visEnt(e).show) return; var mem=nodes.filter(function(n){return n.ent===e;}).map(function(n){return n.id;});
     if(!mem.length) return;                                                                     /* a registered cluster whose pieces sit in a hidden pool draws no hull (and parks no label at the origin) until they load (review 2026-09-06) */
     var _mr=(window.__uniModelRosterRow&&window.__uniModel!=="claim")?__uniModelRosterRow(e):null, _dash=!!(_mr&&_mr.kind==="aspect");   /* an aspect cluster (derived / proposed) wears the dashed rim */
@@ -5220,7 +5248,9 @@ function updateClusters(force){ _wtick++; _npos={}; nodes.forEach(function(n){ i
     var cx=0,cy=0,cz=0,top=-1e9; ms.forEach(function(p){cx+=p.x;cy+=p.y;cz+=p.z; if(p.y>top)top=p.y;}); cx/=ms.length;cy/=ms.length;cz/=ms.length;
     if(c.stars&&c.stars.length){ var _rad=(NR+c.pad)*1.1;   // stars CLOUD around the cluster's member NODES, not its bbox (a thin diagonal hull has a huge box → stars everywhere) → they hug the actual footprint
       c.stars.forEach(function(so){ var m=ms[Math.floor(prand(so.i,4)*ms.length)%ms.length]||ms[0];
-        so.s.position.set(m.x+(prand(so.i,1)-0.5)*_rad*2, m.y+(prand(so.i,2)-0.5)*_rad*2, m.z+(prand(so.i,3)-0.5)*_rad*2); }); }
+        var _sx=m.x+(prand(so.i,1)-0.5)*_rad*2, _sy=m.y+(prand(so.i,2)-0.5)*_rad*2, _sz=m.z+(prand(so.i,3)-0.5)*_rad*2;
+        if(so.s) so.s.position.set(_sx,_sy,_sz);
+        else if(_STARL){ _STARL.set(so.ix,_sx,_sy,_sz); _STARL.set(so.hx,_sx,_sy,_sz); } }); }   /* the same law either way — only the carrier differs */
     if(c.shape==="aura"){ c.sprites.forEach(function(sp){
         if(sp.node){ var p=_npos[sp.node]; if(p) sp.s.position.set(p.x,p.y,p.z); }
         else { var s=_npos[lid(sp.link.source)], t=_npos[lid(sp.link.target)]; if(s&&t) sp.s.position.set(s.x+(t.x-s.x)*sp.t,s.y+(t.y-s.y)*sp.t,s.z+(t.z-s.z)*sp.t); } });
@@ -5244,7 +5274,7 @@ function updateClusters(force){ _wtick++; _npos={}; nodes.forEach(function(n){ i
       c.mc.update();
     }
     if(c.lbl){ c.lbl.position.set(c.level==="ent"?cx:cx-28, c.level==="ent"?top+26:cy, cz); var _lh=c.level==="ent"?12.5:7.5, _la=(c.lbl.material.map&&c.lbl.material.map.image)?(c.lbl.material.map.image.width/c.lbl.material.map.image.height):4; c.lbl.scale.set(_lh*_la, _lh, 1); }
-  }); if(INST&&window.__uniInst) try{ __uniInstSync(); }catch(e){} if(window.__uniHLTick) __uniHLTick(); if(force || _wtick%3===0) updateConnectors(); }
+  }); if(INST&&window.__uniInst) try{ __uniInstSync(); }catch(e){} if(_STARL) _STARL.flush(); if(window.__uniHLTick) __uniHLTick(); if(force || _wtick%3===0) updateConnectors(); }
 function build(){
   if(Graph){ try{ Graph._destructor(); }catch(e){} document.getElementById("g").innerHTML=""; }
   Graph=ForceGraph3D({ controlType: st.ctl })(document.getElementById("g"))

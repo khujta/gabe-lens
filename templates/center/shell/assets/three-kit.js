@@ -121,6 +121,21 @@
     L.place = function (i, x, y, z, br) { /* the station: slot A lower-right of the icon, slot B upper-right */ };
     return L;
   };
+  /* ── stars: ONE additive quad layer for every cluster star in the scene ─────────────────────────────────────
+     The station draws a star as a Group of two Sprites (a dot plus a halo at `glow` scale), per entity cluster,
+     min(80, members*5) of them — on the example that is ~960 Groups and ~958 draw calls. Instanced they are one.
+     Per-instance SIZE carries the station's size variance; per-instance COLOUR carries the halo, because under
+     ADDITIVE blending a dimmer tint is exactly a lower opacity — so the halo needs no second material. */
+  TK.starLayer = function (n, tex, size) {
+    if (!n) return { mesh: null, set: function () {}, hide: function () {}, flush: function () {}, setSize: function () {}, setColor: function () {} };
+    var uvs = new Float32Array(n * 4), sizes = new Float32Array(n * 2), sz = size || 1;
+    for (var i = 0; i < n; i++) { uvs[i * 4] = 0; uvs[i * 4 + 1] = 0; uvs[i * 4 + 2] = 1; uvs[i * 4 + 3] = 1; sizes[i * 2] = sz; sizes[i * 2 + 1] = sz; }
+    var L = quadLayer(tex, n, uvs, sizes);
+    var m = L.mesh.material; m.blending = T.AdditiveBlending; m.alphaTest = 0; m.depthWrite = false; m.depthTest = true;
+    L.mesh.name = 'stars'; L.mesh.renderOrder = 2; L.mesh.frustumCulled = false;
+    for (var k = 0; k < n; k++) TK.hide(L.mesh, k);   /* nothing draws until the station places it — a star with no member node is not drawn at the origin */
+    return L;
+  };
   TK.labelLayer = function (nodes, labelOf, max, opts) {
     opts = opts || {}; var cap = Math.min(max || 400, 4000), pick = []; for (var i = 0; i < nodes.length && pick.length < cap; i++) if (!opts.filter || opts.filter(nodes[i])) pick.push(i);
     if (!pick.length) return { mesh: null, pick: pick, set: function () {}, hide: function () {}, flush: function () {} };

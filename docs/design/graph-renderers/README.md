@@ -128,8 +128,28 @@ rasterises no pixels — but its vertices still run, and a CPU rasteriser bills 
 and the 33× is what the frame feels; this rig cannot show that, which is why the knob ships default-off.
 
 **The named next lever** (not built): compact `mesh.count` to the visible high-water mark by keeping the visible slots contiguous across a
-visibility change. That retires the whole triangle debt without touching the picture, and it is the prerequisite for making `instanced` the
-default. Until then the two rows above are the honest pair — read the draw-call and heap columns, not `frame ms`.
+visibility change. That retires the whole triangle debt without touching the picture. Until then the two rows above are the honest pair — read
+the draw-call and heap columns, not `frame ms`.
+
+**PROMOTED TO THE DEFAULT — 2026-09-07**, on the operator's own GPU ("it really accelerates the renderization"), which is the read swiftshader
+could not give. `?render=objects` — or the stored `objects` — is the way back, and a lightning-bolt toggle beside the FLEET title flips it.
+Two things had to be settled first, and both are measurements, not opinions:
+
+| under the instanced default | draw calls | note |
+|---|---:|---|
+| the objects path (now the opt-out) | 6,232 | one three.js object per node, one Line per wire |
+| instanced, star field as SPRITES | 1,160 | the star field alone is ~958 calls: a Group of two Sprites per star, min(80, members×5) per entity |
+| **instanced, star field as a LAYER** | **203** | 1,270 stars in ONE additive quad layer (`TK.starLayer`) — two instance slots per star, the halo carried as a dimmer additive tint |
+
+**What the instanced default LOSES, and why it is structural, not lazy.** Two per-object GLB swarms cannot ride this path:
+the per-node **fleets** (`fleetZones()` is built inside `buildNode`, which instancing replaces with an invisible proxy — turning `CFG.warOn`
+back on changed the draw count by nothing, because the code never runs) and the per-route **transports** (790 shuttle Groups of 4 meshes each on
+the example — enabling them took the instanced page from 202 to **6,524** calls, *worse* than the objects path it replaces). Both stay off under
+INST and are named where they are switched off. The star field was in that list until this beat; it is not per-object, so it came back as a layer.
+
+The battery now runs its WHOLE headless suite on the instanced default and measures the objects path explicitly via `?render=objects`. Two probes
+had to stop pinning a renderer and start reading whichever carrier is live: the composed-node check (`fcb` — Sprite children vs `_instIconKey` +
+`_instSlots`) and the two-slot badge check (`legend56` — `__slot` Sprites vs badge instances). Both assert the same LAW on both paths.
 
 Two defects were found landing it, both worth naming because neither could fail in a static check: the render-mode global was published as
 `window.__uniRender`, a name the naming FORMATTER already owned, so `__uniAddWireView` called a string, threw, and left `Graph` null — the page
