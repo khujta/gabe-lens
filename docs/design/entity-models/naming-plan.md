@@ -64,6 +64,8 @@ so the station, gabe-map and the drafter each own a three-line `{name}` substitu
 
 ## The conventions (pill `#entfeconv`, each button renders its ACTUAL mark — legend-visual law)
 
+> 2026-09-07 (operator, after the pass shipped): the three config pills now carry ICONS; the rendered mark ("frontend myFeature · backend MyFeature") and the strategy's rule moved to the hover title. The CAPSULES option below them was dropped ("we will not move forward with that option").
+
 | Convention | Form | Note |
 |---|---|---|
 | `case` (default, operator-ruled) | `{name\|camel}` / `{name\|pascal}` | the CASING is the mark — frontend `cookingSessions`, backend `CookingSessions`; applied to the name's leading word-run (up to the first ` · ` or ` — `), separators and trailing detail keep their words; `naming.fe.case {frontend: camel, backend: pascal}` swaps the pair; one-word names still differ (`cooking` / `Cooking`); every label's casing changes on regen — the operator's chosen churn |
@@ -85,7 +87,7 @@ name (today they render `fe · d:cooking_photos`).
 
 ## The control surface
 
-Two single-select pills in the cog panel, built by the same `__uniAddWireView` pass directly under `#entmodel` and above `#wireview`,
+Two single-select pills in the cog panel, built by the same `__uniAddWireView` pass directly under `#entmodel`, in the order `#entnaming` then `#entfeconv` (the `#wireview` CAPSULES group below them was dropped 2026-09-07),
 in its disabled-position grammar (reason in `title`, `__uniSyncGrpSel` echoing the chosen word). **GLOBAL, not per model** — names
 key on cluster ids that span the views; a per-model preference would 4× the reader state and make one click change words for two
 reasons; the disabled-position grammar carries the per-model honesty (on the claim model only `config` differs from the slug — the
@@ -137,7 +139,7 @@ clause (strategy in force · `config_error` · `unused_words`), no new trigger.
 3. **STATION** (template only; example regenerated): `__uniNameOf(id)` (roster `names[strategy]` → `row.name` → the l1 label for
    claim slugs → the id) · `__uniEntLabel` composing `forms[conv][tier]` over it · `__uniRelabel` · the two setters · the two pills ·
    boot read + precedence · deep links in the stated order · Sources clause · legend rows. `tests/gabe-universe` +~60 static
-   (`data-v` order for both pills · built between `#entmodel` and `#wireview` on all three call-site paths · the `__uniRelabel`
+   (`data-v` order for both pills · built under `#entmodel` in that order on all three call-site paths · the `__uniRelabel`
    absence list · noStore on the URL path · legend rows concatenated · no "orphan") + 3 headless asserts in the existing block
    (switch naming → `nodes.map(n=>n.ent)` and `CLUSTERS.map(c=>c.ekey)` element-wise unchanged, ≥1 label changed, a walk survives;
    cycle six conventions → split counts identical; round trip → labels element-wise equal; delete `models.naming` → the setter

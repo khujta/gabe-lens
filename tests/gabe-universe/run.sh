@@ -895,7 +895,7 @@ check('(kind==="mclass")?"module class":' not in page and '(kind==="mclass")?["a
 check('if(!_bm && !sel) return;' in page and 'window.__uniSelectLink=function(l)' in page and 'if(window.__uniSelectLink) __uniSelectLink(l);' in page and 'function wireVisSec(l)' in page and 'function fkKey(s, t)' in page and 'class="lrex lrexl"' in page and '.lrex:not(.lrexl)' in page,
       "WIRE SELECTION (2026-09-05): a selected wire draws even when its kind beam is 0 (the vanishing rollup); one select path; the card says why a wire is hidden; the FK key line; example WIRE chips on the reference's connector rows")
 check('window.__uniBudget=1600;' in page and 'window.__uniScaleGuard=function' in page and 'window.__uniApplyDeepLinks=function' in page and 'q.get("journey")' in page and 'window.__uniPanelEnt=function' in page and 'if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} }' in page,
-      "PASS 4 (2026-09-06): the node budget + scale guard (booted folded above it), the ?journey= / ?ent= deep links, the entity-panel handle")
+      "PASS 4 (2026-09-06): the node budget + scale guard (booted at tier 0 above it), the ?journey= / ?ent= deep links, the entity-panel handle")
 # ── legend pass (2026-09-06) · Step 0: the endpoint ⓘ popover lists TASK — the two method arrays must be the SAME list (paired assert) ──
 import re as _re0
 _pop = _re0.search(r'\["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"\]:\(kind==="count"\)', page); _sec = _re0.search(r'\["GET","POST","PUT","PATCH","DELETE","BOOT","TASK"\]\.forEach', page)
@@ -1129,19 +1129,21 @@ check('E2.push([fh, FE_PAIR[fh], 8]);' in page and 'ord.splice(bi+1,0,fh);' in p
       "pair seating is gone (force spring + ring adjacency)")
 check('(fe?"fe · {name}":"{name}")' in page and 'forms[conv][fe?"fe":"be"]' in page, "the label formatter must fall back to today's opened-dot prefix without a naming block, and read the emitted form with one")
 # the R2–R4 lab was RETIRED by the entity-models pass (Phase 2, 2026-09-06): the machinery goes, not just the buttons — an unreachable
-# toggle that still gated the connector build was the failure mode. CAP stays alone as the capsule master; the ENTITY MODEL pill sits above it.
+# toggle that still gated the connector build was the failure mode. The CAPSULES option followed on 2026-09-07 (dropped); the ENTITY MODEL pill leads the group.
 check('window.UNIWIRE' not in page and '__uniRelHide' not in page and '__uniDrawBundles' not in page and '_UTILSET' not in page and '_SOLEP' not in page and '_wireSets' not in page,
       "R2–R4 machinery survived (UNIWIRE / __uniRelHide / __uniDrawBundles / _UTILSET / _SOLEP) — a retired toggle still gates the connector build")
 check('data-v="r2"' not in page and '["r2","R2"' not in page and '["r3","R3"' not in page and '["r4","R4"' not in page and 'UNIWIRE[d[0]]' not in page,
       "an R2/R3/R4 button is still built")
-check('window.__uniAddWireView=function()' in page and 'id="wireview"' in page.replace("'",'"') and 'id="entmodel"' in page.replace("'",'"')
+check('window.__uniAddWireView=function()' in page and 'id="wireview"' not in page.replace("'",'"') and '>CAPSULES</div>' not in page and '"wv-"+d[0]' not in page and 'id="entmodel"' in page.replace("'",'"')
       and '__uniAddWireView();' in page,
-      "the CAPSULES group / the ENTITY MODEL pill are not built at boot / preset re-tabs")
+      "the CAPSULES option must be GONE (dropped 2026-09-07) while the ENTITY MODEL pill is built at boot / preset re-tabs")
 
 # ── 10z. batch 52 review fixes (7 confirmed → 6 distinct) ──
-check('b.classList.toggle("on", !!UNICAP.on);' in page, "the CAP button loses its lit state on a config rebuild")
-check('try{ buildTransports(); }catch(e){}' in page.split("wv-")[1][:1600],
-      "a CAP flip no longer re-derives the shuttles (ghosts would fly folded wires)")
+check('UNICAP.on=true' not in page and 'UNICAP.on=!UNICAP.on' not in page and 'UNICAP.on = ' not in page,
+      "a control still turns capsules on — UNICAP.on has NO writer since the option was dropped (2026-09-07)")
+_sg=page[page.find('window.__uniScaleGuard=function()'):page.find('window.__uniApplyDeepLinks=function()')]
+check(bool(_sg) and '__uniSetTier(0)' in _sg and '__uniApplyCapsules' not in _sg and 'booted at tier 0' in _sg and 'opens FOLDED' not in page and 'open a planet' not in page,
+      "the scale guard must boot an over-budget field at TIER 0 without the capsule fold (and say so — the Sources row's hover text included)")
 check('window.__uniCamFit=function(ms)' in page and '__uniCamFit(600); else Graph.cameraPosition(DEF' in page
       and '__uniCamFit(0); }, 400);' in page,
       "the camera no longer fits the live field (19 clusters outgrew the fixed 780) on boot + reset")
@@ -1149,7 +1151,7 @@ check('" (frontend of "+' in page.replace("'",'"'), "a paired piece's card no lo
 
 # ── 10aa. batch 53: capsules (S1+S3) · areas (S2) · the screen core (S4) · alias/fixture de-noisers ──
 check('window.UNICAP={ on:false, threshold:80, open:{} };' in page and 'window.__uniApplyCapsules=function()' in page,
-      "capsules DEFAULT OFF (operator: control-driven simplification) — the mechanism survives as the CAP legacy toggle")
+      "capsules DEFAULT OFF (operator: control-driven simplification) — the fold machinery survives dormant, with no control (the option was dropped 2026-09-07)")
 check('if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} }' in page,
       "the station BOOTS simplified via the T1 tier (the tier replaces the capsule fold as boot-time simplification)")
 check('rel:"bundle"' in page and 'count:g2.n' in page, "capsule wires lost their aggregated bundles")
@@ -1179,7 +1181,9 @@ _em=page[page.find('if(!document.getElementById("entmodel"))'):page.find('if(!do
 check(bool(_em) and re.findall(r'\["(\w+)","\w+",', _em)==["claim","seeded","derived","proposed"] and '__uniSetModel(btn.getAttribute("data-v"))' in _em
       and "' disabled'" in _em and 'vw.reason' in _em,
       "B3: the ENTITY MODEL pill is not the four-position claim · seeded · derived · proposed with disabled-with-reason positions")
-check(page.find('em.id="entmodel"') < page.find('g.id="wireview"'), "B3: #entmodel must be built ABOVE #wireview")
+check(page.find('em.id="entmodel"') < page.find('en.id="entnaming"'), "B3: #entmodel must be built ABOVE #entnaming")
+check('ico(MICO[d[0]],13)' in _em and "\">'+d[1]+'</button>'" not in _em and '(d[1]+" — "+d[2])' in _em,
+      "B3-icons: the ENTITY MODEL buttons must carry an ICON with the word on hover (operator 2026-09-07), not the word")
 check('window.localStorage.setItem("gabe:universe:model", v)' in page and 'window.localStorage.getItem("gabe:universe:model")' in page,
       "B3: the model preference is not persisted / read back (gabe:universe:model)")
 _sm=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('/* a naming or mark switch RELABELS')]
@@ -1210,11 +1214,17 @@ check(all(k in page for k in ('window.__uniNameOf=function(id)','window.__uniRen
       "B3-naming: the formatter chain (__uniNameOf · __uniRender · __uniCaseRun · __uniStrategy · __uniConvention) is missing a link")
 check('{name|camel}' in page and '{name|pascal}' in page and '/^(.*?)( · | — )(.*)$/' in page, "B3-naming: the case tokens are not substituted on the leading word-run only")
 _en=page[page.find('if(!document.getElementById("entnaming"))'):page.find('if(!document.getElementById("entfeconv"))')]
-_ec=page[page.find('if(!document.getElementById("entfeconv"))'):page.find('if(document.getElementById("wireview")) return;')]
-check(bool(_en) and bool(_ec) and page.find('em.id="entmodel"') < page.find('en.id="entnaming"') < page.find('ec.id="entfeconv"') < page.find('g.id="wireview"'),
-      "B3-naming: #entnaming and #entfeconv must be built between #entmodel and #wireview")
+_ec=page[page.find('if(!document.getElementById("entfeconv"))'):page.find('/* ── SELECTED-LINE look SETTLED')]
+check(bool(_en) and bool(_ec) and page.find('em.id="entmodel"') < page.find('en.id="entnaming"') < page.find('ec.id="entfeconv"'),
+      "B3-naming: #entnaming and #entfeconv must be built under #entmodel, in that order")
+check('ico(NICO[k]||"domain",13)' in _en and "+k+'</button>'" not in _en and '_ea2(k+" — "+ti)' in _en
+      and 'ico(CICO[k]||"none",13)' in _ec and 'ico("tint",13)' in _ec and '_ea3(k+" — "+ti)' in _ec,
+      "B3-icons: the NAMES and FRONTEND MARK buttons must carry ICONS with the word + rule (or the rendered mark) on hover (operator 2026-09-07)")
+_ico=page[page.find('var ICO={'):page.find('function ico(g,w)')]
+check(bool(_ico) and all((k+":'") in _ico or (k+':GLYPH') in _ico for k in ('claim','seeded','derived','proposed','domain','table','path','action','config','both','prefix','suffix','bracket','tint','none')) and '"class":GLYPH.schema' in _ico and 'glyph:GLYPH.screen' in _ico and '"case":\'' in _ico,
+      "B3-icons: the ICO roster is missing a pill icon (claim · seeded · derived · proposed · domain · table · class · path · action · config · both · case · prefix · suffix · bracket · glyph · tint · none)")
 check('__uniSetNaming(btn.getAttribute("data-v"))' in _en and "' disabled'" in _en and 'dis[k]' in _en and '__uniSetFeConv(btn.getAttribute("data-v"))' in _ec and '["case","prefix","suffix","bracket","glyph","tint","none"]' in _ec and '__uniRender(f.fe,"my feature")' in _ec,
-      "B3-naming: the pills bind their setters, render disabled positions with reasons, and the mark buttons draw their ACTUAL mark")
+      "B3-naming: the pills bind their setters, render disabled positions with reasons, and the mark buttons carry their ACTUAL mark (on hover since 2026-09-07)")
 _rl=page[page.find('window.__uniRelabel=function()'):page.find('window.__uniSetNaming=function(k, opts)')]
 check(bool(_rl) and 'buildClusters()' in _rl and '__uniFleetRender()' in _rl and all(x not in _rl for x in ('recomputeEX','__uniAssignSplit','recomputeSubAnchors','__uniApplyCapsules','d3ReheatSimulation','Graph.graphData(','nodes=','n.ent=','JRN=null')),
       "B3-naming: __uniRelabel must relabel (clusters · fleet · panel) and NEVER re-cluster (the absence list)")
@@ -1240,7 +1250,7 @@ check("(k===cur&&!off?' class=\"on\"':'')" in page and "(k===cur2&&!off?' class=
 check('window.__uniEsc=function(x)' in page and 'window.__uniEntLabelHTML=function(e)' in page and '__uniEntLabelHTML(e):(window.__uniEntLabel?__uniEntLabel(e):e))+\'</span>' in page and '"<div class=\'ptitle\'><div class=\'pname\'>"+_hx(title)+"</div>"' in page,
       "R2-naming: the fleet row and the panel head escape the label (project prose reaches innerHTML) — the fleet through __uniEntLabelHTML (the glyph mark rides it)")
 check('__uniEsc((window.__uniEntLabel?__uniEntLabel(e):e)+" · "+e)' in page, "R2-naming: the fleet tooltip carries the FULL label beside the id (the sprite truncates, the fleet carries)")
-check('(k==="none")?(_ea3(ex)+\' <i style="opacity:.6">bare</i>\')' in page and 'k==="glyph"&&typeof svgInline==="function")?(svgInline("web"' in page and '(k==="tint")?(\'<span style="color:\'' in page, "R2-naming: glyph · tint · none buttons read differently")
+check('ico("tint",13)' in page and 'glyph:GLYPH.screen' in page and "none:'<circle" in page and 'ico(CICO[k]||"none",13)' in page and '(k==="tint"&&!off)?(\'<span style="color:\'' in page, "R2-naming: glyph · tint · none buttons read differently (icons: the screen glyph · a tinted palette · the ban circle)")
 check('x.kind==="feature"&&x.name&&(k==="domain"||(x.names&&x.names[k]&&x.names[k]!==x.name))' in page and 'ex=_r.name+" → "+(window.__uniEntLabel?__uniEntLabel(_r.id):_r.names[k])' in page, "R2-naming: the legend example shows a row whose name CHANGES, drawn as the hull draws it")
 check('+" "+((window.__uniNameOf&&__uniNameOf(e))||"")' in page, "R2-naming: the search scorer keeps the emitter's words as a witness under every convention")
 check('"entity · "+(window.__uniEntLabel?__uniEntLabel(ent):_hslug(ent))' in page and '"entity · "+ent,' not in page, "R2-naming/R10: panelClu's Above row goes through the label funnel")
@@ -1835,7 +1845,7 @@ const { chromium } = require(process.argv[3]);
   const homingOk = !!(homingEv && !homingEv.err && homingEv.stats && homingEv.stats.present && homingEv.stats.pieces > 0 && homingEv.nodeWithEv && homingEv.cardRow === true && homingEv.clean === true && homingEv.unclaimedCard !== false && homingEv.sourcesRow === true);
   const legend56Ok = !!(legend56 && !legend56.err && legend56.slot1===1 && legend56.apart===true && legend56.plainSlot1===0 && legend56.providerClass===true && legend56.ref && legend56.ref.llm==='real' && legend56.ref.payments==='dash' && legend56.ref.stream==='real' && legend56.refN===9 && legend56.refBlank && legend56.refBlank.length===0 && legend56.contrastBad && legend56.contrastBad.length===0);
   const dispOk = !!(dispSel && !dispSel.err && dispSel.drawn===true && dispSel.chip===true && dispSel.ref==='real');
-  const scaleOk = !!(scaleDL && !scaleDL.err && scaleDL.hit===true && scaleDL.capOn===true && scaleDL.tier===0 && scaleDL.row===true && scaleDL.jrn && scaleDL.steps>0 && scaleDL.ent==='ent');
+  const scaleOk = !!(scaleDL && !scaleDL.err && scaleDL.hit===true && scaleDL.capOn===false && scaleDL.tier===0 && scaleDL.row===true && scaleDL.jrn && scaleDL.steps>0 && scaleDL.ent==='ent');
   const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && dispOk && legend56Ok && homingOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk && modelOk;
   if(ok) console.log(`  render: PASS — ${r.nodes} live nodes, 0 errors, card renders (st-pass=${r.stPass}, faces=${r.face}); frontend ${f.present?`${f.feNodes} pieces · ${f.absorbed} screens absorbed · ${f.typesHeld} types held · FE-write heat off-by-default, bands blue→magenta`:'absent (honest-empty)'}`);
   else { console.error('  render FAIL:', JSON.stringify(r), 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'modelOk='+modelOk+' '+JSON.stringify(modelSw), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }

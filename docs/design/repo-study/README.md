@@ -72,7 +72,7 @@ The build takes the config's entities as the registry when `adoption.json` is ab
 | 0 | `2ac980a` | 23 · 2 · 28 | 346 pieces (homed by config, 5 planets) · sdkTable 17/17 | bun installs at the repo root; universe 223 nodes; 3 journeys |
 | 1 | `555929a` | 31 · 6 · 31 | — | 6 entities by module; gated 20; T1/T2 recorded as no-code-at-HEAD |
 | 2 | `daedb62` | 11 · 3 · 17 | — | stream marked on `POST /chatbot/chat/stream`; providers langchain · langgraph · mem0 · openai · redis; 4 journeys |
-| 3 | (local) | 512 · 155 · 5852 | 2602 pieces (8 planets) · fetch 188/351, 19 unhomed, `mobile/src` + `widget/src` named as not scanned | 9 entities by package; `data` owns the models file; 46 TASK roots + 32 dispatch edges; twin pass blocked (7,258 sizable → 1 M pairs); **universe 2,050 nodes → booted folded** (203 capsules, tier 0, ready in 17 s); regen 2.5 min; workflow B walks TASK roots |
+| 3 | (local) | 512 · 155 · 5852 | 2602 pieces (8 planets) · fetch 188/351, 19 unhomed, `mobile/src` + `widget/src` named as not scanned | 9 entities by package; `data` owns the models file; 46 TASK roots + 32 dispatch edges; twin pass blocked (7,258 sizable → 1 M pairs); **universe 2,050 nodes → booted folded** (203 capsules, tier 0, ready in 17 s) — a 2026-09-06 measurement; the capsule fold was dropped 2026-09-07, an over-budget estate now boots at tier 0 only; regen 2.5 min; workflow B walks TASK roots |
 
 ## Friction log (what the install taught the suite)
 

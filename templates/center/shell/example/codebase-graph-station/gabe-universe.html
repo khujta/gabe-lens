@@ -3904,10 +3904,10 @@ window.__uniAddLayoutTab=function(){ var cfg=document.getElementById("cfg"); if(
    bundle wires between capsules. Click a capsule (or its card's Expand, or the fleet row, or
    any search/chip hit inside it) → the entity opens to its pieces; the CAP toggle in the
    config flips the whole mechanism. Restore-then-apply keeps the surgery idempotent. ── */
-window.__uniBudget=1600;   /* review 2026-09-06 (repo-study — onyx draws ≈3.9k nodes, 3× gustify): above this node count the station boots FOLDED (capsules on · tier 0) instead of every node at once; the Sources row says so; raise it to draw more */
+window.__uniBudget=1600;   /* review 2026-09-06 (repo-study — onyx draws ≈3.9k nodes, 3× gustify): above this node count the station boots at TIER 0 (Skeleton — no capsule fold: that option was dropped 2026-09-07) instead of every node at once; the Sources row says so; raise it to draw more */
 window.__uniScaleGuard=function(){ var n=(typeof nodes!=="undefined"&&nodes)?nodes.length:0, b=window.__uniBudget||1600; if(n<=b){ window.__uniBudgetHit=null; return false; }
-  window.__uniBudgetHit={nodes:n, budget:b}; UNICAP.on=true; try{ if(window.__uniApplyCapsules) __uniApplyCapsules(); }catch(e){} if(window.__uniSetTier){ try{ __uniSetTier(0); }catch(e){} }
-  try{ console.info("gabe-universe: "+n+" nodes > budget "+b+" — booted folded (capsules on, tier 0); raise window.__uniBudget to draw more"); }catch(e){} return true; };
+  window.__uniBudgetHit={nodes:n, budget:b}; if(window.__uniSetTier){ try{ __uniSetTier(0); }catch(e){} }   /* tier 0 only — the capsule fold left with its option (2026-09-07) */
+  try{ console.info("gabe-universe: "+n+" nodes > budget "+b+" — booted at tier 0 (Skeleton); raise window.__uniBudget to draw more"); }catch(e){} return true; };
 window.__uniApplyDeepLinks=function(){   /* ?model=<view> picks the entity model FIRST (so ?ent= resolves against its clusters) · ?journey=<name|cid> opens ONE walk · ?ent=<slug> opens that entity's panel — the ramp-up's "one trace per session" (review 2026-09-06) */
   var jv=window.__jrn, ev=window.__ent, mv=window.__model, _stored=null;
   var _switched=false;
@@ -3923,7 +3923,7 @@ window.__uniApplyDeepLinks=function(){   /* ?model=<view> picks the entity model
   if(jv && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
     if(j) __uniJrnStart(j.cid); else console.info("gabe-universe: ?journey="+jv+" names no journey (workflows tab lists them)"); }catch(e){} }
   if(ev && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
-window.UNICAP={ on:false, threshold:80, open:{} };   // DEFAULT OFF (operator): simplification is control-driven (tiers) now, not the capsule click-fold — the CAP fleet toggle can still turn the legacy fold back on
+window.UNICAP={ on:false, threshold:80, open:{} };   // DEFAULT OFF and NEVER WRITTEN since 2026-09-07 (the CAPSULES option was dropped — operator): simplification is the tier control; the fold machinery is dormant
 var _CAPST=null;   // {nodes:[...], links:[...], caps:[capIds], byPiece:{pieceId:capId}}
 window.__uniApplyCapsules=function(){ try{
   if(typeof Graph==="undefined"||!Graph) return;
@@ -4171,7 +4171,8 @@ window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbo
               ["derived","derived","features found from the code alone — an endpoint, its shapes and the hook that calls it, grouped by the table they write, named by their URL"],
               ["proposed","proposed","one verdict per declared entity — keep · split · merge · aspect · layer — plus features no entity declares, drawn as if you accepted them"]];
     var ph='<div class="grplbl" title="which ENTITY MODEL clusters the field — the claim is the registry; the other three are views over it (nothing is re-homed on disk)">ENTITY MODEL</div><div class="pill" data-grp="entmodel">';
-    MDEF.forEach(function(d){ var vw=views[d[0]]||{present:false}, on=vw.present!==false; ph+='<button data-v="'+d[0]+'"'+(d[0]===cur?' class="on"':'')+(on?'':' disabled')+' title="'+_ea(on?d[2]:(d[1]+" — not on this feed: "+(vw.reason||"absent")))+'">'+d[1]+'</button>'; });
+    var MICO={claim:"claim", seeded:"seeded", derived:"derived", proposed:"proposed"};   /* icons, the word on hover (operator 2026-09-07) */
+    MDEF.forEach(function(d){ var vw=views[d[0]]||{present:false}, on=vw.present!==false; ph+='<button data-v="'+d[0]+'"'+(d[0]===cur?' class="on"':'')+(on?'':' disabled')+' title="'+_ea(on?(d[1]+" — "+d[2]):(d[1]+" — not on this feed: "+(vw.reason||"absent")))+'">'+ico(MICO[d[0]],13)+'</button>'; });
     em.innerHTML=ph+'</div>'; body.appendChild(em);
     [].forEach.call(em.querySelectorAll('.pill[data-grp="entmodel"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetModel) __uniSetModel(btn.getAttribute("data-v")); }; }); }
   /* ── NAMES + FRONTEND MARK (naming-plan Phase 3): two single-select pills under ENTITY MODEL. A position the feed cannot serve renders
@@ -4180,10 +4181,11 @@ window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbo
     var en=document.createElement("div"); en.className="grp"; en.id="entnaming";
     var RULE={domain:"the URL domain at adaptive depth, else the table in words — today's rule", table:"the table the cluster's endpoints write — unique by construction", "class":"the ORM class in words (acronym-aware; OAuthConfig reads 'o auth config', honestly)", path:"the deepest URL segment every endpoint shares, else the most frequent leaf — collisions carry their table", action:"what the person does — verb phrase · noun · actions (the naming law)", config:"the project's own words — naming.words / naming.entities / adoption display names", both:"table · /url prefix — the two machine witnesses side by side"};
     var pos=(nb&&nb.positions)||["domain"], cur=(window.__uniStrategy?__uniStrategy():"domain"), cov=(nb&&nb.coverage)||{}, dis=(nb&&nb.disabled)||{}, lng=(nb&&nb.long)||{}, col=(nb&&nb.collisions)||{};
+    var NICO={domain:"domain", table:"table", "class":"class", path:"path", action:"action", config:"config", both:"both"};   /* icons, the rule + coverage on hover (operator 2026-09-07) */
     var nh='<div class="grplbl" title="which WORDS a cluster wears — a rendering over the same ids; the claim slug and every cluster id are unchanged">NAMES</div><div class="pill" data-grp="entnaming">';
-    pos.forEach(function(k){ var off=!nb||!!dis[k]||(k!=="domain"&&k!=="config"&&(cov[k]||0)===0), why=!nb?"no naming block on this feed — regen with the current generators":(dis[k]||(k+" — no cluster carries this name on this feed"));
+    pos.forEach(function(k){ var off=!nb||!!dis[k]||(k!=="domain"&&k!=="config"&&(cov[k]||0)===0), why=!nb?"no naming block on this feed — regen with the current generators":(dis[k]||"no cluster carries this name on this feed");   /* the key is prefixed ONCE, on the title */
       var ti=off?why:(RULE[k]||k)+(cov[k]!=null?(" · "+cov[k]+"/"+(cov.rows||0)+" named"):"")+(k==="path"&&col.path?(" · "+col.path+" collide (suffixed)"):"")+((k==="action"||k==="both")&&lng[k]?(" · "+lng[k]+" over "+(((nb||{}).caps||{}).name_max||40)+" chars — the hull sprite truncates"):"")+(k==="config"&&nb&&nb.entities&&Object.keys(nb.entities).length?(" · "+Object.keys(nb.entities).length+" entity display name(s) on the claim model"):"");
-      nh+='<button data-v="'+k+'"'+(k===cur&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea2(ti)+'">'+k+'</button>'; });
+      nh+='<button data-v="'+k+'"'+(k===cur&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea2(k+" — "+ti)+'">'+ico(NICO[k]||"domain",13)+'</button>'; });
     en.innerHTML=nh+'</div>'; body.appendChild(en);
     [].forEach.call(en.querySelectorAll('.pill[data-grp="entnaming"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetNaming) __uniSetNaming(btn.getAttribute("data-v")); }; }); }
   if(!document.getElementById("entfeconv")){ var nb2=(window.__uniNamingBlock?__uniNamingBlock():null), fe2=nb2&&nb2.fe, forms2=(fe2&&fe2.present!==false&&fe2.forms)||null, _ea3=function(x){ return String(x).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); };
@@ -4192,22 +4194,13 @@ window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbo
     var ch='<div class="grplbl" title="how a FRONTEND home is told apart from a backend one — a mark on the label; the id underneath never changes">FRONTEND MARK</div><div class="pill" data-grp="entfeconv">';
     CONVS.forEach(function(k){ var f=forms2&&forms2[k], off=!f, ex=f?(window.__uniRender?__uniRender(f.fe,"my feature"):k):k, ex2=f?(window.__uniRender?__uniRender(f.be,"my feature"):""):"";
       var ti=off?(fe2&&fe2.reason?("no frontend on this feed — "+fe2.reason):"no naming block on this feed — regen with the current generators"):("frontend "+ex+" · backend "+ex2+(k==="glyph"?" · the screen glyph on DOM labels; hull sprites fall back to tint":"")+(k==="tint"?" · colour only — the twin tint and the fleet's Backend/Frontend masters carry the signal":"")+(k==="case"?" · frontend "+(fe2.case||{}).frontend+"Case · backend "+(fe2.case||{}).backend+"Case":""));
-      var face=off?_ea3(k):(k==="glyph"&&typeof svgInline==="function")?(svgInline("web",(typeof KINDCOL!=="undefined"&&KINDCOL.web)||"#e8590c",10)+" "+_ea3(ex)):(k==="tint")?('<span style="color:'+((typeof ENT!=="undefined"&&ENT[Object.keys(ENT).filter(function(x){ return window.__uniIsFeEnt&&__uniIsFeEnt(x); })[0]])||"#c4b5fd")+'">'+_ea3(ex)+'</span>'):(k==="none")?(_ea3(ex)+' <i style="opacity:.6">bare</i>'):_ea3(ex);   /* the button IS the example — glyph wears the screen glyph, tint the twin tint, none says bare */
-      ch+='<button data-v="'+k+'"'+(k===cur2&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea3(ti)+'">'+face+'</button>'; });
+      var CICO={"case":"case", prefix:"prefix", suffix:"suffix", bracket:"bracket", glyph:"glyph", tint:"tint", none:"none"};   /* icons on the buttons; the rendered mark ("frontend myFeature · backend MyFeature") rides the hover title (operator 2026-09-07) */
+      var face=(k==="tint"&&!off)?('<span style="color:'+((typeof ENT!=="undefined"&&ENT[Object.keys(ENT).filter(function(x){ return window.__uniIsFeEnt&&__uniIsFeEnt(x); })[0]])||"#c4b5fd")+'">'+ico("tint",13)+'</span>'):ico(CICO[k]||"none",13);
+      ch+='<button data-v="'+k+'"'+(k===cur2&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea3(k+" — "+ti)+'">'+face+'</button>'; });
     ec.innerHTML=ch+'</div>'; body.appendChild(ec);
     [].forEach.call(ec.querySelectorAll('.pill[data-grp="entfeconv"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetFeConv) __uniSetFeConv(btn.getAttribute("data-v")); }; }); }
-  if(document.getElementById("wireview")) return;
-  var g=document.createElement("div"); g.className="grp"; g.id="wireview";
-  g.innerHTML='<div class="grplbl" title="the capsule master — folds a big entity into one planet per AREA; every other simplification is the tier control">CAPSULES</div>';
-  var row=document.createElement("div"); row.className="cfgrow";
-  var DEF=[["cap","CAP","capsules — a big entity boots COLLAPSED into one planet per AREA with bundled wires; click a capsule / its fleet row / any search hit inside it to open. Toggle OFF to always draw every piece."]];
-  DEF.forEach(function(d){ var b=document.createElement("button"); b.className="itog wv"; b.id="wv-"+d[0];
-    b.title=d[2]; b.textContent=d[1];
-    b.classList.toggle("on", !!UNICAP.on);   // a config rebuild must not lose the lit state (review 52[3])
-    b.onclick=function(){ UNICAP.on=!UNICAP.on; if(!UNICAP.on) UNICAP.open={}; b.classList.toggle("on", UNICAP.on);
-      if(window.__uniApplyCapsules) __uniApplyCapsules(); try{ buildTransports(); }catch(e){} };   // shuttles re-derive — none fly a folded wire (review 52[4])
-    row.appendChild(b); });
-  g.appendChild(row); body.appendChild(g);
+  /* the CAPSULES option was DROPPED (operator 2026-09-07 — "we will not move forward with that option"): no control turns UNICAP.on any more; the fold
+     machinery below stays dormant (UNICAP.on is never written) until its own deletion pass. */
   /* ── SELECTED-LINE look SETTLED (operator config baked as the connection default; the Temporary-Config panel retired like the focus-ring one) ── */
   if(typeof CFG!=="undefined"){ if(CFG.selOpacity==null) CFG.selOpacity=0.5; if(CFG.selThick==null) CFG.selThick=0.2; if(CFG.selPattern==null) CFG.selPattern="solid";
     if(CFG.selAnim==null) CFG.selAnim="pulse"; if(CFG.selAnimSpeed==null) CFG.selAnimSpeed=0.3; if(CFG.selGlow==null) CFG.selGlow=true; if(CFG.selGlowInt==null) CFG.selGlowInt=0.05; } };
@@ -5189,6 +5182,23 @@ document.getElementById("reset").onclick=function(){ if(window.__uniCamFit) __un
 
 /* ── CONFIG PANEL — draggable · minimizable · icons + pills (no dropdowns; every group is ≤3 opts) ── */
 var ICO={
+  /* the ENTITY MODEL · NAMES · FRONTEND MARK pills (icons, words on hover — operator 2026-09-07) */
+  claim:'<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 2 2 4-4"/>',
+  seeded:'<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>',
+  derived:'<circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"/><path d="M12 12v3"/>',
+  proposed:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+  domain:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  table:'<path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>',
+  "class":GLYPH.schema,
+  path:'<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+  action:'<path d="M14 4.1 12 6"/><path d="m5.1 8-2.9-.8"/><path d="m6 12-1.9 2"/><path d="M7.2 2.2 8 5.1"/><path d="M9.037 9.69a.498.498 0 0 1 .653-.653l11 4.5a.5.5 0 0 1-.074.949l-4.349 1.041a1 1 0 0 0-.74.739l-1.04 4.35a.5.5 0 0 1-.95.074z"/>',
+  config:'<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+  both:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  "case":'<path d="m3 15 4-8 4 8"/><path d="M4 13h6"/><circle cx="18" cy="12" r="3"/><path d="M21 9v6"/>',
+  prefix:'<path d="M3 19V5"/><path d="m13 6-6 6 6 6"/><path d="M7 12h14"/>', suffix:'<path d="M17 12H3"/><path d="m11 18 6-6-6-6"/><path d="M21 5v14"/>',
+  bracket:'<path d="M16 3h3v18h-3"/><path d="M8 21H5V3h3"/>', glyph:GLYPH.screen,
+  tint:'<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
+  none:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
   cog:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   shape:GLYPH.entity, show:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   radius:'<path d="M3 12h18"/><path d="m7 8-4 4 4 4"/><path d="m17 8 4 4-4 4"/>', opacity:'<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/>',
@@ -5821,8 +5831,8 @@ var KINDCARD=(function(){
     var st=(window.GABE_C4&&window.GABE_C4.stats)||null;
     if(st){ var w=E("div",{class:"sec"}, sechd("down","Sources", null, false,
         {icon:"info",cls:"info",text:"The committed feeds this graph is drawn from — each row is one input and what it contributed."}));
-      if(window.__uniBudgetHit) w.append(srcRow("entity","scale", window.__uniBudgetHit.nodes+" nodes > budget "+window.__uniBudgetHit.budget+" — booted folded (capsules on · tier 0)",
-        "above its node budget the station opens FOLDED so a large repo stays navigable — open a planet, or raise window.__uniBudget, to draw more"));
+      if(window.__uniBudgetHit) w.append(srcRow("entity","scale", window.__uniBudgetHit.nodes+" nodes > budget "+window.__uniBudgetHit.budget+" — booted at tier 0 (Skeleton)",
+        "above its node budget the station boots at tier 0 (Skeleton) so a large repo stays navigable — raise the tier, or window.__uniBudget, to draw more"));
       /* the ENTITY MODEL row (Phase 2, 2026-09-06): which model clusters the field and what the switch did — live counts, said out loud */
       var _mv=window.__uniModel||"claim", _mm=(window.GABE_C4&&GABE_C4.models)||null, _mvw=(_mm&&_mm.views&&_mm.views[_mv])||null, _mst=window.__uniModelStats||{};
       var _others=_mm&&_mm.views?["seeded","derived","proposed"].filter(function(k){ return (_mm.views[k]||{}).present; }):[];

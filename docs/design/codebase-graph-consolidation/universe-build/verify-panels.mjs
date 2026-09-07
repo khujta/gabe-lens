@@ -1,3 +1,5 @@
+// NOTE 2026-09-07: the CAPSULES option (#wv-cap) was DROPPED from the station; the batch-53 capsule sections below are dormant
+// (the click is null-guarded) until the capsule machinery's own deletion pass removes them. Only verify-tiers.mjs is wired into the doctor.
 /* Batch-22 proof: the PANEL HIERARCHY — Everything → Entity → Cluster → Element with two-way nav,
    Esc lands on Everything, background click picks the hull under the cursor. Run: node verify-panels.mjs */
 import { createRequire } from 'module';
@@ -467,7 +469,7 @@ const b52 = await p.evaluate(() => new Promise(res => {
   out.adjacent = d < Math.min.apply(null, others) * 1.2;
   out.label = __uniEntLabel('fe·pantry') === 'fe · pantry';
   out.wv = !!document.getElementById('wireview');
-  document.getElementById('wv-cap').click();                       // R semantics are defined on the UNFOLDED field
+  (function(){ var _b=document.getElementById('wv-cap'); if(_b) _b.click(); })();                       // R semantics are defined on the UNFOLDED field
   const w0 = connGroup.children.length;
   document.getElementById('wv-r1').click();
   setTimeout(() => { out.r1 = connGroup.children.length < w0 * 0.35;
@@ -475,7 +477,7 @@ const b52 = await p.evaluate(() => new Promise(res => {
     setTimeout(() => { out.r3 = connGroup.children.filter(c => c.userData.kind === 'bundle').length > 50;
       document.getElementById('wv-r3').click();
       setTimeout(() => { out.back = connGroup.children.length === w0;
-        document.getElementById('wv-cap').click(); setTimeout(() => res(out), 1400); }, 900);
+        (function(){ var _b=document.getElementById('wv-cap'); if(_b) _b.click(); })(); setTimeout(() => res(out), 1400); }, 900);
     }, 1100); }, 1100); }));
 
 // [batch 53] capsules: boot-folded big entities · click/goto expand · CAP toggle round-trip
@@ -498,11 +500,11 @@ const b53 = await p.evaluate(() => new Promise(res => { const out = {};
 const b53r = {};
 await p.evaluate(() => { window.__b53 = {}; const feSum = js => js.reduce((a,j)=>a+(j.feN||0),0);
   JRN = null; window.__b53.A = feSum(_jrnCollect());                     // folded collect (stash-aware)
-  document.getElementById('wv-cap').click(); });                          // CAP off → full field
+  (function(){ var _b=document.getElementById('wv-cap'); if(_b) _b.click(); })(); });                          // CAP off → full field
 await p.waitForTimeout(1400);
 Object.assign(b53r, await p.evaluate(() => { const feSum = js => js.reduce((a,j)=>a+(j.feN||0),0);
   JRN = null; const B = feSum(_jrnCollect()); const A = window.__b53.A;
-  document.getElementById('wv-cap').click();                             // CAP back on
+  (function(){ var _b=document.getElementById('wv-cap'); if(_b) _b.click(); })();                             // CAP back on
   return { jrnFold: A === B && A > 150 }; }));                           // fold-independent journey truth
 await p.waitForTimeout(1400);
 Object.assign(b53r, await p.evaluate(() => {
