@@ -934,7 +934,7 @@ check(page.count('homeEv:p.home_ev||null') == 2 and 'function homeEvRow(n)' in p
       "Part C (2026-09-06): the membership-evidence field on endpoint nodes + fe pieces, the evidence row on every fe builder + the endpoint card, the Sources row — evidence only, nothing re-homed")
 check('C.store=feDataBuilder; C.type=feDataBuilder; C.hook=feHookBuilder; C.component=feHookBuilder;' in page and 'function carriesSec(l)' in page and page.count('carriesSec(l)')>=1 and 'function carriesSec(l)' in page and '{t:"ln",k:"renders"' in page and '"x:typed":' in page and 'if(/tog$/.test(it.t||"")) return;' in page and page.count('structureSec(n),\n') >= 1,
       "CARD ORDER + CARRIES + CONNECTORS (2026-09-05): data kinds put Structure before Connections; hooks/components list the shapes they handle; every wire card says what it carries; the frontend wires join the connector roster; the reference lists wires only")
-check('cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null' in page and 'n.kind==="store"){ op="client state"; opk="store"; fields=(n.det&&n.det.cols)||null;' in page and 'the frontend\'s table: its fields are its value type' in page,
+check('cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null' in page and 'n.kind==="store"){ op=(n.client&&n.det&&n.det.via)?("client state · "+n.det.via):"client state"; opk="store"; fields=(n.det&&n.det.cols)||null;' in page and 'the frontend\'s table: its fields are its value type' in page,
       "STORE SHAPE (D5 2026-09-05): a store's fields / a type's members ride det.cols; the matrix reads a store like a table; the definition says so")
 check('hrole:{fetcher:"#3b82f6",streamer:"#8b5cf6",store:"#ec4899",orchestrator:"#f59e0b",effect:"#ef4444",deriver:"#8794ab"}' in page and 'n.kind==="hook" && n.hrole' in page and '_badgeRow("hrole", hr, hr,' in page and '(it.k==="hook")?"hrole":(it.k==="provider")?"pclass":null' in page and 'hrole:p.hrole||null' in page and '"hrole:fetcher":' in page,
       "HOOK ROLES (D2 2026-09-05): the hook badge palette · buildNode badge · legend-reference rows · the hook row's ⓘ · the adapter field · definitions")
@@ -1112,6 +1112,11 @@ check('class="jdcols"' in page and '#uni-jrnref .jdcols, #uni-jrnref .jdstep{ di
       "the 8-column GRID (element · entity·cluster · operation · in · store · out), the FLUSH opaque sticky header, entity-tinted rows, or the incoming-edge resolver are gone; or a retired group-row/standalone-cluster came back")
 # a route's LABEL is its URL path (tier0 review 2026-09-07): the emitter's `label` wins over the export name, the card names the export + the raw literal,
 # and the journey anchors on the route whose first URL segment matches the journey's first endpoint (path-aware, idiom-only)
+# CLIENT stores (2026-09-07): a literal key reaching Web Storage / the query cache is a piece — the adapter
+# carries its key-space and direction so the card names them instead of drawing a column-less store.
+check('via:p.via||null, ops:p.ops||null }' in page and 'client:!!p.client }' in page
+      and 'the app reads AND writes this key' in page,
+      "client-store FIRE (station): the fe adapter dropped `via`/`ops`/`client`, so a keyed store draws as a nameless column-less store")
 check('label:p.label||p.name, col:KINDS[kind].col' in page and 'route:p.route||null, exportName:(p.label&&p.label!==p.name)?p.name:null' in page
       and 'det.exportName?kv("role","export", det.exportName+(det.route?' in page,
       "route label FIRE: the fe node's label funnel (p.label || p.name), det.route/exportName, or the card's export · route row is gone")

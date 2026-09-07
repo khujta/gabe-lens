@@ -1286,12 +1286,14 @@ if(_FE){
     if(NIDS[p.id]) return;
     var det={ file:p.file, flines:p.span?(p.span[0]+"-"+p.span[1]):null, exported:true, fe_kind:p.kind, exports:p.exports||null, doc:"",
       cols:(p.fields||p.members||[]).map(function(c){ return [c[0], c[1]||"", ""]; }), shape:p.shape||null,   /* D5: a store's fields / a type's members ride det.cols like a table's columns */
-      route:p.route||null, exportName:(p.label&&p.label!==p.name)?p.name:null };   /* a route's raw router literal + the export it hides behind (tier0 review 2026-09-07: six routes all named `Route`) */
+      route:p.route||null, exportName:(p.label&&p.label!==p.name)?p.name:null,   /* a route's raw router literal + the export it hides behind (tier0 review 2026-09-07: six routes all named `Route`) */
+      via:p.via||null, ops:p.ops||null };   /* a CLIENT store (2026-09-07): the key-space it lives in — localStorage · sessionStorage · query-cache — and whether the app reads it, writes it, or both */
     var m={ behind:0, depth:0, tests:0, cols:0, fanin:0, god:false, method:null };
     var n={ id:p.id, kind:kind, ent:p.home, entClaim:p.home, label:p.label||p.name, col:KINDS[kind].col, K:KINDS[kind], layer:KINDS[kind].layer, sub:KINDS[kind].layer||"web",
       m:m, det:det, behind:{}, fe:true, screen:p.screen||null, sites:p.sites||0, candidate:!!p.candidate,
       area:p.area||null, fixture:!!p.fixture, feClass:p.feClass||null, mclass:p.mclass||null, hrole:p.hrole||null, homedBy:p.homed_by||null, homeEv:p.home_ev||null,   // AREA + showcase tag + the fold-control class (phase 1)
-      write:!!p.write, wsites:p.wsites||0, fed2w:(p.fed2w==null?null:p.fed2w) };   // FE d2w: on the WRITE spine · write-method fetch count · hops-to-write (the gradient's number, 0 at the write)
+      write:!!p.write, wsites:p.wsites||0, fed2w:(p.fed2w==null?null:p.fed2w),   // FE d2w: on the WRITE spine · write-method fetch count · hops-to-write (the gradient's number, 0 at the write)
+      client:!!p.client };   // a CLIENT store is a KEY, not an export — one node shared by every file that names it
     nodes.push(n); NIDS[n.id]=n; });
 }
 
@@ -4930,7 +4932,8 @@ window.__uniJrnDetail=function(){
       inG=_grp(n.id,"in",{takes:"taken by",consumes:"taken by"});
       stG=_grpRW(n.id,"out",{serializes:"serializes"},"w");
       outG=_grp(n.id,"in",{returns:"returned by",serializes:"serialized by"}); }   /* the dead `resp` key is GONE — resp is an endpoint FIELD (_a3_graph writes it on the node), never a wire */
-    else if(n.kind==="store"){ op="client state"; opk="store"; fields=(n.det&&n.det.cols)||null;
+    else if(n.kind==="store"){ op=(n.client&&n.det&&n.det.via)?("client state · "+n.det.via):"client state"; opk="store"; fields=(n.det&&n.det.cols)||null;
+      if(n.client&&n.det&&n.det.ops) note=({r:"the app READS this key",w:"the app WRITES this key",rw:"the app reads AND writes this key"})[n.det.ops]||"";
       outG=_mergeG(_grp(n.id,"in",{reads:"read by"}), _grp(n.id,"in",{uses:"used by"})); }   /* D5: the store is the frontend's table — its fields ARE the STORE cell. The dead "uses-store" key is GONE: FE_REL rewrites that rel to `reads` before a link is built */
     else if(n.kind==="type"){ op="a shape"; opk="schema"; fields=(n.det&&n.det.cols)||null; outG=_grp(n.id,"in",{typed:"typed by",uses:"used by"}); }
     else if(n.kind==="middleware"){ op="gates"; opk="gate"; if(n.det&&n.det.gates) note="gates "+n.det.gates; inG=_grp(n.id,"in",{depends:"protects",handler:"guards"}); }

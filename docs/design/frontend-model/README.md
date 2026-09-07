@@ -286,10 +286,34 @@ A published decision surface (four live-sample forks) → the operator ruled:
 ### Batteries
 `tests/frontend` 45→77 (cache sink both ways · the write channel serialized on `e[3]` · fed2w depth · honest-empty). `tests/gabe-universe` render proof BEHAVIORALLY gates the FE-heat toggle (off-by-default, bands fed2w 0→magenta / 4→blue) + static pins for `FEBAND`/`__uniFED2W`/the legend row/the ring toggle. `tests/arch-graph` 237 (honest-empty pinned).
 
+5. **CLIENT-STORE pieces — a literal KEY is client state** (2026-09-07). A string a piece names when it
+   reaches Web Storage (`localStorage`/`sessionStorage`) or the query cache (`queryKey: [<root>, …]`) is the
+   frontend's smallest table, and it gets a piece. RULING: the same LIBRARY/PLATFORM-idiom class as
+   `_STORE_`/`_ROUTER_`/`_CACHE_CALLEES` — `_STORAGE_VIA` names the two storage objects, `_STORAGE_OPS` names
+   the three methods that take a key, and **never a project key allow-list**. The split of labour is the
+   extractor's own: `_a3_fe_extract.mjs` captures the tuple `[object, method, key]` VERBATIM (window included)
+   and `_a3_fe.py`'s roster decides what it means. A key handed over as an identifier resolves against the
+   file's **module-level** string consts and nothing else — a const inside a function is not a shared key. A
+   key built by a factory yields no literal, so it is reported by ABSENCE and never guessed (the same honesty
+   as RTK-Query's pattern-named hooks below).
+   - **Identity is (via, key), not the file.** A token WRITTEN in `useAuth` and READ in the api client is ONE
+     piece with `ops: "rw"`, not two — which is the whole reason the arm is worth having.
+   - **The piece is minted AFTER `principal` is fixed and never enters `file_pieces`.** `_PRINCIPAL` ranks
+     `store` (1) above `hook` (2) and `component` (3), so a key filed under a component's path would HIJACK
+     that file's principal piece and steal its screen absorption and module-scope refs. An assert pins it.
+   - **No new relation.** Consumers wire over the existing `uses-store`, so REL2KIND · CONN · DASHMAP · the
+     legend row and both stations are untouched. The read/WRITE DIRECTION of a client store as a *wire* stays
+     deferred with the `zustand set()` case below — it is its own designed pass.
+   - `stats.client_stores` + `client_stores_by_via`; the station carries `via`/`ops`/`client` so the card says
+     `client state · localStorage` with "the app reads AND writes this key" rather than drawing a column-less
+     store. Honest-empty: no key in the tree ⇒ no piece, no wire, byte-identical.
+
 ### Deferred (this arc)
 - The node RING / `wsites` 3D pill sprite (D2) — awaiting the operator's look at the wire gradient.
 - RTK-Query generated-hook detection (pattern-named, not in the `_CACHE_CALLEES` roster).
 - Store-object (`zustand set()`) write detection — not method-visible; revisit on a store-write-heavy twin.
+- A client store's read/write direction as a WIRE (ruling 5 above) — the `ops` field records it per piece;
+  drawing it costs a new rel and the full legend chain, so it waits on the operator asking for it.
 
 ## 11. BUILT — 2026-09-03 (classification honesty: O2 rendered-by promotion · O1 `fe-unknown` · module classes)
 

@@ -92,8 +92,27 @@ const callArg0 = d => {
   const a = c.arguments[0];
   return a && (ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a)) ? a.text : null;
 };
+// CLIENT-STATE KEYS (2026-09-07): the string a piece names when it reaches Web Storage or a query cache.
+// RAW capture, per this file's stated split — the extractor takes the LITERAL, `_a3_fe.py`'s rosters decide
+// which object/method is storage and which direction it runs. `LITS` is the current file's module-level
+// `const NAME = '<literal>'` map, so a key passed as an identifier resolves without guessing.
+let LITS = {};
+const litOf = a => !a ? null
+  : (ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a)) ? a.text
+  : (ts.isIdentifier(a) && Object.prototype.hasOwnProperty.call(LITS, a.text)) ? LITS[a.text] : null;
+const collectLits = sf => {   // module scope only — a const inside a function is not a shared key
+  const out = {};
+  for (const st of sf.statements) {
+    if (!ts.isVariableStatement(st)) continue;
+    for (const d of st.declarationList.declarations)
+      if (ts.isIdentifier(d.name) && d.initializer && (ts.isStringLiteral(d.initializer) || ts.isNoSubstitutionTemplateLiteral(d.initializer)))
+        out[d.name.text] = d.initializer.text;
+  }
+  return out;
+};
 const refsOf = node => {
   const jsx = new Set(), calls = new Set(), types = new Set(), idents = new Set(), ctxArgs = new Set();
+  const storage = new Set(), qkeys = new Set();
   let hasJsx = false;
   const walk = n => {
     if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) { hasJsx = true; const t = leftmost(n.tagName); if (t && /^[A-Z]/.test(t)) jsx.add(t); }
@@ -101,13 +120,27 @@ const refsOf = node => {
     else if (ts.isCallExpression(n)) {
       const c = leftmost(n.expression); if (c) calls.add(c);
       if (c && /^use(Context|Store|Atom|Selector|AtomValue|SetAtom|Reducer)$/.test(c) && n.arguments[0] && ts.isIdentifier(n.arguments[0])) ctxArgs.add(n.arguments[0].text);
+      // `<obj>.<method>('<key>')` — the object, the method and the key, verbatim. No roster here.
+      if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && ts.isIdentifier(n.expression.name)) {
+        const k = litOf(n.arguments[0]);
+        if (k != null) storage.add(n.expression.expression.text + '\u0000' + n.expression.name.text + '\u0000' + k);
+      }
+    }
+    // a `queryKey: [<literal>, …]` property — the ROOT segment names the cache entry. A key built by a
+    // factory call yields no literal here and is simply not captured (reported by absence, never guessed).
+    else if (ts.isPropertyAssignment(n) && n.name && n.name.getText(n.getSourceFile()) === 'queryKey'
+             && n.initializer && ts.isArrayLiteralExpression(n.initializer)) {
+      const k = litOf(n.initializer.elements[0]); if (k != null) qkeys.add(k);
     }
     else if (ts.isTypeReferenceNode(n)) { const t = leftmost(n.typeName); if (t) types.add(t); }
     else if (ts.isIdentifier(n)) idents.add(n.text);
     ts.forEachChild(n, walk);
   };
   walk(node);
-  return { hasJsx, jsx: [...jsx].sort(), calls: [...calls].sort(), types: [...types].sort(), idents: [...idents].sort(), ctxArgs: [...ctxArgs].sort() };
+  const out = { hasJsx, jsx: [...jsx].sort(), calls: [...calls].sort(), types: [...types].sort(), idents: [...idents].sort(), ctxArgs: [...ctxArgs].sort() };
+  if (storage.size) out.storage = [...storage].sort().map(x => x.split('\u0000'));   // [[obj, method, key], …]
+  if (qkeys.size) out.queryKeys = [...qkeys].sort();
+  return out;
 };
 
 // ── D5 (operator 2026-09-05): a TYPE's MEMBERS — the frontend's schema fields — and a STORE's SHAPE — the value
@@ -152,6 +185,7 @@ for (const sf of program.getSourceFiles()) {
   const f = sf.fileName;
   if (!f.startsWith(SRC) || sf.isDeclarationFile || f.endsWith('.d.ts') || NOISE.test(f) || isTest(f)) continue;
   const story = /\.stories\.(ts|tsx)$/.test(f);
+  LITS = collectLits(sf);   // this file's module-level string consts — an identifier key resolves against them, and only them
   const rec = { story, imports: [], bindings: {}, exports: [] };
   // ── imports (static · re-export · dynamic) resolved by the compiler ──────────────────
   const seen = new Set();
@@ -241,6 +275,8 @@ for (const sf of program.getSourceFiles()) {
   // module-scope refs (calls outside any export — a side-effect module's wiring)
   const top = refsOf(sf);
   rec.file_refs = { calls: top.calls, jsx: top.jsx, hasJsx: top.hasJsx };
+  if (top.storage) rec.file_refs.storage = top.storage;
+  if (top.queryKeys) rec.file_refs.queryKeys = top.queryKeys;
   files[rel(f)] = rec;
 }
 const keys = Object.keys(files).sort();

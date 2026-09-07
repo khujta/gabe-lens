@@ -326,6 +326,47 @@ if ts_dir and shutil.which("node"):
               f"LIVE: a tsconfig matching 0 files → present=False (honest-empty, not a false success) ({_emp.get('reason')})")
     finally:
         shutil.rmtree(_td, ignore_errors=True)
+    # ── LIVE: the CLIENT-STATE key capture, proven by the real compiler (2026-09-07). The frozen
+    #    fixture names no localStorage and no queryKey, so the Python arm's cases above exercise the
+    #    ROSTER while this one exercises the CAPTURE — including a key handed over as an identifier,
+    #    which must resolve against the file's own module-level const and nothing else. ──────────────
+    _tk = Path(tempfile.mkdtemp())
+    try:
+        (_tk / "src").mkdir()
+        (_tk / "src" / "useAuth.ts").write_text(
+            "const TOKEN = 'access_token';\n"
+            "function inner(){ const SHADOW = 'not_module_scope'; return localStorage.getItem(SHADOW); }\n"
+            "export function useAuth(){\n"
+            "  localStorage.setItem(TOKEN, 'x');\n"
+            "  localStorage.setItem('currentUser', 'y');\n"
+            "  sessionStorage.getItem('nonce');\n"
+            "  window.setItem('not_storage', 'z');\n"
+            "  const o = { queryKey: ['users', 1] };\n"
+            "  return [inner(), o] as any;\n"
+            "}\n")
+        (_tk / "package.json").write_text('{"name":"keystub","version":"0.0.0"}\n')
+        (_tk / "tsconfig.json").write_text('{"compilerOptions":{"module":"esnext","moduleResolution":"bundler","skipLibCheck":true},"include":["src"]}\n')
+        os.environ["GABE_TS_DIR"] = ts_dir
+        _kj, _kr = _a3_fe.run_extractor(_tk, _tk)
+        del os.environ["GABE_TS_DIR"]
+        _rec = ((_kj or {}).get("byFile") or {}).get("src/useAuth.ts") or {}
+        _ex = next((e for e in _rec.get("exports") or [] if e.get("name") == "useAuth"), {})
+        _st = [tuple(t) for t in _ex.get("storage") or []]
+        check(("localStorage", "setItem", "access_token") in _st,
+              f"key-capture LIVE: a key given as an IDENTIFIER resolves against the file's module-level const ({_st})")
+        check(("localStorage", "setItem", "currentUser") in _st and ("sessionStorage", "getItem", "nonce") in _st,
+              f"key-capture LIVE: a literal key on either storage object is captured verbatim ({_st})")
+        check(("window", "setItem", "not_storage") in _st,
+              "key-capture LIVE: the extractor captures the object RAW — window included — because the ROSTER decides, not the compiler pass")
+        check(not any(k == "not_module_scope" for _, _, k in _st),
+              f"key-capture LIVE: a const declared INSIDE a function is not a shared key — it never resolves ({_st})")
+        check(_ex.get("queryKeys") == ["users"],
+              f"key-capture LIVE: queryKey: ['users', 1] yields its ROOT segment, and only that ({_ex.get('queryKeys')})")
+        _lv = _a3_fe.build_fe(_kj, None, [])
+        check(_lv["stats"]["client_stores"] == 4 and _lv["stats"]["client_stores_by_via"] == {"localStorage": 2, "query-cache": 1, "sessionStorage": 1},
+              f"key-capture LIVE end-to-end: compiler → roster → four client-store pieces, window dropped ({_lv['stats'].get('client_stores_by_via')})")
+    finally:
+        shutil.rmtree(_tk, ignore_errors=True)
 else:
     skipped.append("LIVE extractor case — no `typescript` resolvable (set GABE_TS_DIR)")
 
@@ -506,6 +547,43 @@ _X9m = {"byFile": {k: dict(v, exports=[{kk: vv for kk, vv in ex.items() if kk !=
 _fe9m = _a3_fe.build_fe(_X9m, {"cart": {}}, [])
 check(not next(p for p in _fe9m["pieces"] if p["name"] == "useCartStore").get("fields") and _fe9m["stats"].get("stores_with_fields") == 0,
       "D5 MUTATION: no shape on the store export → no fields (the store's columns are READ from its value type, never assumed)")
+
+# ── CLIENT-STORE PIECES (2026-09-07): a literal KEY reaching Web Storage or the query cache is client
+#    state. One piece per (via, key) SHARED across files; minted after `principal` so it can never
+#    outrank a file's hook/component; honest-empty when the tree names no key. ────────────────────────
+_XC = {"byFile": {
+    "src/api/client.ts": {"bindings": {}, "file_refs": {"calls": [], "jsx": [], "hasJsx": False},
+        "exports": [{"name": "apiFetch", "kind": "function", "hasJsx": False,
+                     "storage": [["localStorage", "getItem", "access_token"], ["sessionStorage", "setItem", "nonce"],
+                                 ["window", "setItem", "not_storage"], ["localStorage", "clear", "not_a_key"]]}]},
+    "src/hooks/useAuth.ts": {"bindings": {}, "file_refs": {"calls": [], "jsx": [], "hasJsx": False},
+        "exports": [{"name": "useAuth", "kind": "function", "hasJsx": False,
+                     "storage": [["localStorage", "setItem", "access_token"], ["localStorage", "setItem", "currentUser"]],
+                     "queryKeys": ["users"]}]}}}
+_feC = _a3_fe.build_fe(_XC, None, [])
+_PC = {q["id"]: q for q in _feC["pieces"]}
+_TOK = _PC.get("fe:store:localStorage#access_token")
+check(_feC["stats"]["client_stores"] == 4 and _feC["stats"]["client_stores_by_via"] == {"localStorage": 2, "query-cache": 1, "sessionStorage": 1},
+      f"client-store FIRE: the four keys the roster knows, split by via ({_feC['stats'].get('client_stores')} / {_feC['stats'].get('client_stores_by_via')})")
+check(_TOK is not None and _TOK["kind"] == "store" and _TOK["client"] is True and _TOK["via"] == "localStorage" and _TOK["ops"] == "rw" and _TOK["name"] == "access_token",
+      f"client-store FIRE: a key WRITTEN in one file and READ in another is ONE piece with ops 'rw' ({_TOK})")
+_CONS = sorted(_feC["pieces"][e[0]]["id"] for e in _feC["edges"] if _feC["pieces"][e[1]].get("client") and _feC["pieces"][e[1]]["name"] == "access_token")
+check(_CONS == ["fe:src/api/client.ts", "fe:src/hooks/useAuth.ts#useAuth"] and all(e[2] == "uses-store" for e in _feC["edges"] if _feC["pieces"][e[1]].get("client")),
+      f"client-store FIRE: BOTH namers wire to the one key over the existing `uses-store` rel — no new edge kind. The api consumer is the file's MODULE piece: a plain exported function is not a hook/component, so it rides the principal exactly as every other ref does ({_CONS})")
+check(not any(q.get("client") for q in _feC["pieces"] if q["id"] in ("fe:store:window#not_storage", "fe:store:localStorage#not_a_key"))
+      and "fe:store:window#not_storage" not in _PC and "fe:store:localStorage#not_a_key" not in _PC,
+      "client-store ROSTER: an object the roster does not know (window) and a method that takes no key (clear) mint NOTHING — a platform idiom, never a project key list")
+# the PRINCIPAL guard: _PRINCIPAL ranks store(1) above hook(2)/component(3), so a key filed into the
+# file would steal its principal — and with it the file's screen absorption and module-scope refs.
+_HK = [q for q in _feC["pieces"] if q["file"] == "src/hooks/useAuth.ts" and not q.get("client")]
+check(len(_HK) == 1 and _HK[0]["kind"] == "hook" and _HK[0]["name"] == "useAuth",
+      f"client-store GUARD: the hook file's principal piece is still the HOOK — a key never enters file_pieces ({[(q['kind'], q['name']) for q in _HK]})")
+# SILENT: the same corpus with every key stripped is byte-identical to a tree that never knew the arm.
+_XCs = {"byFile": {k: dict(v, exports=[{kk: vv for kk, vv in ex.items() if kk not in ("storage", "queryKeys")} for ex in v["exports"]]) for k, v in _XC["byFile"].items()}}
+_feCs = _a3_fe.build_fe(_XCs, None, [])
+check(_feCs["stats"]["client_stores"] == 0 and _feCs["stats"]["client_stores_by_via"] == {} and not any(q.get("client") for q in _feCs["pieces"])
+      and _feCs["stats"]["by_kind"].get("store", 0) == 0 and _feCs["stats"]["edges"] == 0,
+      f"client-store SILENT: no key in the tree → no piece, no wire, no store kind (honest-empty: {_feCs['stats']['by_kind']})")
 
 print(f"frontend battery: {pass_} passed, {fail} failed" + (f", {len(skipped)} skipped" if skipped else ""))
 sys.exit(1 if fail else 0)

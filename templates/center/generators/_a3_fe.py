@@ -76,6 +76,14 @@ _CACHE_CALLEES = frozenset({
 # = this piece WRITES; GET = reads. Store-object writes (zustand set()) aren't method-visible → not
 # claimed here (deferred: revisit when a twin shows a material store-write population the bridge misses).
 _WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+# CLIENT STATE named by a literal KEY: Web Storage, and the query cache's own key-space. A PLATFORM /
+# LIBRARY idiom roster (same class as _STORE_/_ROUTER_/_CACHE_CALLEES), never a project key allow-list —
+# an object the roster does not know is not storage, and a key built by a factory yields no literal for
+# the extractor to hand over, so it is reported by ABSENCE and never guessed. Honest-empty: a tree with
+# no Web Storage and no queryKey mints no piece and no wire, and the arm is byte-identical.
+_STORAGE_VIA = {"localStorage": "localStorage", "sessionStorage": "sessionStorage"}
+_STORAGE_OPS = {"setItem": "w", "getItem": "r", "removeItem": "w"}
+_QUERY_VIA = "query-cache"
 _TYPE_KINDS = frozenset({"type", "interface", "enum"})
 # design SCAFFOLD, not the app (batch 50, measured on gustify): /spikes/ (122 pieces) and
 # /showcase/ (4) had ZERO app in-edges — excluded and counted. Fixture modules
@@ -220,6 +228,7 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
     fetching file's principal piece carries ``screen`` + ``sites`` (the universe absorbs the
     file-level web node into it)."""
     slugs = frozenset(entities) if entities else frozenset()
+    client_stores: list[str] = []          # the (via, key) pieces minted below — counted, never re-filed
     by_file: dict[str, Any] = extract.get("byFile") or {}
     pieces: dict[str, dict[str, Any]] = {}
     file_pieces: dict[str, list[str]] = {}          # file → piece ids (in principal order)
@@ -502,6 +511,41 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                 elif c in _CACHE_CALLEES:                 # a module-scope query/cache call → cache sink (F1)
                     pieces[src]["cache"] = True
 
+        # ── CLIENT-STORE PIECES (2026-09-07). A literal KEY a piece names when it reaches Web Storage or
+        #    the query cache IS client state — the frontend's smallest table. ONE piece per (via, key),
+        #    shared by every file that names it, so a token WRITTEN in useAuth and READ in the api client
+        #    is one node, not two. The piece is minted here, AFTER `principal` is fixed above, and is
+        #    NEVER entered into file_pieces/ids — _PRINCIPAL ranks store (1) above hook (2) and component
+        #    (3), so a key piece filed under a component would HIJACK that file's principal piece and
+        #    steal its screen absorption and its module-scope refs. `ops` records r / w / rw honestly.
+        for _ex in ([e for e in (rec.get("exports") or []) if not e.get("reexport")]
+                    + [dict(rec.get("file_refs") or {}, name=None)]):
+            _src = (export_piece.get((path, _ex.get("name") or "")) if _ex.get("name") else None) or principal.get(path)
+            if not _src:
+                continue
+            _keys: list[tuple[str, str, str]] = []       # (via, key, op)
+            for _t in _ex.get("storage") or []:
+                if not (isinstance(_t, (list, tuple)) and len(_t) == 3):
+                    continue
+                _obj, _m, _k = _t
+                _via, _op = _STORAGE_VIA.get(_obj), _STORAGE_OPS.get(_m)
+                if _via and _op and _k:
+                    _keys.append((_via, _k, _op))
+            for _k in _ex.get("queryKeys") or []:
+                if _k:
+                    _keys.append((_QUERY_VIA, _k, "r"))   # a queryKey names the cache entry the piece READS or invalidates
+            for _via, _k, _op in _keys:
+                _pid = f"fe:store:{_via}#{_k}"
+                _p = pieces.get(_pid)
+                if _p is None:
+                    _p = pieces[_pid] = {"id": _pid, "name": _k, "kind": "store", "via": _via, "client": True,
+                                         "file": path, "home": pieces[_src]["home"], "candidate": False,
+                                         "area": pieces[_src].get("area"), "ops": ""}
+                    client_stores.append(_pid)
+                if _op not in _p["ops"]:
+                    _p["ops"] = "rw" if _p["ops"] else _op
+                add(_src, _pid, "uses-store")
+
     # ── D6 (review 2026-09-05): NO FEATURE LAYOUT → the config's own web claims home the pieces. _fe_home routes
     #    by directory idiom (features/<x>, <entity>/); a flat src/{routes,hooks,components} tree (gastify) landed
     #    EVERY piece in app-shell — one bucket, no per-entity fleet rows, every journey's frontend leg in one planet.
@@ -523,6 +567,9 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                 p["home"] = "fe·" + _slug
                 p["homed_by"] = "config"
                 homing = "config"
+    # the client stores never entered the per-file ranking, so no file's principal piece moved (see the mint)
+    assert not any(pid in ids for ids in file_pieces.values() for pid in client_stores), \
+        "a client-store piece reached file_pieces — it would outrank the file's hook/component principal"
     edge_list = [{"from": s, "to": t, "rel": r, "cross": pieces[s]["home"] != pieces[t]["home"]}
                  for (s, t), r in sorted(edges.items())]
     # ── STORE DETECTOR (F2) + feClass. A call wire is STATE if it (transitively) reaches a STORE, a
@@ -651,7 +698,9 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                   "by_home": dict(sorted(by_home.items())), "homing": homing, "edges": len(edge_list),
                   "by_rel": dict(sorted(by_rel.items())), "cross": sum(1 for e in edge_list if e["cross"]),
                   "screens_absorbed": absorbed, "screens_by_export": by_export, "unresolved": unresolved, "local_refs": local["refs"],
-                  "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "by_hrole": dict(sorted(by_hrole.items())), "stores_with_fields": sum(1 for _p in pieces.values() if _p["kind"] == "store" and _p.get("fields")), "types_with_members": sum(1 for _p in pieces.values() if _p["kind"] == "fe-type" and _p.get("members")), "promoted": promoted,
+                  "samefile_renders": local.get("samefile", 0), "by_feclass": dict(sorted(by_class.items())), "by_mclass": dict(sorted(by_mclass.items())), "by_hrole": dict(sorted(by_hrole.items())), "stores_with_fields": sum(1 for _p in pieces.values() if _p["kind"] == "store" and _p.get("fields")),
+                  "client_stores": len(client_stores),
+                  "client_stores_by_via": dict(sorted((lambda c: c)({_v: sum(1 for _q in client_stores if pieces[_q]["via"] == _v) for _v in sorted({pieces[_q]["via"] for _q in client_stores})}).items())), "types_with_members": sum(1 for _p in pieces.values() if _p["kind"] == "fe-type" and _p.get("members")), "promoted": promoted,
                   "by_channel": by_channel, "state_pieces": len(touches_state),
                   "cache_pieces": sum(1 for p in pieces.values() if p.get("cache")),
                   "write_pieces": len(touches_write),
