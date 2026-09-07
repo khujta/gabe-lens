@@ -1,6 +1,8 @@
 # Plan — naming strategies and frontend/backend conventions for the entity models (2026-09-06)
 
-**Status:** DRAFT — nothing built. Operator ask (2026-09-06, after the four models shipped at `e60484a`): *"per model let's add options
+**Status:** RULED 2026-09-06 (operator, AskUserQuestion) — building. Rulings: default strategy `domain` · **default convention `case` — frontend camelCase, backend PascalCase (a NEW shape, see the conventions table; the word marks prefix/suffix/bracket/glyph/tint/none stay as pill positions)** · the emitter imports the INSTALLED `draft_name` (env override `GABE_DRAFT_WORKFLOWS`) · the phrase==noun dedupe lands as its OWN commit first. Decisions 5–11 taken on their recommendations (DECISION blocks in the session). Original header follows.
+
+**Status (original):** DRAFT — nothing built. Operator ask (2026-09-06, after the four models shipped at `e60484a`): *"per model let's add options
 for different naming strategies and conventions — different ways to name the entities, and different conventions to distinguish
 frontend and backend instead of prefixing frontend with fe".* Judge panel (three read-only designs — display-only · emitter-emits-all
 · config-first — one Fable judge; numbers below were recomputed on the six committed maps) → this synthesis. Build starts on "land it".
@@ -64,7 +66,8 @@ so the station, gabe-map and the drafter each own a three-line `{name}` substitu
 
 | Convention | Form | Note |
 |---|---|---|
-| `prefix` (default) | `fe · {name}` / `{name}` | today's mark, the key's dot opened; two batteries already pin it |
+| `case` (default, operator-ruled) | `{name\|camel}` / `{name\|pascal}` | the CASING is the mark — frontend `cookingSessions`, backend `CookingSessions`; applied to the name's leading word-run (up to the first ` · ` or ` — `), separators and trailing detail keep their words; `naming.fe.case {frontend: camel, backend: pascal}` swaps the pair; one-word names still differ (`cooking` / `Cooking`); every label's casing changes on regen — the operator's chosen churn |
+| `prefix` | `fe · {name}` / `{name}` | today's mark, the key's dot opened; two batteries pin it today (re-pinned as a position) |
 | `suffix` | `{name} (ui)` / `{name}` | the mark trails, so a sorted fleet/search seats `cooking (ui)` beside `cooking` — 11 of gustify's 20 fleet homes sort under "f" today |
 | `bracket` | `[ui] {name}` / `[api] {name}` | the only SYMMETRIC mark — the backend is marked too, so "no mark means backend" is never learned; the text fallback for glyph/tint in a plain-text tool answer |
 | `glyph` | `{name}` / `{name}` + the screen glyph on DOM labels | canvas hull sprites cannot carry an SVG → tint; the Sources row says so |
@@ -89,7 +92,7 @@ reasons; the disabled-position grammar carries the per-model honesty (on the cla
 title says so).
 
 **Precedence, stated once** (station header + shell README, one battery case per level): URL > localStorage > config
-(`models.naming.default` / `.fe.convention`) > built-in (`domain` / `prefix`). localStorage keys `gabe:universe:naming` and
+(`models.naming.default` / `.fe.convention`) > built-in (`domain` / `case`). localStorage keys `gabe:universe:naming` and
 `gabe:universe:feconv`; a stored value the feed cannot serve falls through with ONE console line naming the valid set; no state
 renders a blank label. Deep links `?naming=` and `?feconv=` beside `?model=`: inside `__uniApplyDeepLinks` ASSIGN naming/feconv
 state first (no render), then apply `?model=` (its re-cluster labels with the convention in force), then `?journey=`/`?ent=`; if no

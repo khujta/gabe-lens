@@ -3371,7 +3371,10 @@ window.__uniFlOpen=function(key, remount){ try{
   document.querySelectorAll("#fleetbody .flhead .flcfgbtn").forEach(function(c){
     c.classList.toggle("on", c.getAttribute("data-fk")===key); });
 }catch(e){} };
-window.__uniIsFeEnt=function(e){ return window.__uniEntLabel ? /^fe · /.test(__uniEntLabel(e)) : /^fe·/.test(e); };
+/* the frontend predicate reads the REGISTRY (every non-entity fe home at boot · every minted fe·d: twin) then the KEY prefix — never a
+   rendered label: the fleet's backend/frontend split, the group masters, capsule area stamping and coreLead all hang on this boolean,
+   and a label convention other than the "fe · " prefix would otherwise silently re-group every frontend entity (naming pass, 2026-09-06) */
+window.__uniIsFeEnt=function(e){ return !!(typeof FE_HOME!=="undefined"&&FE_HOME&&FE_HOME[e]) || /^fe·/.test(String(e||"")); };
 /* SELECTED-OPTION NAME after a section title (operator aesthetic) — for each single-select pill
    group, echo the chosen option's word next to its label in a lighter, non-title font. Skips
    numeric/boolean pills (transparency, warOn). Kept in sync by a delegated pill-click listener. */
@@ -5574,7 +5577,7 @@ var KINDCARD=(function(){
     return kv("role","evidence","home "+_hslug(n.entClaim||n.ent)+" by "+by+" · "+(u?("users say "+u):"users abstain")+" · "+(d?("data says "+d):(e.data_note?"data abstains — "+e.data_note:"data abstains"))+" → "+word+" — evidence only, nothing re-homed"); }
   /* the ENTITY-MODEL row (Phase 2, 2026-09-06): under a non-claim model, where the view put this piece and why — the claim stays the join key */
   function modelRow(n){ var v=window.__uniModel||"claim"; if(v==="claim"||!n||!n.entClaim||!n.modelMark) return null;
-    var nm=function(e){ var r=(window.__uniModelRosterRow?__uniModelRosterRow(e):null); return (r&&r.name&&!/^fe·/.test(e))?(r.name+" · "+_hslug(e)):(window.__uniEntLabel?__uniEntLabel(e):_hslug(e)); };
+    var nm=function(e){ var r=(window.__uniModelRosterRow?__uniModelRosterRow(e):null); return (r&&r.name)?((window.__uniIsFeEnt&&__uniIsFeEnt(e)?"fe · ":"")+r.name+" · "+_hslug(e)):(window.__uniEntLabel?__uniEntLabel(e):_hslug(e)); };   /* a twin reads its roster name too (the roster indexes fe·d: ids) */
     if(n.modelMark==="moved") return kv("link","model", v+": claim "+_hslug(n.entClaim)+" → "+nm(n.ent)+" — a view over the claim, nothing re-homed on disk");
     if(n.modelMark==="abstain") return kv("link","model", v+": no witness reaches this piece — it keeps its claim "+_hslug(n.entClaim));
     var hub=(window.__uniModelHub?__uniModelHub(n.id):null);
