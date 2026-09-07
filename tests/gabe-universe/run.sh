@@ -1094,12 +1094,22 @@ check('class="jdstep' in page and 'data-si="' in page and 'WALK.i=i; try{ _walkG
 # journey-detail COLUMNS + deterministic DATA semantics (operator): the entity-dot + cluster columns, and a DATA
 # block — op badge (from endpoint method / function role) · read/write model TARGETS (reads_from/writes_to/
 # fnreads/fnwrites edges) · structure FIELDS (det.cols) · gate CONDITION (evaluates …).
-check('function _stepData(n){' in page and 'function _dataHTML(sd){' in page and 'function _groupsHTML(gs){' in page and 'function _grp(id, dir, spec){' in page and 'function _fieldsHTML(sd){' in page and 'class="jdentdot"' in page and 'class="jdenc"' in page and 'class="jdencE"' in page and 'class="jdencC"' in page and 'class="jdopc"' in page and 'class="jdfrom"' in page and 'class="jdto"' in page and 'class="jdrel"' in page and 'op="guards"; opk="gate"; note="evaluates "' in page,
-      "the journey-detail merged entity·cluster cell, the OPERATION column, or the RELATION-labelled FROM/TO groups (_grp/_groupsHTML/.jdrel) are gone")
+check('function _stepData(n){' in page and 'function _dataHTML(sd){' in page and 'function _groupsHTML(gs){' in page and 'function _grp(id, dir, spec){' in page and 'function _grpRW(id, dir, spec, rw){' in page and 'function _storeHTML(sd){' in page and 'function _fieldsHTML(sd){' in page and 'class="jdentdot"' in page and 'class="jdenc"' in page and 'class="jdencE"' in page and 'class="jdencC"' in page and 'class="jdopc"' in page and 'class="jdin"' in page and 'class="jdstore"' in page and 'class="jdout"' in page and 'class="jdrel"' in page and 'class="jdrw jdrw-' in page and 'op="guards"; opk="gate"; note="evaluates "' in page,
+      "the journey-detail merged entity·cluster cell, the OPERATION column, or the RELATION-labelled IN/STORE/OUT groups (_grp/_grpRW/_groupsHTML/_storeHTML/.jdrel/.jdrw) are gone")
+# FACE (2026-09-07): the from/to pair is RETIRED — three columns, and the two keys that could never match are gone.
+check('class="jdfrom"' not in page and 'class="jdto"' not in page and 'sd.fromG' not in page and 'sd.toG' not in page,
+      "step-card REGRESSION: the retired from/to pair is back — the columns are IN · STORE · OUT")
+check("resp:\"returned by\"" not in page and "\"uses-store\":\"used by\"" not in page,
+      "step-card REGRESSION: a DEAD relation key returned — `resp` is an endpoint FIELD (never a wire) and the feed's `uses-store` is rewritten to `reads` by FE_REL before a link is built, so neither can ever match")
+check("_grp(n.id,\"out\",{consumes:\"takes\"})" in page and "inG=_mergeG(_grp(n.id,\"in\",{renders:\"rendered by\",uses:\"used by\"})" in page
+      and "_grp(n.id,\"out\",{handler:\"handled by\"})" in page and "calls:\"called by\",handler:\"routed from\"" in page,
+      "step-card FIRE: the REQUEST SHAPE (`consumes`, routed nowhere before this beat) or a piece's incoming leg (its renderers/users — both its sides were dir 'out') is gone, so IN reads half-empty")
+check("stG=_mergeG(_grpRW(n.id,\"out\",{fnwrites:\"writes\",writes_to:\"writes\"},\"w\"), _grpRW(n.id,\"out\",{fnreads:\"reads\"},\"r\"))" in page,
+      "step-card FIRE: a plain function's table READ (fnreads) is back under OUT — it belongs in STORE with an r chip")
 # journey-detail COLUMN HEADER + entity-tinted rows (operator 2026-09-03): the entity is a column, so the per-entity
 # group rows are gone; ONE sticky header names every column; each row carries its entity color as --ec.
-check('class="jdcols"' in page and '#uni-jrnref .jdcols, #uni-jrnref .jdstep{ display:grid;' in page and 'grid-template-columns:26px 22px 190px 130px 130px 196px 196px;' in page and 'jd-grid' in page and 'class="jdmh"' in page and 'class="jdmx' in page and 'background:var(--panel);' in page and 'padding:0 0 22px' in page and 'class="jdgrp"' not in page and 'class="jdclu"' not in page and 'style="--ec:' in page and 'var(--ec, transparent) 9%' in page and 'function _srcsOf(id, rels){' in page and 'function _feEndpoints(id){' in page,
-      "the 7-column GRID (element · entity·cluster · operation · from · to), the FLUSH opaque sticky header, entity-tinted rows, or the incoming-edge resolver are gone; or a retired group-row/standalone-cluster came back")
+check('class="jdcols"' in page and '#uni-jrnref .jdcols, #uni-jrnref .jdstep{ display:grid;' in page and 'grid-template-columns:26px 22px 190px 130px 130px 150px 150px 150px;' in page and 'grid-template-columns:26px 22px 190px 130px 130px 150px 150px 150px repeat(' in page and '196px 196px' not in page and 'jd-grid' in page and 'class="jdmh"' in page and 'class="jdmx' in page and 'background:var(--panel);' in page and 'padding:0 0 22px' in page and 'class="jdgrp"' not in page and 'class="jdclu"' not in page and 'style="--ec:' in page and 'var(--ec, transparent) 9%' in page and 'function _srcsOf(id, rels){' in page and 'function _feEndpoints(id){' in page,
+      "the 8-column GRID (element · entity·cluster · operation · in · store · out), the FLUSH opaque sticky header, entity-tinted rows, or the incoming-edge resolver are gone; or a retired group-row/standalone-cluster came back")
 # a route's LABEL is its URL path (tier0 review 2026-09-07): the emitter's `label` wins over the export name, the card names the export + the raw literal,
 # and the journey anchors on the route whose first URL segment matches the journey's first endpoint (path-aware, idiom-only)
 check('label:p.label||p.name, col:KINDS[kind].col' in page and 'route:p.route||null, exportName:(p.label&&p.label!==p.name)?p.name:null' in page
@@ -1636,18 +1646,19 @@ const { chromium } = require(process.argv[3]);
     // read/write model targets, structure fields, and gate conditions — all deterministic.
     const all=[].slice.call(ov.querySelectorAll('.jdstep'));
     const entDots=all.filter(x=>x.querySelector('.jdenc .jdentdot')).length, clus=all.filter(x=>x.querySelector('.jdencC')).length;
-    const rels=all.reduce((a,x)=>a+x.querySelectorAll('.jdfrom .jdrel, .jdto .jdrel').length,0);
+    const rels=all.reduce((a,x)=>a+x.querySelectorAll('.jdin .jdrel, .jdstore .jdrel, .jdout .jdrel').length,0);
+    const rwChips=all.reduce((a,x)=>a+x.querySelectorAll('.jdstore .jdrw').length,0);   // every STORE group is chipped r / w / rw
     const ops=all.filter(x=>x.querySelector('.jdop')).length, tgts=all.filter(x=>x.querySelector('.jdtgt')).length;
     const fields=all.filter(x=>x.querySelector('.jdfields')).length, gates=all.filter(x=>x.querySelector('.jdop-gate')).length;
-    const opcs=all.filter(x=>x.querySelector('.jdopc .jdop')).length, flows=all.filter(x=>x.querySelector('.jdfrom')&&x.querySelector('.jdto')).length,
-          fromTo=all.filter(x=>x.querySelectorAll('.jdfrom .jdtgt, .jdto .jdtgt').length>0).length;
+    const opcs=all.filter(x=>x.querySelector('.jdopc .jdop')).length, flows=all.filter(x=>x.querySelector('.jdin')&&x.querySelector('.jdstore')&&x.querySelector('.jdout')).length,
+          fromTo=all.filter(x=>x.querySelectorAll('.jdin .jdtgt, .jdstore .jdtgt, .jdout .jdtgt').length>0).length;
     const bd=ov.querySelector('.jdbody'); const noHOverflow=!(bd.scrollWidth>bd.clientWidth+1);
     // FLUSH header (operator): body has no top padding, so the sticky header's top edge meets the body's top —
     // scrolled rows cannot show through above it. Assert the pixel gap is ~0.
     const hcell=ov.querySelector('.jdcols'), flush=(bd.getBoundingClientRect().top - hcell.getBoundingClientRect().top) < 1.5;
     // GRID ALIGNMENT (operator): a header column and its row column must share the SAME left edge (flex drifted).
-    const hc=[].slice.call(ov.querySelectorAll('.jdcols>*')).slice(0,7).map(e=>Math.round(e.getBoundingClientRect().left));
-    const r0=all[0], rc=[r0.querySelector('.jdnum'),r0.querySelector('.jdico'),r0.querySelector('.jdmain'),r0.querySelector('.jdenc'),r0.querySelector('.jdopc'),r0.querySelector('.jdfrom'),r0.querySelector('.jdto')].map(e=>e?Math.round(e.getBoundingClientRect().left):-1);
+    const hc=[].slice.call(ov.querySelectorAll('.jdcols>*')).slice(0,8).map(e=>Math.round(e.getBoundingClientRect().left));
+    const r0=all[0], rc=[r0.querySelector('.jdnum'),r0.querySelector('.jdico'),r0.querySelector('.jdmain'),r0.querySelector('.jdenc'),r0.querySelector('.jdopc'),r0.querySelector('.jdin'),r0.querySelector('.jdstore'),r0.querySelector('.jdout')].map(e=>e?Math.round(e.getBoundingClientRect().left):-1);
     const aligned=hc.length===rc.length && hc.every((x,k)=>Math.abs(x-rc[k])<=1);
     const rz=ov.querySelector('.jdrz'), defL=Math.round(ov.getBoundingClientRect().left);
     let dragL=defL, resetL=defL;
@@ -1689,7 +1700,7 @@ const { chromium } = require(process.argv[3]);
     const walkSyncOk = stillOpen && walkI===dsi && hotHdr>0 && hotCells>0;
     if(document.getElementById('uni-jrnref')) window.__uniJrnDetail();
     return { clickable, nsteps, steps, groups, icons, stepsMatch:(steps===nsteps),
-      entDots, clus, ops, tgts, fields, gates, cols, colsSticky, tinted, opcs, flows, fromTo, flush, aligned, rels, resizeOk,
+      entDots, clus, ops, tgts, fields, gates, cols, colsSticky, tinted, opcs, flows, fromTo, flush, aligned, rels, rwChips, resizeOk,
       mh, filled, matrixOk, frozenOk, walkSyncOk, flagsOk, opcFrozen, indirect };
   }).catch(e=>({err:String(e)}));
   // STORE VISIBILITY (operator 2026-09-03): a FRESH viewer (empty localStorage — a private window) opening a
@@ -1870,7 +1881,7 @@ const { chromium } = require(process.argv[3]);
     && lr.flag && lr.flag.before==='all' && lr.flag.after==='off' && lr.flag.rebuilt===true;
   // the journey-detail overlay opens from the walk-bar name, lists every step (icon + entity groups), and a
   // step row walks the graph to it + closes.
-  const jd=jrnDetail, jrnDetailOk = jd && !jd.err && jd.clickable && jd.steps>0 && jd.stepsMatch && jd.groups===0 && jd.cols===1 && jd.colsSticky && jd.tinted===jd.steps && jd.opcs===jd.ops && jd.flows===jd.steps && jd.fromTo>0 && jd.icons===jd.steps
+  const jd=jrnDetail, jrnDetailOk = jd && !jd.err && jd.clickable && jd.steps>0 && jd.stepsMatch && jd.groups===0 && jd.cols===1 && jd.colsSticky && jd.tinted===jd.steps && jd.opcs===jd.ops && jd.flows===jd.steps && jd.fromTo>0 && jd.rwChips>0 && jd.icons===jd.steps
     && jd.entDots===jd.steps && jd.clus===jd.steps && jd.ops>0 && jd.tgts>0 && jd.fields>0 && jd.rels>0 && jd.flush && jd.aligned && jd.resizeOk
     && jd.matrixOk && jd.frozenOk && jd.walkSyncOk && jd.flagsOk && jd.opcFrozen && jd.indirect>0;
   const sc=storeCheck, storeOk = sc && !sc.err && sc.storeCols>=1 && sc.storeFlagOn && sc.litStore>=1 && sc.iconInline && sc.titleHot && sc.cellClean && sc.row0Lit>=0 && sc.row0Lit<=5 && sc.anchorKind==='route' && sc.anchorKind3==='route' && sc.lgbiOk===true && /useCreatePantryItem/.test(sc.feStart||'') && sc.hookRoles && sc.hookRoles.hooks>0 && sc.hookRoles.withRole===sc.hookRoles.hooks && sc.hookRoles.kinds>=3 && sc.storeShape && sc.storeShape.stores>0 && sc.storeShape.shaped>=1 && sc.cardOrder && !sc.cardOrder.err && /Usage/.test(sc.cardOrder.store[0]||'') && /Structure/.test(sc.cardOrder.store[1]||'') && /Structure/.test(sc.cardOrder.model[1]||'') && sc.cardOrder.carries===true && sc.cardOrder.ref && sc.cardOrder.ref.blank===0 && sc.cardOrder.ref.fe===true && sc.drafts>=1 && sc.draftWalk>0 && sc.draftGrp && sc.draftLeveled && sc.draftNamed && sc.viewType==='View (FE)' && sc.viewCol==='#d946ef' && (sc.viewIcon==='heat'||sc.viewIcon==='#d946ef');

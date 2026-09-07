@@ -831,7 +831,7 @@
   /* header row + every step share ONE grid template → columns ALWAYS align (flex measured each cell
      independently and drifted — operator). FROM · TO are two columns; a model's fields wrap under them. */
   #uni-jrnref .jdcols, #uni-jrnref .jdstep{ display:grid;
-    grid-template-columns:26px 22px 190px 130px 130px 196px 196px;   /* default (no matrix); #jd-grid overrides with the element columns */
+    grid-template-columns:26px 22px 190px 130px 130px 150px 150px 150px;   /* default (no matrix); #jd-grid overrides with the element columns */
     column-gap:0; row-gap:2px; align-items:start; width:max-content; min-width:100%; }
   /* FROZEN LEFT — # · icon · element · entity·cluster · operation stay put while you slide right into the
      matrix; opaque so nothing shows behind, and UNDER the sticky header when you scroll down (operator 2026-09-03) */
@@ -872,12 +872,14 @@
   #uni-jrnref .jdopc{ min-width:0; display:flex; flex-direction:column; gap:3px; align-items:flex-start; overflow:hidden; }
   /* FROM (input) · TO (output) — each a stack of RELATION-labelled groups (the panel's vocabulary):
      a sub-line names uses/renders/fetches/reads/writes/called-by/read-by … then its targets */
-  #uni-jrnref .jdfrom, #uni-jrnref .jdto{ min-width:0; margin-top:1px; padding-left:8px; display:flex; flex-direction:column; gap:4px; overflow:hidden; }
-  #uni-jrnref .jdcols .jdfrom, #uni-jrnref .jdcols .jdto{ position:relative; z-index:3; align-self:stretch; justify-content:flex-end; padding-bottom:9px; background:var(--panel); }   /* header from/to sit ABOVE the diagonal labels extending left */
+  #uni-jrnref .jdin, #uni-jrnref .jdstore, #uni-jrnref .jdout{ min-width:0; margin-top:1px; padding-left:8px; display:flex; flex-direction:column; gap:4px; overflow:hidden; }
+  #uni-jrnref .jdrw{ display:inline-block; font-style:normal; margin-right:4px; padding:0 3px; border-radius:3px; font:700 8px/1.5 var(--font-mono); color:#0b0e13; letter-spacing:0; }   /* the STORE chip: the same read/write colours the operation badge uses */
+  #uni-jrnref .jdrw-r{ background:#22c55e; } #uni-jrnref .jdrw-w{ background:#f97316; } #uni-jrnref .jdrw-rw{ background:#eab308; }
+  #uni-jrnref .jdcols .jdin, #uni-jrnref .jdcols .jdstore, #uni-jrnref .jdcols .jdout{ position:relative; z-index:3; align-self:stretch; justify-content:flex-end; padding-bottom:9px; background:var(--panel); }   /* the header in/store/out sit ABOVE the diagonal labels extending left */
   #uni-jrnref .jdg{ min-width:0; display:flex; flex-direction:column; }
   #uni-jrnref .jdrel{ font:700 8px/1.4 var(--font-ui); text-transform:uppercase; letter-spacing:.05em; color:color-mix(in srgb, var(--accent) 70%, var(--muted)); }
-  #uni-jrnref .jdfrom .jdtgt, #uni-jrnref .jdto .jdtgt{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #uni-jrnref .jdextra{ grid-column:6 / 8; min-width:0; margin-top:2px; overflow:hidden; }   /* fields wrap under from·to only, never across the matrix */
+  #uni-jrnref .jdin .jdtgt, #uni-jrnref .jdstore .jdtgt, #uni-jrnref .jdout .jdtgt{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #uni-jrnref .jdextra{ grid-column:6 / 9; min-width:0; margin-top:2px; overflow:hidden; }   /* fields wrap under in·store·out only, never across the matrix (this class is currently emitted nowhere — kept in step with the grid) */
   /* ── the DATA-LINEAGE MATRIX — one column per data structure the journey touches; a cell shows the
      structure's ROLE at that step: read (input) · write (output/modified) · both (operator 2026-09-03) ── */
   /* header column = SYMBOL then NAME in two lines, ellipsis-capped, compact (operator 2026-09-03) */
@@ -938,8 +940,8 @@
   #uni-jrnref .jdinfo{ display:inline-flex; vertical-align:-1px; margin-left:4px; color:var(--muted); opacity:.55; cursor:help; }
   #uni-jrnref .jdcols .jdhl{ display:inline-flex; align-items:center; white-space:nowrap; }   /* the header label + its info icon stay on ONE row (operator 2026-09-03) */
   #uni-jrnref .jdinfo:hover{ color:var(--accent); opacity:1; }
-  @media (max-width:1080px){ #uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:26px 22px minmax(88px,1.1fr) 120px minmax(0,1fr) minmax(0,1fr); } #uni-jrnref .jdopc{ grid-column:1 / 3; grid-row:2; } #uni-jrnref .jdextra{ grid-column:4 / -1; } }
-  @media (max-width:820px){ #uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:24px 20px minmax(72px,1fr) minmax(0,1fr) minmax(0,1fr); } #uni-jrnref .jdenc{ display:none; } #uni-jrnref .jdextra{ grid-column:3 / -1; } }
+  @media (max-width:1080px){ #uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:26px 22px minmax(88px,1.1fr) 120px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); } #uni-jrnref .jdopc{ grid-column:1 / 3; grid-row:2; } #uni-jrnref .jdextra{ grid-column:4 / -1; } }
+  @media (max-width:820px){ #uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:24px 20px minmax(72px,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); } #uni-jrnref .jdenc{ display:none; } #uni-jrnref .jdextra{ grid-column:3 / -1; } }
 </style></head><body>
 <nav class="side">
   <div class="brand">
@@ -4888,46 +4890,63 @@ window.__uniJrnDetail=function(){
       if(!by[lbl]){ by[lbl]={rel:lbl, names:[]}; order.push(lbl); } if(by[lbl].names.indexOf(nm)<0) by[lbl].names.push(nm); }
     return order.map(function(r){ return by[r]; }); }
   function _mergeG(){ var by={}, order=[]; [].slice.call(arguments).forEach(function(gs){ (gs||[]).forEach(function(g){
-      if(!by[g.rel]){ by[g.rel]={rel:g.rel, names:g.names.slice()}; order.push(g.rel); }
-      else g.names.forEach(function(n){ if(by[g.rel].names.indexOf(n)<0) by[g.rel].names.push(n); }); }); });
+      if(!by[g.rel]){ by[g.rel]={rel:g.rel, names:g.names.slice()}; if(g.rw) by[g.rel].rw=g.rw; order.push(g.rel); }
+      else { if(g.rw) by[g.rel].rw=(by[g.rel].rw&&by[g.rel].rw!==g.rw)?"rw":g.rw;   /* a label reached by both a read and a write wire chips RW */
+        g.names.forEach(function(n){ if(by[g.rel].names.indexOf(n)<0) by[g.rel].names.push(n); }); } }); });
     return order.map(function(r){ return by[r]; }); }
-  // FROM = where the step's data ORIGINATES (its reads · its callers/senders) · TO = where it LANDS
-  // (its writes · its renders/calls · its readers). Grouped, honest-empty per side. (operator 2026-09-03)
-  function _stepData(n){ var op="", opk="", note="", fromG=[], toG=[], fields=null;
+  // IN = what REACHES this step — its callers/senders + the request SHAPES it takes · STORE = the data it
+  // HOLDS or touches, every group chipped r / w / rw · OUT = what it hands onward — its calls, renders,
+  // fetches, dispatches, returns. The axis is SEMANTIC, not directional: a wire drawn OUTWARD can still be
+  // an input (an endpoint TAKES a schema, a component USES a hook), which is why `dir` and column disagree
+  // on purpose. Honest-empty per column. (operator 2026-09-07; supersedes the from/to pair of 2026-09-03)
+  function _grpRW(id, dir, spec, rw){ var gs=_grp(id, dir, spec); for(var q=0;q<gs.length;q++) gs[q].rw=rw; return gs; }   // the same groups, chipped r / w / rw for the STORE column
+  function _stepData(n){ var op="", opk="", note="", inG=[], stG=[], outG=[], fields=null;
     if(n.kind==="endpoint"){ var m=(n.m&&n.m.method)||"";
-      if(m==="GET"){ op="reads"; opk="read"; fromG=_grp(n.id,"out",{reads_from:"reads",touches:"reads"}); toG=_grp(n.id,"in",{bridge:"fetched by",fecall:"fetched by"}); }
-      else if(m==="POST"||m==="PUT"||m==="PATCH"){ op="writes"; opk="write"; fromG=_grp(n.id,"in",{bridge:"fetched by",fecall:"fetched by"}); toG=_grp(n.id,"out",{writes_to:"writes",touches:"writes"}); }
-      else if(m==="DELETE"){ op="deletes"; opk="write"; fromG=_grp(n.id,"in",{bridge:"fetched by",fecall:"fetched by"}); toG=_grp(n.id,"out",{writes_to:"writes",touches:"writes"}); }
-      else if(m==="BOOT"){ op="boots once"; opk="boot"; toG=_grp(n.id,"out",{writes_to:"writes",touches:"writes"}); }
-      else if(m==="TASK"){ op="runs on a worker"; opk="task"; fromG=_grp(n.id,"in",{dispatches:"dispatched by"}); toG=_grp(n.id,"out",{writes_to:"writes",touches:"writes"}); }
-      else { op="handles"; opk="call"; fromG=_grp(n.id,"in",{bridge:"fetched by",fecall:"fetched by"}); toG=_grp(n.id,"out",{touches:"touches"}); } }
-    else if(n.kind==="function"){
-      if(n.role==="accessor"){ var w=_grp(n.id,"out",{fnwrites:"writes",writes_to:"writes"}), r=_grp(n.id,"out",{fnreads:"reads",reads_from:"reads"});
+      inG=_mergeG(_grp(n.id,"in",{bridge:"fetched by",fecall:"fetched by"}), _grp(n.id,"out",{consumes:"takes"}));   /* `consumes` is the REQUEST SHAPE — emitted by _a3_graph since the schema arm, routed nowhere before this beat */
+      outG=_mergeG(_grp(n.id,"out",{handler:"handled by"}), _grp(n.id,"out",{returns:"returns",serializes:"serializes"}));   /* …the HANDLER it routes to, and the response shape as the mirror of `consumes` */
+      if(m==="GET"){ op="reads"; opk="read"; stG=_grpRW(n.id,"out",{reads_from:"reads",touches:"reads"},"r"); }
+      else if(m==="POST"||m==="PUT"||m==="PATCH"){ op="writes"; opk="write"; stG=_grpRW(n.id,"out",{writes_to:"writes",touches:"writes"},"w"); }
+      else if(m==="DELETE"){ op="deletes"; opk="write"; stG=_grpRW(n.id,"out",{writes_to:"writes",touches:"writes"},"w"); }
+      else if(m==="BOOT"){ op="boots once"; opk="boot"; inG=[]; stG=_grpRW(n.id,"out",{writes_to:"writes",touches:"writes"},"w"); }   /* nothing fetches a boot hook */
+      else if(m==="TASK"){ op="runs on a worker"; opk="task"; inG=_grp(n.id,"in",{dispatches:"dispatched by"}); stG=_grpRW(n.id,"out",{writes_to:"writes",touches:"writes"},"w"); }
+      else { op="handles"; opk="call"; stG=_grpRW(n.id,"out",{touches:"touches"},"rw"); } }
+    else if(n.kind==="function"){ inG=_grp(n.id,"in",{calls:"called by",handler:"routed from"});   /* a handler fn is CALLED BY its endpoint over the `handler` wire in _FNLINKS — without it every handler row read as caller-less */
+      if(n.role==="accessor"){ var w=_grpRW(n.id,"out",{fnwrites:"writes",writes_to:"writes"},"w"), r=_grpRW(n.id,"out",{fnreads:"reads",reads_from:"reads"},"r");
         op=(w.length&&r.length)?"reads / writes":(w.length?"writes":"reads"); opk=w.length?"write":"read";
-        fromG=_mergeG(r, _grp(n.id,"in",{calls:"called by"})); toG=_mergeG(w, _grp(n.id,"out",{calls:"calls"})); }
-      else if(n.role==="gate"){ op="guards"; opk="gate"; note="evaluates "+(n.label||""); fromG=_grp(n.id,"in",{calls:"called by",depends:"gates",handler:"guards"}); }
-      else if(n.role==="pure"){ op="computes"; opk="pure"; fromG=_grp(n.id,"in",{calls:"called by"}); toG=_grp(n.id,"out",{calls:"calls",fnwrites:"writes",writes_to:"writes"}); }
-      else { op="calls"; opk="call"; fromG=_grp(n.id,"in",{calls:"called by"}); toG=_grp(n.id,"out",{calls:"calls",fnwrites:"writes",writes_to:"writes",fnreads:"reads"}); } }
+        stG=_mergeG(r, w); outG=_grp(n.id,"out",{calls:"calls"}); }
+      else if(n.role==="gate"){ op="guards"; opk="gate"; note="evaluates "+(n.label||""); inG=_mergeG(inG, _grp(n.id,"in",{depends:"gates",handler:"guards"})); }
+      else if(n.role==="pure"){ op="computes"; opk="pure"; stG=_grpRW(n.id,"out",{fnwrites:"writes",writes_to:"writes"},"w"); outG=_grp(n.id,"out",{calls:"calls"}); }
+      else { op="calls"; opk="call"; outG=_grp(n.id,"out",{calls:"calls"});
+        stG=_mergeG(_grpRW(n.id,"out",{fnwrites:"writes",writes_to:"writes"},"w"), _grpRW(n.id,"out",{fnreads:"reads"},"r")); } }   /* a table READ used to render under "to (output)" — the defect STORE fixes */
     else if(n.kind==="component"||n.kind==="hook"){ op=n.write?"writes":"reads / renders"; opk=n.write?"write":"read";
-      fromG=_grp(n.id,"out",{uses:"uses",reads:"reads",imports:"imports",fnreads:"reads"});
-      toG=_grp(n.id,"out",{renders:"renders",fecall:"fetches",bridge:"fetches",dispatches:"dispatches"}); }
-    else if(n.kind==="model"){ op="a table"; opk="model"; fields=(n.det&&n.det.cols)||null;
-      fromG=_grp(n.id,"in",{writes_to:"written by",fnwrites:"written by"}); toG=_grp(n.id,"in",{reads_from:"read by",fnreads:"read by",touches:"touched by"}); }
+      inG=_mergeG(_grp(n.id,"in",{renders:"rendered by",uses:"used by"}), _grp(n.id,"out",{uses:"uses",imports:"imports"}));   /* a piece had NO incoming leg before this beat: both its sides were dir "out", so IN would have been dead for the two commonest frontend kinds */
+      stG=_grpRW(n.id,"out",{reads:"reads",fnreads:"reads"},"r");                                                             /* the feed's `uses-store` arrives REWRITTEN to `reads` by FE_REL — this is the store wire */
+      outG=_grp(n.id,"out",{renders:"renders",fecall:"fetches",bridge:"fetches",dispatches:"dispatches"}); }
+    else if(n.kind==="model"){ op="a table"; opk="model"; fields=(n.det&&n.det.cols)||null;   /* a model step IS the store: writers feed it, readers take from it, its own columns are the STORE cell */
+      inG=_grp(n.id,"in",{writes_to:"written by",fnwrites:"written by"});
+      stG=_grpRW(n.id,"in",{touches:"touched by"},"rw");
+      outG=_grp(n.id,"in",{reads_from:"read by",fnreads:"read by"}); }
     else if(n.kind==="schema"){ op="a body shape"; opk="schema"; fields=(n.det&&n.det.cols)||null;
-      fromG=_grp(n.id,"in",{resp:"returned by",serializes:"serialized by",returns:"returned by",takes:"taken by"}); }
+      inG=_grp(n.id,"in",{takes:"taken by",consumes:"taken by"});
+      stG=_grpRW(n.id,"out",{serializes:"serializes"},"w");
+      outG=_grp(n.id,"in",{returns:"returned by",serializes:"serialized by"}); }   /* the dead `resp` key is GONE — resp is an endpoint FIELD (_a3_graph writes it on the node), never a wire */
     else if(n.kind==="store"){ op="client state"; opk="store"; fields=(n.det&&n.det.cols)||null;
-      fromG=_grp(n.id,"in",{uses:"used by",reads:"read by","uses-store":"used by"}); }   /* D5: the store is the frontend's table — its fields are its value type's members */
-    else if(n.kind==="type"){ op="a shape"; opk="schema"; fields=(n.det&&n.det.cols)||null; fromG=_grp(n.id,"in",{typed:"typed by",uses:"used by"}); }
-    else if(n.kind==="middleware"){ op="gates"; opk="gate"; if(n.det&&n.det.gates) note="gates "+n.det.gates; fromG=_grp(n.id,"in",{depends:"protects",handler:"guards"}); }
-    else if(n.kind==="route"){ op="a screen"; opk="call"; toG=_grp(n.id,"out",{renders:"renders",mounts:"mounts"}); }
-    else if(n.kind==="web"){ op="fetches"; opk="call"; toG=_grp(n.id,"out",{bridge:"fetches",fecall:"fetches"}); }
-    return {op:op, opk:opk, note:note, fromG:fromG, toG:toG, fields:fields}; }
+      outG=_mergeG(_grp(n.id,"in",{reads:"read by"}), _grp(n.id,"in",{uses:"used by"})); }   /* D5: the store is the frontend's table — its fields ARE the STORE cell. The dead "uses-store" key is GONE: FE_REL rewrites that rel to `reads` before a link is built */
+    else if(n.kind==="type"){ op="a shape"; opk="schema"; fields=(n.det&&n.det.cols)||null; outG=_grp(n.id,"in",{typed:"typed by",uses:"used by"}); }
+    else if(n.kind==="middleware"){ op="gates"; opk="gate"; if(n.det&&n.det.gates) note="gates "+n.det.gates; inG=_grp(n.id,"in",{depends:"protects",handler:"guards"}); }
+    else if(n.kind==="route"){ op="a screen"; opk="call"; outG=_grp(n.id,"out",{renders:"renders",mounts:"mounts"}); }
+    else if(n.kind==="web"){ op="fetches"; opk="call"; inG=_grp(n.id,"in",{renders:"rendered by"}); outG=_grp(n.id,"out",{bridge:"fetches",fecall:"fetches"}); }
+    return {op:op, opk:opk, note:note, inG:inG, stG:stG, outG:outG, fields:fields}; }
   function _dataHTML(sd){ if(!sd.op) return '<span class="jdno">—</span>';
     var h='<div class="jddline"><span class="jdop jdop-'+sd.opk+'">'+_esc(sd.op)+'</span></div>';
     if(sd.note){ h+='<div class="jdnote">'+_esc(sd.note.length>96?sd.note.slice(0,94)+"…":sd.note)+'</div>'; }
     return h; }
   function _groupsHTML(gs){ if(!gs||!gs.length) return '<span class="jdno">—</span>';
-    return gs.map(function(g){ return '<div class="jdg"><span class="jdrel">'+_esc(g.rel)+'</span><span class="jdtgt">'+g.names.slice(0,3).map(_esc).join(" · ")+(g.names.length>3?(' <i>+'+(g.names.length-3)+'</i>'):'')+'</span></div>'; }).join(""); }
+    return gs.map(function(g){ return '<div class="jdg"><span class="jdrel">'+(g.rw?('<i class="jdrw jdrw-'+g.rw+'">'+g.rw.toUpperCase()+'</i>'):'')+_esc(g.rel)+'</span><span class="jdtgt">'+g.names.slice(0,3).map(_esc).join(" · ")+(g.names.length>3?(' <i>+'+(g.names.length-3)+'</i>'):'')+'</span></div>'; }).join(""); }
+  // the STORE cell: its groups, then the step's OWN columns when it IS a carrier (model · schema · store · type).
+  // A carrier with fields and no wires shows the fields alone, never a dash above them.
+  function _storeHTML(sd){ var f=(sd.fields&&sd.fields.length)?_fieldsHTML(sd):"";
+    return ((sd.stG&&sd.stG.length)?_groupsHTML(sd.stG):(f?"":'<span class="jdno">—</span>'))+f; }
   function _fieldsHTML(sd){ if(!sd.fields||!sd.fields.length) return "";
     return '<div class="jdfields"><i>'+sd.fields.length+' field'+(sd.fields.length>1?"s":"")+':</i> '+sd.fields.slice(0,6).map(function(c){return _esc(c[0]);}).join(" · ")+(sd.fields.length>6?(' +'+(sd.fields.length-6)):'')+'</div>'; }
   // ── DATA-LINEAGE MATRIX: one column per ELEMENT the journey touches, its cell showing the element's
@@ -5017,8 +5036,9 @@ window.__uniJrnDetail=function(){
     element:'<div class="cphd"><b>Element</b></div><div class="cpsub">the step, and what it is</div><div class="cpbody">The element\'s name, its <b>kind</b> (component · hook · function · endpoint · model · schema · store) and its <b>side</b> — frontend or backend.</div>',
     ent:'<div class="cphd"><b>Entity · Cluster</b></div><div class="cpsub">where it lives</div><div class="cpbody">Line 1 the <b>entity</b> (domain) it belongs to, its colour dot; line 2 the <b>cluster</b> — the sub-group inside that entity.</div>',
     op:'<div class="cphd"><b>Operation</b></div><div class="cpsub">what the step does</div><div class="cpf">'+_sw("#f97316","writes / a write endpoint")+_sw("#22c55e","reads / reads·renders")+_sw("#3b82f6","calls")+_sw("#8794ab","computes (pure)")+_sw("#12b886","a table (a model)")+_sw("#f59f00","a body shape (schema)")+_sw("#eab308","guards / gates")+'</div>',
-    from:'<div class="cphd"><b>Data · From (input)</b></div><div class="cpsub">where the step\'s data comes from, by relation</div><div class="cpbody"><b>uses</b> a hook · <b>imports</b> a module · <b>reads</b> a store/model · <b>called by</b> · <b>fetched by</b> a screen · <b>written by</b> · <b>returned by</b>. Hover a FROM cell to see the full list.</div>',
-    to:'<div class="cphd"><b>→ To (output)</b></div><div class="cpsub">where the step\'s data goes, by relation</div><div class="cpbody"><b>renders</b> a child · <b>fetches</b> an endpoint · <b>calls</b> · <b>writes</b> a model · <b>read by</b> · <b>mounts</b>. Hover a TO cell to see the full list.</div>' };
+    'in':'<div class="cphd"><b>In</b></div><div class="cpsub">what reaches this step — its senders, and the shapes it takes</div><div class="cpbody"><b>called by</b> · <b>fetched by</b> a screen · <b>dispatched by</b> a queue · <b>rendered by</b> a parent · <b>used by</b> · <b>takes</b> a request shape · <b>uses</b> a hook · <b>imports</b> a module · <b>written by</b>. The axis is what FLOWS, not which way the arrow points — a piece that <em style="font-style:normal;color:var(--ink)">uses</em> a hook draws outward and still reads as an input. Hover an IN cell for the full list.</div>',
+    store:'<div class="cphd"><b>Store</b></div><div class="cpsub">the data this step holds or touches, chipped by direction</div><div class="cpf">'+_sw("#22c55e","R — it reads that carrier")+_sw("#f97316","W — it writes that carrier")+_sw("#eab308","RW — it does both, or the wire does not say")+'</div><div class="cpbody">Tables, schemas and client stores: <b>reads</b> · <b>writes</b> · <b>touches</b> · <b>serializes</b>. When the STEP is itself a carrier (a model, a schema, a store, a type) this cell shows its OWN columns. Hover a STORE cell for the full list.</div>',
+    out:'<div class="cphd"><b>Out</b></div><div class="cpsub">what the step hands onward</div><div class="cpbody"><b>calls</b> · <b>renders</b> a child · <b>fetches</b> an endpoint · <b>dispatches</b> a task · <b>returns</b> a response shape · <b>mounts</b> · <b>read by</b> · <b>typed by</b>. Hover an OUT cell for the full list.</div>' };
   function _jdColInfo(anchor, which){ _jdPop(anchor, _COLINFO[which]||''); }
   function _ii(k){ return '<span class="jdinfo" data-info="'+k+'" title="what this column shows"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4.5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg></span>'; }
   // every element label seen, in first-seen order, with its kind — the flags filter this into columns
@@ -5050,7 +5070,7 @@ window.__uniJrnDetail=function(){
       var gl=r?(r.role==="in"?"R":r.role==="out"?"W":r.role==="both"?"RW":"◆"):"";
       return '<div class="jdmx'+(r?"":" empty")+'" data-col="'+_esc(k)+'">'+(r?('<span class="cell r-'+r.role+(r.indirect?" ind":"")+'">'+gl+'</span>'):"")+'</div>'; }).join(""); }
     var body='<div class="jdbody"><div class="jdcols"><span class="jdnum">#</span><span class="jdico"></span><div class="jdmain"><span class="jdhl">element'+_ii("element")+'</span></div>'
-      +'<div class="jdenc"><span class="jdhl">entity · cluster'+_ii("ent")+'</span></div><div class="jdopc"><span class="jdhl">operation'+_ii("op")+'</span></div><div class="jdfrom"><span class="jdhl">data · from (input)'+_ii("from")+'</span></div><div class="jdto"><span class="jdhl">→ to (output)'+_ii("to")+'</span></div>'+_mxHead+'</div>';
+      +'<div class="jdenc"><span class="jdhl">entity · cluster'+_ii("ent")+'</span></div><div class="jdopc"><span class="jdhl">operation'+_ii("op")+'</span></div><div class="jdin"><span class="jdhl">in'+_ii("in")+'</span></div><div class="jdstore"><span class="jdhl">store'+_ii("store")+'</span></div><div class="jdout"><span class="jdhl">out'+_ii("out")+'</span></div>'+_mxHead+'</div>';
     var _sdCache={}, _snCache={};
     WALK.steps.forEach(function(id,i){ var n=NIDS[id]; if(!n) return;
       var ic=(typeof svgInline==="function")?svgInline(n.kind, KC[n.kind]||n.col||"#9ecbff", 16):"";
@@ -5059,14 +5079,15 @@ window.__uniJrnDetail=function(){
         +'<div class="jdmain"><b>'+_esc(n.label||id)+'</b><i>'+_esc(n.kind||"")+(n.fe?" · frontend":" · backend")+'</i></div>'
         +'<div class="jdenc"><div class="jdencE" title="entity"><span class="jdentdot" style="background:'+entC+'"></span><span class="jdentnm">'+_esc(_entLbl(n.ent))+'</span></div><div class="jdencC" title="cluster">'+_esc(n.sub||"—")+'</div></div>'
         +'<div class="jdopc" title="operation">'+_dataHTML(sd)+'</div>'
-        +'<div class="jdfrom">'+_groupsHTML(sd.fromG)+'</div>'
-        +'<div class="jdto">'+_groupsHTML(sd.toG)+(sd.fields&&sd.fields.length?_fieldsHTML(sd):"")+'</div>'
+        +'<div class="jdin">'+_groupsHTML(sd.inG)+'</div>'
+        +'<div class="jdstore">'+_storeHTML(sd)+'</div>'
+        +'<div class="jdout">'+_groupsHTML(sd.outG)+'</div>'
         +_mxCells(i)+'</div>'; });
     body+='</div>';
     ov.innerHTML=head+body;
     var _og=document.getElementById("jd-grid"); if(_og) _og.remove();
     if(_NCOL){ var _gs=document.createElement("style"); _gs.id="jd-grid";
-      _gs.textContent='#uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:26px 22px 190px 130px 130px 196px 196px repeat('+_NCOL+',50px) !important; }';
+      _gs.textContent='#uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:26px 22px 190px 130px 130px 150px 150px 150px repeat('+_NCOL+',50px) !important; }';
       ov.appendChild(_gs); }
     ov.appendChild(_rz);   // resizer survives the innerHTML rebuild
     // flag chips → toggle the kind, persist, re-render the matrix in place
@@ -5082,9 +5103,9 @@ window.__uniJrnDetail=function(){
       h.onmouseenter=function(){ _jdColPop(h, node); }; h.onmouseleave=function(){ _jdColPopHide(); }; });
     [].forEach.call(ov.querySelectorAll(".jdinfo"), function(ic){ var w=ic.getAttribute("data-info");
       ic.onmouseenter=function(e){ e.stopPropagation(); _jdColInfo(ic, w); }; ic.onmouseleave=function(){ _jdColPopHide(); }; });
-    [].forEach.call(ov.querySelectorAll(".jdstep .jdfrom, .jdstep .jdto"), function(cell){
-      var row=cell.closest(".jdstep"), si=row?+row.getAttribute("data-si"):-1, side=cell.classList.contains("jdfrom")?"from":"to";
-      cell.onmouseenter=function(){ var sd=_sdCache[si]; if(!sd) return; _jdFlowPop(cell, side==="from"?sd.fromG:sd.toG, side==="from"?"Data · from (input)":"→ to (output)", side); };
+    [].forEach.call(ov.querySelectorAll(".jdstep .jdin, .jdstep .jdstore, .jdstep .jdout"), function(cell){
+      var row=cell.closest(".jdstep"), si=row?+row.getAttribute("data-si"):-1, side=cell.classList.contains("jdin")?"in":cell.classList.contains("jdstore")?"store":"out";
+      cell.onmouseenter=function(){ var sd=_sdCache[si]; if(!sd) return; _jdFlowPop(cell, side==="in"?sd.inG:side==="store"?sd.stG:sd.outG, side==="in"?"In — what reaches this step":side==="store"?"Store — the data it holds or touches":"Out — what it hands onward", side); };
       cell.onmouseleave=function(){ _jdColPopHide(); }; });
     [].forEach.call(ov.querySelectorAll(".jdstep .jdmx"), function(mx){ if(mx.classList.contains("empty")) return;
       var row=mx.closest(".jdstep"), si=row?+row.getAttribute("data-si"):-1, col=mx.getAttribute("data-col");
