@@ -1258,12 +1258,12 @@ window.__uniNameOf=function(id){ var raw=String(id||""), key=raw.indexOf("fe·")
   if(r&&r.name){ return (k!=="domain"&&r.names&&r.names[k])?r.names[k]:r.name; }                     /* a derived / candidate cluster: its emitted name under the strategy, else its domain name */
   if(k==="config"&&nb&&nb.entities&&nb.entities[key]&&nb.entities[key].display) return nb.entities[key].display;   /* a claim entity's project words */
   return __uniKeyWords(key); };
-window.__uniCaseRun=function(run, how){ var ws=String(run||"").split(/[\s_\-]+/).filter(Boolean); if(!ws.length) return run;
-  var cap=function(w){ return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); };
-  if(how==="camel") return ws[0].toLowerCase()+ws.slice(1).map(cap).join("");
+window.__uniCaseRun=function(run, how){ var ws=String(run||"").split(/[\s_\-\/&]+/).filter(Boolean); if(!ws.length) return run;   /* mirrors _a3_naming._case: interiors kept (iPhone sync → iPhoneSync), split on space _ - / & */
+  var cap=function(w){ return w.charAt(0).toUpperCase()+w.slice(1); };
+  if(how==="camel") return ws[0].charAt(0).toLowerCase()+ws[0].slice(1)+ws.slice(1).map(cap).join("");
   if(how==="pascal") return ws.map(cap).join(""); return run; };
 window.__uniRender=function(form, name){ name=String(name||""); var m=/^(.*?)( · | — )(.*)$/.exec(name); var head=m?m[1]:name, sep=m?m[2]:"", tail=m?m[3]:"";
-  return String(form||"{name}").replace("{name|camel}", __uniCaseRun(head,"camel")+sep+tail).replace("{name|pascal}", __uniCaseRun(head,"pascal")+sep+tail).replace("{name}", name); };
+  return String(form||"{name}").replace("{name|camel}", __uniCaseRun(head,"camel")+sep+tail).replace("{name|pascal}", __uniCaseRun(head,"pascal")+sep+tail).replace("{name}", name).replace(/\{name\|[a-z]+\}/g, name); };
 window.__uniEntLabel=function(e){ if(!e) return e; var nb=__uniNamingBlock(), conv=__uniConvention(), fe=!!(window.__uniIsFeEnt&&__uniIsFeEnt(e));
   var forms=(nb&&nb.fe&&nb.fe.forms)||null, form=(forms&&forms[conv])?forms[conv][fe?"fe":"be"]:(fe?"fe · {name}":"{name}");
   return __uniRender(form, __uniNameOf(e)); };
