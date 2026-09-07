@@ -14,10 +14,22 @@
     "mermaid_renderer": "scripts/_render_mermaid.mjs"
   },
   "corpora": [
-    { "key": "api", "runner": "pytest", "kind": "integration",
-      "kind_detail": "HTTP surface", "tag_class": "l-api", "kpi_detail": "pytest" },
-    { "key": "web", "runner": "vitest", "kind": "unit",
-      "kind_detail": "components/hooks", "tag_class": "l-web", "kpi_detail": "vitest" }
+    {
+      "key": "api",
+      "runner": "pytest",
+      "kind": "integration",
+      "kind_detail": "HTTP surface",
+      "tag_class": "l-api",
+      "kpi_detail": "pytest"
+    },
+    {
+      "key": "web",
+      "runner": "vitest",
+      "kind": "unit",
+      "kind_detail": "components/hooks",
+      "tag_class": "l-web",
+      "kpi_detail": "vitest"
+    }
   ],
   "e2e": {
     "runner": "playwright",
@@ -28,9 +40,18 @@
     "coverage_gate": "the repo coverage gate"
   },
   "leaf_reports": [
-    { "path": "leaf/api-htmlcov/index.html", "label": "API coverage" },
-    { "path": "leaf/web-coverage/index.html", "label": "Web coverage" },
-    { "path": "leaf/playwright-report/index.html", "label": "Playwright report" }
+    {
+      "path": "leaf/api-htmlcov/index.html",
+      "label": "API coverage"
+    },
+    {
+      "path": "leaf/web-coverage/index.html",
+      "label": "Web coverage"
+    },
+    {
+      "path": "leaf/playwright-report/index.html",
+      "label": "Playwright report"
+    }
   ],
   "_commands_comment": "Capture commands run by scripts/refresh_center.sh <mode>, one shell line per entry, from the repo root. `regen` (the default) never runs a suite.",
   "commands": {
@@ -38,10 +59,45 @@
     "coverage": [],
     "e2e": []
   },
-  "foundations": ["SCOPE", "DECISIONS", "RULES", "BEHAVIOR", "STRUCTURE",
-                  "PLAN", "PENDING", "DOCS", "ENTITIES", "ROADMAP"],
-  "code_layers": ["api", "services", "models", "schemas", "web", "mobile"],
+  "foundations": [
+    "SCOPE",
+    "DECISIONS",
+    "RULES",
+    "BEHAVIOR",
+    "STRUCTURE",
+    "PLAN",
+    "PENDING",
+    "DOCS",
+    "ENTITIES",
+    "ROADMAP"
+  ],
+  "code_layers": [
+    "api",
+    "services",
+    "models",
+    "schemas",
+    "web",
+    "mobile"
+  ],
   "build_architecture": true,
   "_entities_comment": "One block per entity registered in adoption.json. `test_rx` is required (it claims test files into the corpus matrix even before a section is built); `proofs`/`code`/`models` are added when the entity's section is adopted and its feature page is built.",
-  "entities": {}
+  "entities": {},
+  "_naming_comment": "optional — how the universe, gabe-map and the entity drafter WORD the entity models; every key optional; nothing here is a join key (slugs and cluster ids never change). strategy: domain|table|class|path|action|config|both · fe.convention: case|prefix|suffix|bracket|glyph|tint|none · fe.words {frontend, backend} are the marks for suffix/bracket · fe.case {frontend, backend} ∈ camel|pascal|none · words.domains / words.tables name clusters for the `config` strategy (the top-level url_domain_map is read as a fallback) · entities.<slug> a display name (else adoption display_name)",
+  "naming": {
+    "strategy": "domain",
+    "fe": {
+      "convention": "case",
+      "frontend": "ui",
+      "backend": "api",
+      "case": {
+        "frontend": "camel",
+        "backend": "pascal"
+      }
+    },
+    "words": {
+      "domains": {},
+      "tables": {}
+    },
+    "entities": {}
+  }
 }

@@ -37,6 +37,7 @@ import re
 from collections import Counter
 from typing import Any
 
+import _a3_naming   # every name a cluster could wear, computed once (naming-plan.md 2026-09-06)
 import _a3_render
 
 _UNCLAIMED = "__unclaimed__"
@@ -401,7 +402,7 @@ def derive(amap: dict, graph: dict, levels: dict | None, df: dict, hubs: dict) -
     for pid, h in homes.items():
         by_home.setdefault(h, []).append(pid)
     for r in rosters:
-        mem = sorted(by_home.get(r["id"], [])) + sorted(by_home.get(r["twin"], []) if r["twin"] else [])
+        mem = sorted(by_home.get(r["id"], []), key=lambda x: (0 if str(x).startswith("endpoint:") else 1, x)) + sorted(by_home.get(r["twin"], []) if r["twin"] else [])   # endpoint ids FIRST — a capped list never clips the labels a name is computed from
         r["members"], r["members_more"] = _capped(mem, MEMBER_CAP)
         if r["twin"] and not by_home.get(r["twin"]):
             r["twin"] = None
@@ -586,8 +587,10 @@ def _bands_seeded(hom: dict | None) -> dict:
         return {}
 
 
-def build(amap: dict, graph: dict, levels: dict | None, hom: dict | None = None) -> dict:
-    """The `models` block. `present: False` + reason when the levels graph is absent (no users witness)."""
+def build(amap: dict, graph: dict, levels: dict | None, hom: dict | None = None, naming_cfg: dict | None = None, labels: dict | None = None, url_domain_map: dict | None = None) -> dict:
+    """The `models` block. `present: False` + reason when the levels graph is absent (no users witness). `naming_cfg` = the
+    config's optional `naming` block, `labels` = the registry's display names per slug, `url_domain_map` = the legacy top-level
+    key — all three feed `_a3_naming.apply`, which attaches `names{}` to every derived/candidate row and the `naming` contract."""
     if not isinstance(levels, dict) or not levels:
         return {"present": False, "reason": "no levels graph (graft arm absent) — the users witness cannot be read; the claim view is the only model"}
     df = _dataflow(amap, graph, levels)
@@ -629,6 +632,10 @@ def build(amap: dict, graph: dict, levels: dict | None, hom: dict | None = None)
                   "truncated": truncated},
         "present": True,
     }
+    try:
+        block["naming"] = _a3_naming.apply(block, d.get("atoms") or [], labels or {}, naming_cfg, url_domain_map, (graph.get("stats") or {}).get("fe"))
+    except Exception as _ne:  # noqa: BLE001 — a vocabulary problem never costs the models block
+        block["naming"] = {"present": False, "reason": "naming error: %s" % _ne, "default": _a3_naming.DEFAULT_STRATEGY, "rule": _a3_naming.RULE}
     return block
 
 

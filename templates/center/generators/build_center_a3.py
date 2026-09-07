@@ -2167,7 +2167,7 @@ def main() -> int:
         # move band, hubs held) · derived (request atoms on the write-majority table, named by URL domain) · proposed (one
         # verdict per declared entity, as if accepted). Own try/except: a failure leaves the claim view alone and SAYS so.
         try:
-            _mod = _a3_models.build(amap, _graph, _levels, hom=_hom)
+            _mod = _a3_models.build(amap, _graph, _levels, hom=_hom, naming_cfg=CFG.get("naming"), labels=LABELS, url_domain_map=CFG.get("url_domain_map"))
             _a3_models.attach(_graph, _mod)
             _mslice = _a3_models.levels_slice(_mod, _graph)
         except Exception as _me:  # noqa: BLE001
@@ -2194,6 +2194,14 @@ def main() -> int:
                                        f"proposed {'✓' if (_mv.get('proposed') or {}).get('present') else '—'} ({(_mv.get('proposed') or {}).get('verdicts')} · "
                                        f"{(_mv.get('proposed') or {}).get('candidates', 0)} candidate(s)) · {len(_mod.get('shared') or [])} shared hub(s) — views over the claim, nothing re-homed")
                                       if _mod.get("present") else f"absent — {_mod.get('reason')}"))
+        _nm = (_mod.get("naming") or {}) if _mod.get("present") else {}
+        if _nm:
+            _cv = _nm.get("coverage") or {}
+            print("    naming: default %s (%s) · %s · fe mark %s%s%s" % (_nm.get("default"), _nm.get("source"),
+                  " · ".join("%s %s/%s" % (k, _cv.get(k, 0), _cv.get("rows", 0)) for k in ("table", "class", "path", "action", "config", "both")),
+                  ((_nm.get("fe") or {}).get("convention") if (_nm.get("fe") or {}).get("present") else "— (no frontend arm)"),
+                  (" · path collisions %d" % ((_nm.get("collisions") or {}).get("path") or 0)),
+                  (" · ⚠ %s" % _nm["config_error"]) if _nm.get("config_error") else ""))
         _a3_graph.emit(_graph, CENTER_OUT)      # emitted AFTER the evidence + models attach — the stats carry stats.homing / stats.models
         wrote.append(("c4-graph.json", 0))
         _st = _graph["stats"]

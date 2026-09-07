@@ -14,12 +14,22 @@
     "mermaid_renderer": "scripts/_render_mermaid.mjs"
   },
   "corpora": [
-    { "key": "api", "runner": "pytest", "kind": "integration",
-      "kind_detail": "HTTP surface", "tag_class": "l-api",
-      "kpi_detail": "pytest" },
-    { "key": "web", "runner": "vitest", "kind": "unit",
-      "kind_detail": "components/hooks", "tag_class": "l-web",
-      "kpi_detail": "vitest" }
+    {
+      "key": "api",
+      "runner": "pytest",
+      "kind": "integration",
+      "kind_detail": "HTTP surface",
+      "tag_class": "l-api",
+      "kpi_detail": "pytest"
+    },
+    {
+      "key": "web",
+      "runner": "vitest",
+      "kind": "unit",
+      "kind_detail": "components/hooks",
+      "tag_class": "l-web",
+      "kpi_detail": "vitest"
+    }
   ],
   "e2e": {
     "runner": "playwright",
@@ -30,9 +40,18 @@
     "coverage_gate": "≥80%"
   },
   "leaf_reports": [
-    { "path": "leaf/api-htmlcov/index.html", "label": "API coverage" },
-    { "path": "leaf/web-coverage/index.html", "label": "Web coverage" },
-    { "path": "leaf/playwright-report/index.html", "label": "Playwright report" }
+    {
+      "path": "leaf/api-htmlcov/index.html",
+      "label": "API coverage"
+    },
+    {
+      "path": "leaf/web-coverage/index.html",
+      "label": "Web coverage"
+    },
+    {
+      "path": "leaf/playwright-report/index.html",
+      "label": "Playwright report"
+    }
   ],
   "_commands_comment": "Capture commands run by scripts/refresh_center.sh <mode>, one shell line per entry, executed from the repo root. `regen` (the default) never runs a suite; these turn the sources on.",
   "commands": {
@@ -48,41 +67,121 @@
       "PLAYWRIGHT_JUNIT_OUTPUT_NAME=tests/results/e2e-junit.xml npx playwright test --config=tests/web-e2e/playwright.config.ts --reporter=list,junit"
     ]
   },
-  "foundations": ["SCOPE", "DECISIONS", "RULES", "BEHAVIOR", "STRUCTURE",
-                  "PLAN", "PENDING", "DOCS", "ENTITIES", "ROADMAP"],
-  "code_layers": ["api", "services", "models", "schemas", "web", "mobile"],
+  "foundations": [
+    "SCOPE",
+    "DECISIONS",
+    "RULES",
+    "BEHAVIOR",
+    "STRUCTURE",
+    "PLAN",
+    "PENDING",
+    "DOCS",
+    "ENTITIES",
+    "ROADMAP"
+  ],
+  "code_layers": [
+    "api",
+    "services",
+    "models",
+    "schemas",
+    "web",
+    "mobile"
+  ],
   "build_architecture": true,
   "_entities_comment": "One block per entity registered in adoption.json. `test_rx` is required (it claims test files into the corpus matrix, even before a section is built); `proofs`/`code`/`models` are added when the entity's section is adopted and its feature page is built. Every key here MUST exist in adoption.json (unknown-slug aborts the build).",
   "entities": {
     "transaction": {
       "test_rx": "transaction|txn|draft|\\bitem",
-      "proofs": ["tx1-detail-reskin", "tx2-newtransaction-reskin", "tx2b-journey",
-                 "tx3-fidelity", "ca3-shared-transactionlist", "batch-ops",
-                 "ca10-destructive-guards"],
-      "models": ["Transaction", "TransactionItem", "TransactionItemFlag",
-                 "TransactionImage", "TransactionDraft"],
+      "proofs": [
+        "tx1-detail-reskin",
+        "tx2-newtransaction-reskin",
+        "tx2b-journey",
+        "tx3-fidelity",
+        "ca3-shared-transactionlist",
+        "batch-ops",
+        "ca10-destructive-guards"
+      ],
+      "models": [
+        "Transaction",
+        "TransactionItem",
+        "TransactionItemFlag",
+        "TransactionImage",
+        "TransactionDraft"
+      ],
       "code": {
-        "api": ["backend/app/api/transactions.py", "backend/app/api/drafts.py"],
-        "services": ["backend/app/services/create_transaction.py",
-                     "backend/app/services/draft_slot.py",
-                     "backend/app/services/scan_to_draft.py",
-                     "backend/app/services/persist_scan.py"],
-        "models": ["backend/app/models/transaction.py", "backend/app/models/draft.py"],
-        "schemas": ["backend/app/schemas/transaction.py"],
-        "web": ["web/src/routes/transactions.*.tsx", "web/src/routes/transactions.tsx",
-                "web/src/components/transactions/*.tsx",
-                "web/src/hooks/useTransactions.ts", "web/src/hooks/useTransactionDraft.ts",
-                "web/src/hooks/useScanToDraft.ts", "web/src/hooks/useItems.ts",
-                "web/src/lib/itemFamilies.ts"],
-        "mobile": ["mobile/src/screens/Transaction*.tsx",
-                   "mobile/src/hooks/useTransactions.ts", "mobile/src/lib/transactions.ts"]
+        "api": [
+          "backend/app/api/transactions.py",
+          "backend/app/api/drafts.py"
+        ],
+        "services": [
+          "backend/app/services/create_transaction.py",
+          "backend/app/services/draft_slot.py",
+          "backend/app/services/scan_to_draft.py",
+          "backend/app/services/persist_scan.py"
+        ],
+        "models": [
+          "backend/app/models/transaction.py",
+          "backend/app/models/draft.py"
+        ],
+        "schemas": [
+          "backend/app/schemas/transaction.py"
+        ],
+        "web": [
+          "web/src/routes/transactions.*.tsx",
+          "web/src/routes/transactions.tsx",
+          "web/src/components/transactions/*.tsx",
+          "web/src/hooks/useTransactions.ts",
+          "web/src/hooks/useTransactionDraft.ts",
+          "web/src/hooks/useScanToDraft.ts",
+          "web/src/hooks/useItems.ts",
+          "web/src/lib/itemFamilies.ts"
+        ],
+        "mobile": [
+          "mobile/src/screens/Transaction*.tsx",
+          "mobile/src/hooks/useTransactions.ts",
+          "mobile/src/lib/transactions.ts"
+        ]
       }
     },
-    "scan-receipt": { "test_rx": "scan|receipt|ocr|upload" },
-    "statement": { "test_rx": "statement|reconcil|recon_" },
-    "card-alias": { "test_rx": "card_alias|cardalias|alias|efectivo" },
-    "group-share": { "test_rx": "group|share|invite|unshare" },
-    "consent-privacy": { "test_rx": "consent|privacy|erasure|portab" },
-    "analytics-drilldown": { "test_rx": "trend|sankey|treemap|report|categor|insight|period" }
+    "scan-receipt": {
+      "test_rx": "scan|receipt|ocr|upload"
+    },
+    "statement": {
+      "test_rx": "statement|reconcil|recon_"
+    },
+    "card-alias": {
+      "test_rx": "card_alias|cardalias|alias|efectivo"
+    },
+    "group-share": {
+      "test_rx": "group|share|invite|unshare"
+    },
+    "consent-privacy": {
+      "test_rx": "consent|privacy|erasure|portab"
+    },
+    "analytics-drilldown": {
+      "test_rx": "trend|sankey|treemap|report|categor|insight|period"
+    }
+  },
+  "_naming_comment": "optional — how the universe, gabe-map and the entity drafter WORD the entity models; every key optional; nothing here is a join key (slugs and cluster ids never change). strategy: domain|table|class|path|action|config|both · fe.convention: case|prefix|suffix|bracket|glyph|tint|none · fe.words {frontend, backend} are the marks for suffix/bracket · fe.case {frontend, backend} ∈ camel|pascal|none · words.domains / words.tables name clusters for the `config` strategy (the top-level url_domain_map is read as a fallback) · entities.<slug> a display name (else adoption display_name)",
+  "naming": {
+    "strategy": "domain",
+    "fe": {
+      "convention": "case",
+      "frontend": "ui",
+      "backend": "api",
+      "case": {
+        "frontend": "camel",
+        "backend": "pascal"
+      }
+    },
+    "words": {
+      "domains": {
+        "scans": "receipt scanning"
+      },
+      "tables": {
+        "ownership_scope_members": "who shares a wallet"
+      }
+    },
+    "entities": {}
   }
 }
