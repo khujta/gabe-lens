@@ -1,0 +1,304 @@
+[
+ {
+  "page": "lab-00-baseline-3d-force-graph.html?hollow=1",
+  "lib": "3d-force-graph 1.80 + three r185 (hollow)",
+  "ver": "the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "x4",
+  "layout": "live",
+  "tier": {
+   "down_ms": 20.1,
+   "up_ms": 51.4,
+   "visible_t0": 788,
+   "visible_t3": 5404,
+   "moved": 0,
+   "n": 5404,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 104444,
+  "nodes": 5404,
+  "links": 16266,
+  "drawn": 5404,
+  "drawn_ok": true,
+  "boot_ms": 2,
+  "first_frame_ms": 1845.4,
+  "settle_ms": null,
+  "settled": false,
+  "ticks": 37,
+  "settle_note": "not settled within 500000 ms (tick 37)",
+  "fps": 1,
+  "frame_ms": 804.6,
+  "draws": 466,
+  "tris": 1404876,
+  "geos": 203,
+  "texs": 82,
+  "pick": {
+   "tries": 20,
+   "hits": 11,
+   "other": 8,
+   "none": 1,
+   "unpositioned": 0,
+   "ms": 811.37
+  },
+  "heap_mb": 88.6,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 0,
+   "feed": 1216106,
+   "lab": 57911
+  },
+  "ink": 0.8102,
+  "r10": null,
+  "injected": null,
+  "purity": 0.499,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "free",
+    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "instanced layers: 1 draw call per form/badge atlas/label atlas"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "built",
+    "how": "one atlas InstancedMesh"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "one LineSegments per kind (LineDashedMaterial)"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "one Points layer on cross links"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "bandOf(l) → wire end colours"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "colour-id pass over the glyph layers"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "Raycaster over the typed wires (threshold 3)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "plain <script src>, the station's bundle"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "mode": "hollow",
+   "particles": true,
+   "conns": true
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-01-three-raw.html",
+  "lib": "three.js r185 raw",
+  "ver": "no wrapper · the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "x4",
+  "layout": "live",
+  "tier": {
+   "down_ms": 106.5,
+   "up_ms": 65.8,
+   "visible_t0": 788,
+   "visible_t3": 5404,
+   "moved": 0,
+   "n": 5404,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 92794,
+  "nodes": 5404,
+  "links": 16266,
+  "drawn": 5404,
+  "drawn_ok": true,
+  "boot_ms": 2.4,
+  "first_frame_ms": 1674.6,
+  "settle_ms": 13075.9,
+  "settled": true,
+  "ticks": 240,
+  "settle_note": null,
+  "fps": 1,
+  "frame_ms": 704.4,
+  "draws": 466,
+  "tris": 1404272,
+  "geos": 203,
+  "texs": 82,
+  "pick": {
+   "tries": 20,
+   "hits": 10,
+   "other": 10,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 2171.59
+  },
+  "heap_mb": 33.9,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 31161,
+   "feed": 1216106,
+   "lab": 72050
+  },
+  "ink": 0.738,
+  "r10": null,
+  "injected": null,
+  "purity": 0.502,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub (every 3rd tick while settling, then static)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "d3-force-3d + zForce in a Blob worker; ?layout=baked = fdp positions, no sim"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "one InstancedMesh per form · one atlas layer for badges · one sphere layer · one label atlas layer"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "built",
+    "how": "atlas quads: slot A lower-right, slot B upper-right"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "one LineSegments per CONN kind, LineDashedMaterial with lineDistance rewritten per update"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "one Points layer along the cross links"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "bandOf(l) → per-vertex end colours"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "colour-id pass over the glyph layers with the wires hidden (1×1 readback)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "a second colour-id pass over the wire LineSegments alone (1 px lines — no hover tolerance yet)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "built",
+    "how": "zero-scale instances + wire visibility; positions untouched"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "walk mode (?walk=1)",
+    "state": "na",
+    "how": "pointer lock + WASD/QE, capsule vs the buildings"
+   },
+   {
+    "row": "GLB fleets (?ships=1)",
+    "state": "na",
+    "how": "NOT BUILT YET — the stretch row (one InstancedMesh per GLB)"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "built",
+    "how": "the worker is a Blob URL that importScripts() the vendored d3 UMDs"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "labels_capped": "4000 of 5404",
+   "layout_thread": "blob worker + importScripts(file:// d3 UMDs)",
+   "ticks_at_stop": 240
+  },
+  "warnings": [],
+  "baked": null
+ }
+]
