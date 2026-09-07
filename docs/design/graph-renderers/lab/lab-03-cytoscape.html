@@ -1,0 +1,139 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>lab-03 — cytoscape.js 3.34 (2D, NATIVE containment)</title>
+<link rel="stylesheet" href="./lab.css">
+<div id="g"></div>
+<div class="lab-tip" id="tip"></div>
+<div class="lab-card" id="card"></div>
+<div class="lab-knobs" id="knobs"></div>
+<div class="lab-legend"><b>lab-03 · cytoscape.js (compound parents)</b>
+  Every entity and every sub-cluster is a <b>compound parent node</b> — containment is DATA the stylesheet paints and the layout respects; zero hull code.
+  Glyph = a per-kind <code>shape</code> selector; badges = layered <code>background-image</code> discs; typed wires = <code>line-style</code> dash per kind on the canvas renderer
+  (<code>?webgl=1</code> switches to the preview WebGL path and records what it drops). Labels have no collision solver (LOD by <code>min-zoomed-font-size</code> only).<br>
+  Layout: <code>?layout=live</code> = d3-force-3d in 2D + the adapter's zForce, then <code>preset</code> · <code>?layout=baked</code> = fdp · <code>?layout=fcose</code> = the compound-aware force (only at <code>?scale=core</code>: 7–9 s at 1.4k, 141 s at 4k measured).
+</div>
+<script src="./feed-loader.js"></script>
+<script src="../../../../templates/center/shell/assets/graph-grammar.js"></script>
+<script src="./vendor/d3-dispatch.min.js"></script><script src="./vendor/d3-timer.min.js"></script><script src="./vendor/d3-binarytree.min.js"></script>
+<script src="./vendor/d3-quadtree.min.js"></script><script src="./vendor/d3-octree.min.js"></script><script src="./vendor/d3-force-3d.min.js"></script>
+<script src="./vendor/cytoscape.min.js"></script>
+<script src="./vendor/layout-base.js"></script><script src="./vendor/cose-base.js"></script><script src="./vendor/cytoscape-fcose.js"></script>
+<script src="./adapter.js"></script>
+<script src="./scorecard.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.GABE_FEED;
+  if (!F) { document.body.insertAdjacentHTML('beforeend', '<pre style="color:#f88;position:absolute;left:340px;top:14px">' + (window.GABE_FEED_ERR || 'no feed') + '</pre>'); LAB.ready({ err: [window.GABE_FEED_ERR || 'no feed'] }); return; }
+  if (typeof window.cytoscape !== 'function') { LAB.ready({ err: ['cytoscape global missing'] }); return; }
+  if (window.cytoscapeFcose) { try { cytoscape.use(window.cytoscapeFcose); } catch (e) {} }
+  var LAYOUT = LAB.qs('layout', 'live'), WEBGL = LAB.qs('webgl', '0') === '1', REDRAW = LAB.qs('redraw', '1') === '1', TIER = F.tier, nodes = F.nodes, links = F.links, byId = F.byId, N = nodes.length;
+  LAB.mark('boot_ms');
+  document.getElementById('knobs').innerHTML = [['layout=live', LAYOUT === 'live'], ['layout=fcose', LAYOUT === 'fcose'], ['layout=baked', LAYOUT === 'baked'], ['webgl=1', WEBGL], ['scale=core', F.scale === 'core'], ['feed=onyx', F.fixture === 'onyx']]
+    .map(function (k) { var u = new URL(location.href), kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : kv[0] === 'layout' ? 'live' : kv[0] === 'scale' ? 'full' : '0') : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
+
+  /* ── positions (the same law as lab-01/02: seeds → d3 2D + zForce · the bake · fcose at core) ────────────────── */
+  F.seedPositions(1); var BAKED = F.layout === 'baked', FCOSE = LAYOUT === 'fcose' && !BAKED, settleMs = null, t0 = performance.now();
+  if (FCOSE && F.scale !== 'core') { FCOSE = false; LAB.note('fcose_refused', 'fcose only at ?scale=core (7.6–9.3 s at 1.4k nodes, 141 s at 4k — measured by the scale sweep); live layout used'); }
+  nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.bx; n.y = n.by; } else { n.x = n.sx; n.y = n.sy; } });
+  if (!BAKED && !FCOSE) { var d3f = window.d3, idx = Object.create(null); nodes.forEach(function (n, i) { idx[n.id] = i; });
+    var sn = nodes.map(function (n, i) { return { i: i, x: n.x, y: n.y, ent: n.ent, sub: n.sub, kind: n.kind }; }), ls = links.map(function (l) { return { source: idx[l.source], target: idx[l.target] }; });
+    var sim = d3f.forceSimulation(sn, 2).force('link', d3f.forceLink(ls).id(function (d) { return d.i; })).force('charge', d3f.forceManyBody().strength(-60).distanceMax(150)).force('center', d3f.forceCenter()).force('layer', F.force).alphaDecay(0.0228).stop();
+    for (var t = 0; t < 240; t++) sim.tick(); sn.forEach(function (s, i) { nodes[i].x = s.x; nodes[i].y = s.y; }); settleMs = performance.now() - t0; LAB.note('layout_engine', 'd3-force-3d in 2D + zForce, 240 ticks on-thread, then preset'); }
+  else LAB.note('layout_engine', BAKED ? 'baked fdp (preset)' : 'fcose (compound-aware)');
+
+  /* ── elements: compound parents (entity > sub) + typed children + typed edges ───────────────────────────────── */
+  var SHAPE = { endpoint: 'ellipse', 'function': 'rectangle', model: 'barrel', schema: 'diamond', route: 'triangle', component: 'round-rectangle', hook: 'star', store: 'barrel', type: 'rectangle', module: 'rectangle', middleware: 'rectangle', flag: 'vee', provider: 'round-rectangle', prompt: 'round-rectangle', external: 'hexagon', element: 'round-rectangle', web: 'round-rectangle' };
+  var SIZE = { endpoint: 12, model: 13, schema: 9, web: 11, external: 10, element: 9, middleware: 9, flag: 8, provider: 10, component: 9, hook: 9, store: 11, route: 10, module: 8, type: 6, 'function': 7 };
+  var BADGECOL = { method: { GET: '#22c55e', POST: '#3b82f6', PUT: '#f97316', PATCH: '#eab308', DELETE: '#ef4444', BOOT: '#8a8f98', TASK: '#f0abfc' }, feclass: { connector: '#0ea5e9', container: '#f59e0b', leaf: '#84cc16', 'private': '#64748b', detached: '#e11d48' }, hrole: { streamer: '#06b6d4', fetcher: '#e8590c', store: '#ec4899', orchestrator: '#f59e0b', effect: '#8b5cf6', deriver: '#10b981' }, mclass: { 'render-fn': '#f59e0b', logic: '#94a3b8', config: '#64748b' }, pclass: { llm: '#ae3ec9' }, delivery: { stream: '#06b6d4' }, role: { accessor: '#14b8a6', caller: '#6366f1', gate: '#7048e8', pure: '#94a3b8' } };
+  var badgeCache = {};
+  function badgeURI(family, value) { var key = family + ':' + value; if (badgeCache[key]) return badgeCache[key]; var col = (BADGECOL[family] || {})[value] || '#8794ab', txt = String(value).slice(0, 2).toUpperCase();
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="' + col + '"/><text x="16" y="21" font-size="13" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#0b0e13">' + txt + '</text></svg>';
+    return (badgeCache[key] = 'data:image/svg+xml;base64,' + btoa(svg)); }
+  function slotsOf(n) { var a = null, b = null;
+    if (n.kind === 'endpoint' && n.m) a = ['method', n.m]; else if (n.kind === 'function' && n.det && n.det.role) a = ['role', n.det.role]; else if (n.kind === 'component' && n.feClass && n.feClass !== 'view') a = ['feclass', n.feClass];
+    else if (n.kind === 'module' && n.mclass) a = ['mclass', n.mclass]; else if (n.kind === 'hook' && n.hrole) a = ['hrole', n.hrole]; else if (n.kind === 'provider' && n.pclass) a = ['pclass', n.pclass];
+    if (n.kind === 'endpoint' && n.stream) b = ['delivery', 'stream']; return [a, b]; }
+  LAB.mark('build_ms');
+  var els = [], subCount = {}; nodes.forEach(function (n) { var k = n.ent + '|' + n.sub; subCount[k] = (subCount[k] || 0) + 1; });
+  var subs = {}; F.ents.forEach(function (e) { els.push({ group: 'nodes', data: { id: 'grp:' + e, label: F.entKind[e] === 'entity' ? e : ('fe · ' + e.replace(/^fe·/, '')), col: F.entColor[e], lvl: 'ent' } }); });
+  Object.keys(subCount).forEach(function (k) { if (subCount[k] < 2) return; var e = k.split('|')[0]; subs[k] = 'sub:' + k; els.push({ group: 'nodes', data: { id: 'sub:' + k, parent: 'grp:' + e, label: '', col: F.entColor[e], lvl: 'sub' } }); });
+  nodes.forEach(function (n) { var s = slotsOf(n), imgs = [], pos = [], parent = subs[n.ent + '|' + n.sub] || ('grp:' + n.ent);
+    if (s[0]) { imgs.push(badgeURI(s[0][0], s[0][1])); pos.push('100% 100%'); } if (s[1]) { imgs.push(badgeURI(s[1][0], s[1][1])); pos.push('100% 0%'); }
+    var data = { id: n.id, parent: parent, label: n.label, col: F.colorOf(n), kind: n.kind, shape: SHAPE[n.kind] || 'ellipse', sz: SIZE[n.kind] || 8, wire: n.kind === 'type' ? 'dashed' : 'solid', tier: n.tier };
+    if (imgs.length) { data.imgs = imgs; data.ipos = pos.join(' '); }   /* the [imgs] selector matches a null too — the keys exist only on badged nodes */
+    els.push({ group: 'nodes', data: data, position: { x: n.x, y: n.y }, classes: n.tier > TIER ? 'hid' : '' }); });
+  var DASH = { solid: 'solid', dashed: 'dashed', dotted: 'dotted', sparse: 'dashed', longdash: 'dashed' }, DPAT = { sparse: [5, 10], longdash: [10, 4], dashed: [6, 3] };
+  links.forEach(function (l, li) { var cfg = F.conn[l.kind] || F.conn.calls, band = F.bandOf(l), s = byId[l.source], t = byId[l.target];
+    var ed = { id: 'e' + li, source: l.source, target: l.target, li: li, kind: l.kind, col: band ? band.color : cfg.color, c2: band ? band.color : (F.entColor[t.ent] || cfg.color), c1: band ? band.color : (F.entColor[s.ent] || cfg.color), grad: !!cfg.grad && !band, ls: DASH[cfg.style] || 'solid', w: l.cross ? 1.1 : 0.55, op: Math.min(1, cfg.trust) };
+    if (DPAT[cfg.style]) ed.pat = DPAT[cfg.style];   /* the [pat] selector must see the key only where a pattern exists */
+    els.push({ group: 'edges', data: ed, classes: (s.tier > TIER || t.tier > TIER) ? 'hid' : '' }); });
+
+  /* ── the instance ──────────────────────────────────────────────────────────────────────────────────────────── */
+  var style = [
+    { selector: 'node[sz]', style: { 'background-color': 'data(col)', 'width': 'data(sz)', 'height': 'data(sz)', 'shape': 'data(shape)', 'label': 'data(label)', 'font-size': 7, 'color': '#cfd6ea', 'text-opacity': 0.85, 'min-zoomed-font-size': 8, 'text-valign': 'bottom', 'text-margin-y': 2, 'border-width': 0.6, 'border-color': '#0b0e13', 'border-style': 'data(wire)' } },
+    { selector: 'node[kind="endpoint"]', style: { 'border-width': 3, 'border-color': 'data(col)', 'background-opacity': 0.25 } },
+    { selector: 'node[imgs]', style: { 'background-image': 'data(imgs)', 'background-position-x': function (n) { return n.data('ipos').split(' ').filter(function (_, i) { return i % 2 === 0; }); }, 'background-position-y': function (n) { return n.data('ipos').split(' ').filter(function (_, i) { return i % 2 === 1; }); }, 'background-width': '45%', 'background-height': '45%', 'background-clip': 'none', 'bounds-expansion': 6 } },
+    { selector: 'node[lvl="ent"]', style: { 'background-color': 'data(col)', 'background-opacity': 0.08, 'border-width': 1.4, 'border-color': 'data(col)', 'border-opacity': 0.7, 'shape': 'round-rectangle', 'padding': 26, 'label': 'data(label)', 'font-size': 14, 'font-weight': 'bold', 'color': 'data(col)', 'text-opacity': 1, 'text-valign': 'top', 'text-halign': 'center', 'min-zoomed-font-size': 0, 'z-compound-depth': 'bottom' } },
+    { selector: 'node[lvl="sub"]', style: { 'background-color': 'data(col)', 'background-opacity': 0.10, 'border-width': 0.8, 'border-color': 'data(col)', 'border-opacity': 0.45, 'shape': 'round-rectangle', 'padding': 10, 'label': '', 'z-compound-depth': 'bottom' } },
+    { selector: 'edge', style: { 'width': 'data(w)', 'line-color': 'data(col)', 'opacity': 'data(op)', 'curve-style': WEBGL ? 'haystack' : 'straight', 'line-style': 'data(ls)', 'target-arrow-shape': 'none' } },
+    { selector: 'edge[pat]', style: { 'line-dash-pattern': 'data(pat)' } },
+    { selector: 'edge[?grad]', style: { 'line-fill': 'linear-gradient', 'line-gradient-stop-colors': function (e) { return [e.data('c1'), e.data('c2')]; }, 'line-gradient-stop-positions': [0, 100] } },
+    { selector: '.hid', style: { 'display': 'none' } },
+    { selector: '.hi', style: { 'border-width': 2.5, 'border-color': '#fff', 'z-index': 99 } }];
+  var cy, initErr = null, frames = 0, fpsm = LAB.fps, renderMs = 0;
+  try { cy = cytoscape({ container: document.getElementById('g'), elements: els, style: style, renderer: WEBGL ? { name: 'canvas', webgl: true } : { name: 'canvas' }, layout: { name: 'preset' }, textureOnViewport: false, hideEdgesOnViewport: false, pixelRatio: 1 }); }
+  catch (e) { initErr = String(e); LAB.ready({ err: ['cytoscape init: ' + initErr] }); return; }
+  LAB.mark('build_done_ms');
+  cy.on('render', function () { frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms'); });
+  if (FCOSE) { var lt = performance.now(); var lay = cy.layout({ name: 'fcose', quality: 'default', randomize: false, animate: false, nodeRepulsion: 9000, idealEdgeLength: 48, nestingFactor: 0.1, gravity: 0.3, gravityRangeCompound: 1.4, gravityCompound: 1.6, numIter: 900, packComponents: true, tile: true });
+    lay.one('layoutstop', function () { settleMs = performance.now() - lt; cy.nodes('[sz]').forEach(function (nd) { var n = byId[nd.id()]; if (n) { var p = nd.position(); n.x = p.x; n.y = p.y; } }); G.settled = true; LAB.set('settle_ms', +settleMs.toFixed(1)); LAB.set('layout_ms', +settleMs.toFixed(1)); cy.fit(undefined, 30); }); lay.run(); }
+  else { cy.fit(undefined, 30); if (settleMs != null) { LAB.set('settle_ms', +settleMs.toFixed(1)); LAB.set('layout_ms', +settleMs.toFixed(1)); } else LAB.set('settle_ms', 0); }
+  if (REDRAW) (function loop() { requestAnimationFrame(loop); var t = performance.now(); cy.forceRender(); renderMs = performance.now() - t; })();   // a frame per rAF so the paint cost is measured like the 3D pages'
+
+  /* ── cards + picking (tap events for the human; a rendered-position scan for the probe) ─────────────────────── */
+  var tip = document.getElementById('tip'), card = document.getElementById('card');
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function showCard(n) { card.style.display = 'block'; card.innerHTML = '<b>' + esc(n.label) + '</b><div class="row"><span>kind</span><span>' + n.kind + (n.m ? ' · ' + n.m : '') + (n.stream ? ' · stream' : '') + '</span></div><div class="row"><span>entity</span><span>' + esc(n.ent) + '</span></div><div class="row"><span>tier</span><span>T' + n.tier + ' · degree ' + n.deg + '</span></div>' + (n.det && n.det.file ? '<div class="row"><span>file</span><span>' + esc(n.det.file) + '</span></div>' : ''); }
+  function showLink(l) { card.style.display = 'block'; card.innerHTML = '<b>' + esc(byId[l.source].label) + ' → ' + esc(byId[l.target].label) + '</b><div class="row"><span>wire</span><span>' + l.rel + ' (' + l.kind + ')' + (l.cross ? ' · cross-entity' : '') + '</span></div>'; }
+  cy.on('mouseover', 'node[sz]', function (ev) { var n = byId[ev.target.id()]; if (!n) return; var p = ev.target.renderedPosition(); tip.style.display = 'block'; tip.style.left = (p.x + 14) + 'px'; tip.style.top = (p.y + 14) + 'px'; tip.innerHTML = '<b>' + esc(n.label) + '</b><i>' + n.kind + ' · ' + esc(n.ent) + (n.m ? ' · ' + n.m : '') + '</i>'; ev.target.addClass('hi'); });
+  cy.on('mouseout', 'node[sz]', function (ev) { tip.style.display = 'none'; ev.target.removeClass('hi'); });
+  cy.on('tap', 'node[sz]', function (ev) { var n = byId[ev.target.id()]; if (n) showCard(n); });
+  cy.on('tap', 'edge', function (ev) { var l = links[ev.target.data('li')]; if (l) showLink(l); });
+  function pickNode(x, y) { var best = null, bd = 1e9; cy.nodes('[sz]').forEach(function (nd) { if (nd.hasClass('hid')) return; var p = nd.renderedPosition(), r = Math.max(5, nd.renderedWidth() / 2 + 1), dx = p.x - x, dy = p.y - y, d = dx * dx + dy * dy; if (d < r * r && d < bd) { bd = d; best = nd.id(); } }); return best; }
+  function pickLink(x, y) { var best = null, bd = 9; cy.edges().forEach(function (ed) { if (ed.hasClass('hid')) return; var a = ed.source().renderedPosition(), b = ed.target().renderedPosition(), vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy || 1, u = Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / L2)), px = a.x + vx * u - x, py = a.y + vy * u - y, d = px * px + py * py; if (d < bd) { bd = d; best = ed.data('li'); } }); return best; }
+
+  /* ── the probe surface ─────────────────────────────────────────────────────────────────────────────────────── */
+  var G = LAB.graph({ nodes: nodes, links: links, byId: byId, settled: !FCOSE,
+    setTier: function (t) { TIER = Math.max(0, Math.min(3, t | 0)); cy.batch(function () { cy.nodes('[sz]').forEach(function (nd) { nd.toggleClass('hid', nd.data('tier') > TIER); }); cy.edges().forEach(function (ed) { ed.toggleClass('hid', ed.source().data('tier') > TIER || ed.target().data('tier') > TIER); }); }); return G.visible(); },
+    visible: function () { var c = 0; for (var i = 0; i < N; i++) if (nodes[i].tier <= TIER) c++; return c; },
+    visibleIds: function () { return nodes.filter(function (n) { return n.tier <= TIER; }).map(function (n) { return n.id; }); },
+    positions: function () { var o = {}; cy.nodes('[sz]').forEach(function (nd) { if (nd.data('tier') <= TIER) { var p = nd.position(); o[nd.id()] = [p.x, p.y, 0]; } }); return o; },
+    screenOf: function (id) { var nd = cy.getElementById(id); if (!nd || !nd.length) return null; var p = nd.renderedPosition(); return { x: p.x, y: p.y }; },
+    pick: pickNode, pickLink: pickLink,
+    stats: function () { return { calls: null, triangles: null, geometries: null, textures: null, renderMs: +renderMs.toFixed(2), elements: cy.elements().length, compounds: cy.nodes('[lvl]').length }; } });
+  LAB.panel({ lib: 'cytoscape.js 3.34.2' + (WEBGL ? ' (webgl preview)' : ' (canvas)'), ver: 'fcose 2.2 at core only', bundle: '435,503 (+324 KB layout deps) B', license: 'MIT', role: '2D · NATIVE containment',
+    checklist: [
+      ['entity + sub-cluster hulls', 'free', 'compound parents (entity > sub): containment is data the stylesheet paints and every layout respects'],
+      ['anchored deterministic layout', 'built', 'preset from d3-force-3d 2D + zForce (the SAME law as lab-01) or the fdp bake; fcose only at core'],
+      ['composed node: glyph + badges + bubble + label', 'built', 'shape by selector (ellipse · rectangle · barrel · diamond · triangle · star · hexagon · vee); the bubble is the endpoint ring border'],
+      ['badge slots A/B', 'built', 'layered background-image data-URI discs at 100%/100% and 100%/0%'],
+      ['7 typed wires with dash', WEBGL ? 'lost' : 'built', WEBGL ? 'the WebGL preview renderer drops line-style/dash and gradients (recorded)' : 'line-style + line-dash-pattern per kind on the canvas renderer'],
+      ['directional particles', 'lost', 'no per-edge animation primitive (a per-frame style write would repaint the scene)'],
+      ['heat gradients (d2w / fed2w)', WEBGL ? 'lost' : 'built', 'line-fill linear-gradient with the band colour (canvas only)'],
+      ['node picking → card', 'free', 'tap/mouseover on the element model; the probe uses a rendered-position scan'],
+      ['link picking → wire card', 'free', 'tap on edges (haystack/straight); the probe uses a segment scan'],
+      ['label collision', 'lost', 'no solver — min-zoomed-font-size is the only LOD'],
+      ['visibility without relayout (tier press)', 'free', 'display:none by class inside cy.batch(); positions untouched'],
+      ['tiers T0–T3', 'built', 'setTier(t) over the adapter\'s tier field'],
+      ['query algebra', 'free', 'selectors + collections + BFS/dijkstra on the same object (not exercised here)'],
+      ['depth highlight · journeys · search · legend · Sources rows', 'na', 'station chrome — deliberately absent from every lab page'],
+      ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it; the generic shape is an ellipse'],
+      ['file:// · no network', 'free', 'four UMDs, no worker, no wasm'],
+      ['headless provable', 'free', 'Canvas2D under swiftshader (WebGL preview with ?webgl=1)'],
+      ['probe surface', 'built', 'LABG registered']],
+    verdict: 'The only page where CONTAINMENT is a first-class object and the badge grammar survives declaratively. Canvas2D pays per element per frame; the WebGL path is a preview that drops the dashes.' });
+  var hud = setInterval(function () { LAB.hud({ nodes: G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'render ms': renderMs.toFixed(1), elements: cy.elements().length, compounds: cy.nodes('[lvl]').length, layout: (window.__LAB.notes.layout_engine || '').split(' ')[0] }); }, 500);
+  setTimeout(function () { LAB.ready({ nodes: N, links: links.length, drawn: G.visible(), tier: TIER }); }, FCOSE ? 12000 : 2500);
+})();
+</script>

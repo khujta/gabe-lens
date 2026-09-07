@@ -42,8 +42,10 @@ function purity(pos, ent, K = 10) {   // k=10 neighbour purity in the page's FIN
 
 const b = await chromium.launch({ executablePath: CHROME, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox', '--disable-gpu-sandbox', '--disable-dev-shm-usage', '--enable-precise-memory-info'] });
 const rows = []; let bad = 0;
-for (const page of pages) {
-  const url = 'file://' + path.join(D, page) + '?feed=' + FEED + '&scale=' + SCALE + '&layout=' + LAYOUT + '&tier=' + TIER + '&fn=' + FN + (INJECT ? '&inject=1' : '');
+for (const spec of pages) {
+  const page = spec.split('?')[0], variant = spec.includes('?') ? spec.slice(spec.indexOf('?') + 1) : '';   // --only=lab-00.html?hollow=1 → a VARIANT row of the same page
+  const pageKey = page + (variant ? '?' + variant : ''), shotKey = page.replace('.html', '') + (variant ? '.' + variant.replace(/[^a-z0-9]+/gi, '-') : '');
+  const url = 'file://' + path.join(D, page) + '?feed=' + FEED + '&scale=' + SCALE + '&layout=' + LAYOUT + '&tier=' + TIER + '&fn=' + FN + (INJECT ? '&inject=1' : '') + (variant ? '&' + variant : '');
   const p = await b.newPage({ viewport: { width: 1400, height: 860 } });
   const errs = [], net = [];
   p.on('pageerror', e => errs.push('PE: ' + e.message));
@@ -55,6 +57,7 @@ for (const page of pages) {
   const norender = await p.evaluate(() => !!(window.__LAB && window.__LAB.notes && window.__LAB.notes.norender)).catch(() => false);
   // settle: the engine's OWN stop signal
   const settled = await p.waitForFunction('!window.LABG || window.LABG.settled===true', { timeout: SETTLE }).then(() => true).catch(() => false);
+  const ticks = await p.evaluate(() => { try { return window.LABG && window.LABG.ticks ? window.LABG.ticks() : null; } catch (e) { return null; } });   // the layout's tick count (at settle, or at the timeout — the wrapper's per-tick cost under swiftshader is minutes)
   const heap0 = await p.evaluate(() => performance.memory ? performance.memory.usedJSHeapSize : null);
   // the fps window: the page's own per-RENDER meter
   if (!norender) await p.waitForTimeout(FPSWIN);
@@ -95,7 +98,7 @@ for (const page of pages) {
   for (const s of scripts) { let f; try { f = fileURLToPath(s.split('?')[0]); } catch (e) { continue; } let sz = 0; try { sz = fs.statSync(f).size; } catch (e) { sz = 0; }
     if (f.includes('/templates/center/shell/assets/')) bundle.station += sz; else if (f.includes('/vendor/')) bundle.vendor += sz; else if (/c4-graph\.js|levels\.js|\.fdp\.js$/.test(f)) bundle.feed += sz; else bundle.lab += sz; }
   // honesty: ink from the composited screenshot · R10 grep · injected node drawn
-  const shot = path.join(D, '_shots', page.replace('.html', '.' + FEED + '.' + SCALE + (INJECT ? '.inject' : '') + '.png'));
+  const shot = path.join(D, '_shots', shotKey + '.' + FEED + '.' + SCALE + (INJECT ? '.inject' : '') + '.png');
   fs.mkdirSync(path.dirname(shot), { recursive: true }); await p.screenshot({ path: shot });
   let ink = null;
   if (!norender) { const buf = await p.screenshot({ clip: { x: 340, y: 20, width: 800, height: 620 } }); const ip = await b.newPage();
@@ -109,13 +112,14 @@ for (const page of pages) {
   const drawnOk = norender || !G || G.visible == null || G.visible === (G.byTier ? G.byTier[G.tier] : G.feedNodes);
   const ok = !!(L && L.ready) && errs.length === 0 && net.length === 0 && (norender || ink > 0.002) && !r10 && drawnOk && (!INJECT || injected === 'drawn');
   if (!ok) bad++;
-  const row = { page, lib: L && L.lib, ver: L && L.ver, feed: FEED, scale: SCALE, layout: G && G.layout || LAYOUT, tier: +TIER, ok, wall_ms: Date.now() - t0,
+  const row = { page: pageKey, lib: L && L.lib, ver: L && L.ver, feed: FEED, scale: SCALE, layout: G && G.layout || LAYOUT, tier: +TIER, ok, wall_ms: Date.now() - t0,
     nodes: G ? G.feedNodes : (L && L.nodes), links: G ? G.feedLinks : (L && L.links), drawn: G && G.visible, drawn_ok: drawnOk, boot_ms: L && L.boot_ms, first_frame_ms: L && L.first_frame_ms, settle_ms: settled ? (L && L.settle_ms) : null, settled,
+    ticks, settle_note: settled ? null : ('not settled within ' + SETTLE + ' ms' + (ticks != null ? ' (tick ' + ticks + ')' : '')),
     fps: L && L.fps, frame_ms: L && L.frame_ms, draws: G && G.stats && G.stats.calls, tris: G && G.stats && G.stats.triangles, geos: G && G.stats && G.stats.geometries, texs: G && G.stats && G.stats.textures,
     pick, tier, heap_mb: heap1 ? +(Math.max(heap0 || 0, heap1) / 1048576).toFixed(1) : null, bundle, ink, r10, injected, purity: pur, offline: net.length === 0, net: net.slice(0, 3), errs: errs.slice(0, 5),
     matrix: L && L.matrix || [], notes: L && L.notes || {}, warnings: G && G.warnings || [], baked: G && G.baked };
   rows.push(row);
-  console.log((ok ? 'PASS  ' : 'FAIL  ') + page.padEnd(34) + ' n=' + String(row.nodes).padStart(5) + ' drawn=' + String(row.drawn).padStart(5) + ' boot=' + String(row.boot_ms).padStart(6) + ' settle=' + String(row.settle_ms).padStart(6) +
+  console.log((ok ? 'PASS  ' : 'FAIL  ') + pageKey.padEnd(34) + ' n=' + String(row.nodes).padStart(5) + ' drawn=' + String(row.drawn).padStart(5) + ' boot=' + String(row.boot_ms).padStart(6) + ' settle=' + String(row.settle_ms).padStart(6) +
     ' fps=' + String(row.fps).padStart(3) + ' draws=' + String(row.draws).padStart(6) + ' pick=' + pick.hits + '/' + pick.tries + ' tier=' + (tier && tier.static != null ? (tier.static ? 'static' : 'MOVED ' + tier.moved) : '—') + ' ink=' + ink + ' purity=' + pur + ' heap=' + row.heap_mb + 'MB');
   errs.slice(0, 5).forEach(e => console.log('        ' + e)); if (net.length) console.log('        NET: ' + net.slice(0, 3).join(' '));
   if (r10) console.log('        R10 word on the page: ' + r10); if (!drawnOk) console.log('        drawn ' + row.drawn + ' ≠ expected ' + (G.byTier ? G.byTier[G.tier] : G.feedNodes) + ' — a page that silently drops nodes');
@@ -138,9 +142,17 @@ function regenReadme() {
   const f = v => v == null ? '—' : (typeof v === 'number' ? (Number.isInteger(v) ? v.toLocaleString('en-US') : v) : String(v));
   const lines = ['| page | lib | feed · scale | nodes → drawn | boot ms | 1st frame | settle | fps* | frame ms | draws | tris | pick | tier | heap MB | bundle KB (station+vendor) | purity k10 | offline | errors | matrix |', '|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---|---|---|'];
   for (const r of all) { const mx = r.matrix || []; const c = s => mx.filter(m => m.state === s).length;
-    lines.push('| ' + [r.page.replace('.html', '') + (r.ok ? '' : ' ✗'), r.lib || '—', r.feed + ' · ' + r.scale + (r.layout === 'baked' ? ' · baked' : ''), f(r.nodes) + ' → ' + f(r.drawn) + (r.drawn_ok ? '' : ' ✗'), f(r.boot_ms), f(r.first_frame_ms), r.settled ? f(r.settle_ms) : 'never', f(r.fps), f(r.frame_ms), f(r.draws), f(r.tris),
+    lines.push('| ' + [r.page.replace('.html', '') + (r.ok ? '' : ' ✗'), r.lib || '—', r.feed + ' · ' + r.scale + (r.layout === 'baked' ? ' · baked' : ''), f(r.nodes) + ' → ' + f(r.drawn) + (r.drawn_ok ? '' : ' ✗'), f(r.boot_ms), f(r.first_frame_ms), r.settled ? (f(r.settle_ms) + (r.ticks != null ? ' (' + r.ticks + ' ticks)' : '')) : (r.settle_note ? ('>' + Math.round(+((/within (\d+)/.exec(r.settle_note) || [0, 0])[1]) / 1000) + ' s' + (r.ticks != null ? ' at tick ' + r.ticks : '')) : 'never (probe timeout)'), f(r.fps), f(r.frame_ms), f(r.draws), f(r.tris),
       r.pick && r.pick.tries ? r.pick.hits + '/' + r.pick.tries + ' · ' + r.pick.ms + ' ms' : '—', r.tier && r.tier.static != null ? (r.tier.static ? 'static' : 'MOVED ' + r.tier.moved) + ' · ' + r.tier.down_ms + '/' + r.tier.up_ms + ' ms' : '—', f(r.heap_mb),
       r.bundle ? Math.round((r.bundle.station + r.bundle.vendor) / 1024).toLocaleString('en-US') + ' (' + Math.round(r.bundle.station / 1024) + '+' + Math.round(r.bundle.vendor / 1024) + ')' : '—', f(r.purity), r.offline ? 'yes' : 'NET ✗', (r.errs || []).length ? (r.errs.length + ' ✗') : '0', mx.length ? c('free') + ' free · ' + c('built') + ' built · ' + c('lost') + ' lost' : '—'].join(' | ') + ' |'); }
+  // the must-survive MATRIX: every page's checklist claims side by side (free · built · lost · na), one row per label
+  const pagesM = all.filter(r => r.matrix && r.matrix.length && /^lab-/.test(r.page)).filter((r, i, a) => a.findIndex(x => x.page === r.page) === i);   // the adapter check is not a page
+  const labels = []; pagesM.forEach(r => r.matrix.forEach(m => { if (!labels.includes(m.row)) labels.push(m.row); }));
+  const sym = { free: '●', built: '◐', lost: '✗', na: '—' };
+  const mrows = ['| row | ' + pagesM.map(r => r.page.replace('.html', '').replace('-baseline-3d-force-graph', '').replace('-three-raw', ' raw').replace('?hollow=1', ' hollow')).join(' | ') + ' |', '|---|' + pagesM.map(() => ':---:').join('|') + '|']
+    .concat(labels.map(l => '| ' + l + ' | ' + pagesM.map(r => { const m = r.matrix.find(x => x.row === l); return m ? '<span title="' + String(m.how || '').replace(/"/g, '&quot;') + '">' + (sym[m.state] || m.state) + '</span>' : '·'; }).join(' | ') + ' |'));
+  const mblock = '<!-- matrix:start -->\n_● free (the library gives it) · ◐ built (ours on top of it) · ✗ lost (not achievable without a custom program) · — not in scope for the page; hover a cell for how._\n\n' + mrows.join('\n') + '\n<!-- matrix:end -->';
+  if (/<!-- matrix:start -->[\s\S]*<!-- matrix:end -->/.test(md)) md = md.replace(/<!-- matrix:start -->[\s\S]*<!-- matrix:end -->/, mblock); else md += '\n\n' + mblock + '\n';
   const block = '<!-- probe:start -->\n_Regenerated by probe.mjs on this host (WSL2 · Chrome + swiftshader, **no GPU**: fps* is a CPU-rasteriser floor and a RANK, never a rating; draw calls and purity are the deciding columns)._\n\n' + lines.join('\n') + '\n<!-- probe:end -->';
   if (/<!-- probe:start -->[\s\S]*<!-- probe:end -->/.test(md)) md = md.replace(/<!-- probe:start -->[\s\S]*<!-- probe:end -->/, block); else md += '\n\n' + block + '\n';
   fs.writeFileSync(rd, md);

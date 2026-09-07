@@ -1,0 +1,91 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>lab-04 — @cosmos.gl/graph 3.4.1 as the GPU LAYOUT, lab-01's renderer draws</title>
+<link rel="stylesheet" href="./lab.css">
+<div id="g"></div>
+<div id="cosmos" style="position:absolute;left:-4000px;top:0;width:1024px;height:1024px"></div>
+<div class="lab-tip" id="tip"></div>
+<div class="lab-card" id="card"></div>
+<div class="lab-knobs" id="knobs"></div>
+<div class="lab-legend"><b>lab-04 · cosmos.gl as the layout engine</b>
+  <code>@cosmos.gl/graph</code> (MIT — never <code>@cosmograph/cosmos</code>, CC-BY-NC at the same version) runs the force simulation IN SHADERS with a real
+  <b>cluster force</b>: every node is pinned to its entity's cluster (<code>setPointClusters</code>) whose centre is the adapter's anchor
+  (<code>setClusterPositions</code>). Each tick <code>getPointPositions()</code> is harvested (2D; z = the sub-layer band) and the SAME instanced three renderer
+  as lab-01 draws (<code>three-view.js</code>). Under swiftshader the "GPU" sim is CPU-emulated — its tick cost here is not the GPU's.<br>
+  <code>?ticks=N</code> caps the simulation (default 120 — cosmos ticks once per ITS render frame, ~0.6/s under swiftshader) · cluster centres on a RING (a 2D anchor set; the adapter's x-line collapses a 2D force) · <code>?cluster=0.6</code> the cluster force · the purity column compares it with the bake and the d3 lane.
+</div>
+<script src="./feed-loader.js"></script>
+<script src="../../../../templates/center/shell/assets/3d-bundle.js"></script>
+<script src="../../../../templates/center/shell/assets/graph-grammar.js"></script>
+<script src="./vendor/cosmos-graph.umd.min.js"></script>
+<script src="./adapter.js"></script>
+<script src="./scorecard.js"></script>
+<script src="./three-kit.js"></script>
+<script src="./three-view.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.GABE_FEED;
+  if (!F) { document.body.insertAdjacentHTML('beforeend', '<pre style="color:#f88;position:absolute;left:340px;top:14px">' + (window.GABE_FEED_ERR || 'no feed') + '</pre>'); LAB.ready({ err: [window.GABE_FEED_ERR || 'no feed'] }); return; }
+  var CG = window.Cosmos && (window.Cosmos.Graph || window.Cosmos);
+  if (typeof CG !== 'function') { LAB.ready({ err: ['Cosmos.Graph global missing'] }); return; }
+  var TICKS = +LAB.qs('ticks', '120'), CLUSTER = +LAB.qs('cluster', '0.6'), PARTICLES = LAB.qs('particles', '1') === '1', LABELS = LAB.qs('labels', '1') === '1';
+  var nodes = F.nodes, links = F.links, N = nodes.length, idx = Object.create(null); nodes.forEach(function (n, i) { idx[n.id] = i; });
+  LAB.mark('boot_ms');
+  document.getElementById('knobs').innerHTML = [['ticks=120', TICKS === 120], ['cluster=0.6', CLUSTER === 0.6], ['layout=baked', F.layout === 'baked'], ['scale=x4', F.scale === 'x4'], ['feed=onyx', F.fixture === 'onyx']]
+    .map(function (k) { var u = new URL(location.href), kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : kv[0] === 'layout' ? 'live' : kv[0] === 'scale' ? 'full' : kv[1]) : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
+  F.seedPositions(1); var BAKED = F.layout === 'baked';
+  var LZ = { endpoints: 75, api: 30, web: 75, data: -75 };
+  nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.bx; n.y = n.by; n.z = n.bz; } else { n.x = n.sx; n.y = n.sy; n.z = LZ[n.sub] || 0; } });
+  var V = TV.create(F, { labels: LABELS, particles: PARTICLES });
+
+  /* ── cosmos: the space is [0, SPACE]; the adapter's world is ~±600 → one scale factor both ways ───────────────── */
+  var SPACE = 4096, K = SPACE / 1800, tick = 0, harvested = false, t0 = performance.now(), graph = null;
+  function toSpace(v) { return v * K + SPACE / 2; } function fromSpace(v) { return (v - SPACE / 2) / K; }
+  if (!BAKED) {
+    var ents = F.ents, entIdx = Object.create(null); ents.forEach(function (e, i) { entIdx[e] = i; });
+    var pos = new Float32Array(N * 2); nodes.forEach(function (n, i) { pos[i * 2] = toSpace(n.x); pos[i * 2 + 1] = toSpace(n.y); });
+    var lk = []; links.forEach(function (l) { var a = idx[l.source], b = idx[l.target]; if (a != null && b != null) lk.push(a, b); });
+    var clusters = new Float32Array(N); nodes.forEach(function (n, i) { clusters[i] = entIdx[n.ent]; });
+    /* the adapter's anchors are an x-LINE (EX band, EY = EZ = 0): the 3D law spreads each entity radially, but a 2D cluster force collapses onto the line → the
+       cosmos page places its cluster centres on a RING (radius 380, the adapter's entity order) — a 2D anchor set, said here, not the 3D law */
+    var RING = 380, cpos = new Float32Array(ents.length * 2); ents.forEach(function (e, i) { var a = i * Math.PI * 2 / ents.length; cpos[i * 2] = toSpace(Math.cos(a) * RING); cpos[i * 2 + 1] = toSpace(Math.sin(a) * RING); });
+    nodes.forEach(function (n, i) { var a = entIdx[n.ent] * Math.PI * 2 / ents.length; pos[i * 2] = toSpace(Math.cos(a) * RING + (n.sx - (F.anchors.EX[n.ent] || 0))); pos[i * 2 + 1] = toSpace(Math.sin(a) * RING + n.sy); });   /* seeds re-centred on the ring anchor */
+    var cols = new Float32Array(N * 4); nodes.forEach(function (n, i) { var c = new THREE.Color(F.colorOf(n)); cols[i * 4] = c.r; cols[i * 4 + 1] = c.g; cols[i * 4 + 2] = c.b; cols[i * 4 + 3] = 1; });
+    try {
+      graph = new CG(document.getElementById('cosmos'), { spaceSize: SPACE, backgroundColor: '#0b0e13', enableSimulation: true, rescalePositions: false, fitViewOnInit: false, pointSize: 3,
+        simulationGravity: 0.02, simulationRepulsion: 0.8, simulationLinkSpring: 0.5, simulationLinkDistance: 6, simulationFriction: 0.85, simulationDecay: 800, simulationCluster: CLUSTER,
+        onSimulationTick: function (alpha) { tick++; harvested = false; if (tick >= TICKS) { try { graph.pause(); } catch (e) {} finish(); } },
+        onSimulationEnd: function () { finish(); } });
+      graph.setPointPositions(pos); graph.setLinks(new Float32Array(lk)); graph.setPointClusters(clusters); graph.setClusterPositions(cpos); graph.setPointColors(cols); graph.render(); graph.start(1);
+      LAB.note('layout_engine', '@cosmos.gl/graph 3.4.1 GPU sim · cluster force ' + CLUSTER + ' to the entity anchors · tick cap ' + TICKS);
+    } catch (e) { LAB.note('cosmos_error', String(e)); LAB.ready({ err: ['cosmos init: ' + e] }); return; }
+  } else { LAB.note('layout_engine', 'baked fdp (no sim)'); V.setSettled(); }
+  function harvest() { if (!graph) return false; var p = graph.getPointPositions(); if (!p || p.length < N * 2) return false; for (var i = 0; i < N; i++) { nodes[i].x = fromSpace(p[i * 2]); nodes[i].y = fromSpace(p[i * 2 + 1]); } harvested = true; return true; }
+  function finish() { if (V.isSettled()) return; harvest(); V.setSettled(); LAB.note('ticks_at_stop', tick); }
+  V.surface({ ticks: function () { return tick; } });
+  V.hud = function (i2) { LAB.hud({ nodes: V.G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'draw calls': i2.render.calls, tris: (i2.render.triangles / 1000).toFixed(0) + 'k', layout: V.isSettled() ? 'settled' : ('tick ' + tick + '/' + TICKS), engine: 'cosmos → three' }); };
+  V.run(function () { if (!V.isSettled() && graph && !harvested) return harvest(); return false; });
+  LAB.panel({ lib: '@cosmos.gl/graph 3.4.1 → three r185 raw', ver: 'GPU layout · lab-01\'s renderer', bundle: '701,405 B cosmos + the station\'s 3d-bundle.js', license: 'MIT (+ MIT)', role: 'THE GPU-LAYOUT OPTION',
+    checklist: [
+      ['entity + sub-cluster hulls', 'built', 'three-view.js (ConvexGeometry per entity + sub)'],
+      ['anchored deterministic layout', 'built', 'cosmos cluster force to RING anchors (setPointClusters + setClusterPositions — the adapter\'s x-line anchors collapse a 2D force onto a band); the sub rings and the kind rings (KRADF) are NOT expressible — a cluster is one centre'],
+      ['composed node: glyph + badges + bubble + label', 'built', 'three-view.js — cosmos itself draws points only (its canvas sits off-screen)'],
+      ['badge slots A/B', 'built', 'three-view.js'],
+      ['7 typed wires with dash', 'built', 'three-view.js'],
+      ['directional particles', 'built', 'three-view.js'],
+      ['heat gradients (d2w / fed2w)', 'built', 'three-view.js'],
+      ['node picking → card', 'built', 'three-view.js colour-id'],
+      ['link picking → wire card', 'built', 'three-view.js colour-id'],
+      ['visibility without relayout (tier press)', 'built', 'three-view.js; the cosmos sim is paused after the tick cap'],
+      ['tiers T0–T3', 'built', 'setTier(t) over the adapter\'s tier field'],
+      ['GPU simulation off the main thread', 'free', 'the force pass runs in shaders (CPU-emulated under swiftshader — the tick cost here is NOT the GPU\'s)'],
+      ['depth highlight · journeys · search · legend · Sources rows', 'na', 'station chrome — deliberately absent from every lab page'],
+      ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it'],
+      ['file:// · no network', 'free', 'one UMD; cosmos fetches nothing'],
+      ['headless provable', 'free', 'WebGL2 under swiftshader (two contexts: cosmos + three)'],
+      ['probe surface', 'built', 'LABG registered']],
+    verdict: 'One question: does a real cluster force beat the bake (0.994) and the d3 lane (0.60) on k=10 entity purity at the same node count? The purity column answers it; everything else is lab-01\'s.' });
+  setTimeout(function () { LAB.ready({ nodes: N, links: links.length, drawn: V.G.visible(), tier: V.tier() }); }, 2500);
+})();
+</script>

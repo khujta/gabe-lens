@@ -8,15 +8,17 @@
   "layout": "live",
   "tier": null,
   "ok": true,
-  "wall_ms": 425,
-  "nodes": null,
-  "links": null,
+  "wall_ms": 475,
+  "nodes": 1351,
+  "links": 4053,
   "drawn": null,
   "drawn_ok": true,
   "boot_ms": null,
   "first_frame_ms": null,
   "settle_ms": null,
   "settled": true,
+  "ticks": null,
+  "settle_note": null,
   "fps": null,
   "frame_ms": null,
   "draws": null,
@@ -31,12 +33,12 @@
    "unpositioned": 0,
    "ms": null
   },
-  "heap_mb": 10.5,
+  "heap_mb": 6.4,
   "bundle": {
    "station": 25390,
    "vendor": 0,
-   "feed": 2354596,
-   "lab": 34070
+   "feed": 1216106,
+   "lab": 34525
   },
   "ink": null,
   "r10": null,
@@ -59,7 +61,7 @@
    {
     "row": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
     "state": "free",
-    "how": "1632 vs 1632 (L2 307 · fe 1077 · absorbed 33 · fn 281)"
+    "how": "1351 vs 1351 (L2 307 · fe 1077 · absorbed 33 · fn 0)"
    },
    {
     "row": "unknown kind kept, never dropped",
@@ -110,7 +112,7 @@
      {
       "name": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
       "ok": true,
-      "detail": "1632 vs 1632 (L2 307 · fe 1077 · absorbed 33 · fn 281)"
+      "detail": "1351 vs 1351 (L2 307 · fe 1077 · absorbed 33 · fn 0)"
      },
      {
       "name": "unknown kind kept, never dropped",
@@ -144,8 +146,8 @@
      }
     ],
     "counts": {
-     "nodes": 1632,
-     "links": 4767,
+     "nodes": 1351,
+     "links": 4053,
      "ents": 20,
      "byKind": {
       "endpoint": 81,
@@ -161,29 +163,1076 @@
       "store": 5,
       "type": 508,
       "hook": 83,
-      "route": 22,
-      "function": 281
+      "route": 22
      },
      "byTier": [
       197,
       430,
-      992,
-      1632
+      711,
+      1351
      ],
      "fe": 1077,
      "absorbed": 33,
      "generic": 0,
-     "fn": 281,
+     "fn": 0,
      "cross": 343,
      "feLinks": 3228,
-     "droppedLinks": 14,
-     "unknownRels": {
-      "returns": 16,
-      "takes": 16
-     }
+     "droppedLinks": 0,
+     "unknownRels": {}
     },
     "warnings": []
    }
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-00-baseline-3d-force-graph.html",
+  "lib": "3d-force-graph 1.80 + three r185",
+  "ver": "the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 48,
+   "up_ms": 56,
+   "visible_t0": 197,
+   "visible_t3": 1351,
+   "moved": 0,
+   "n": 1351,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 169474,
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 1351,
+  "drawn_ok": true,
+  "boot_ms": 2.2,
+  "first_frame_ms": 959.4,
+  "settle_ms": null,
+  "settled": false,
+  "fps": 1,
+  "frame_ms": 1675.6,
+  "draws": 11530,
+  "tris": 2330306,
+  "geos": 6810,
+  "texs": 1981,
+  "pick": {
+   "tries": 20,
+   "hits": 10,
+   "other": 10,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 4.02
+  },
+  "heap_mb": 234.4,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 0,
+   "feed": 1216106,
+   "lab": 57911
+  },
+  "ink": 0.6486,
+  "r10": null,
+  "injected": null,
+  "purity": 0.597,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "free",
+    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "free",
+    "how": "a Group of 5–7 Object3Ds per node (nodeThreeObject)"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "free",
+    "how": "canvas sprites per node"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "one Line per link rebuilt every 3rd tick (LineDashedMaterial)"
+   },
+   {
+    "row": "directional particles",
+    "state": "free",
+    "how": "linkDirectionalParticles (wrapper) on cross links — but the wrapper links are HIDDEN when typed wires are on (?conns=0 to see them)"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "bandOf(l) → wire end colours"
+   },
+   {
+    "row": "node picking → card",
+    "state": "free",
+    "how": "the wrapper's raycast (Raycaster over every node Group)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "Raycaster over the typed wires (threshold 3)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "plain <script src>, the station's bundle"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "mode": "full",
+   "particles": true,
+   "conns": true
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-00-baseline-3d-force-graph.html?hollow=1",
+  "lib": "3d-force-graph 1.80 + three r185 (hollow)",
+  "ver": "the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 9.1,
+   "up_ms": 12.5,
+   "visible_t0": 197,
+   "visible_t3": 1351,
+   "moved": 0,
+   "n": 1351,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 61302,
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 1351,
+  "drawn_ok": true,
+  "boot_ms": 2.8,
+  "first_frame_ms": 350.9,
+  "settle_ms": null,
+  "settled": false,
+  "fps": 2,
+  "frame_ms": 515.9,
+  "draws": 130,
+  "tris": 352166,
+  "geos": 65,
+  "texs": 22,
+  "pick": {
+   "tries": 20,
+   "hits": 19,
+   "other": 1,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 665.93
+  },
+  "heap_mb": 37.3,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 0,
+   "feed": 1216106,
+   "lab": 57911
+  },
+  "ink": 0.646,
+  "r10": null,
+  "injected": null,
+  "purity": 0.599,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub, recomputed every 3rd tick (the station's way)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "free",
+    "how": "d3Force('layer', zForce) — the adapter's port of the station force; seeds shared"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "instanced layers: 1 draw call per form/badge atlas/label atlas"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "built",
+    "how": "one atlas InstancedMesh"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "one LineSegments per kind (LineDashedMaterial)"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "one Points layer on cross links"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "bandOf(l) → wire end colours"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "colour-id pass over the glyph layers"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "Raycaster over the typed wires (threshold 3)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "nodeVisibility/linkVisibility re-evaluated; no reheat"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "plain <script src>, the station's bundle"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "mode": "hollow",
+   "particles": true,
+   "conns": true
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-01-three-raw.html",
+  "lib": "three.js r185 raw",
+  "ver": "no wrapper · the station's own 3d-bundle.js",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 31.8,
+   "up_ms": 69.2,
+   "visible_t0": 197,
+   "visible_t3": 1351,
+   "moved": 0,
+   "n": 1351,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 32783,
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 1351,
+  "drawn_ok": true,
+  "boot_ms": 6.2,
+  "first_frame_ms": 932.8,
+  "settle_ms": 4301.6,
+  "settled": true,
+  "ticks": 240,
+  "settle_note": null,
+  "fps": 6,
+  "frame_ms": 166.83,
+  "draws": 130,
+  "tris": 352382,
+  "geos": 65,
+  "texs": 22,
+  "pick": {
+   "tries": 20,
+   "hits": 16,
+   "other": 4,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 647.67
+  },
+  "heap_mb": 19.2,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 31161,
+   "feed": 1216106,
+   "lab": 72050
+  },
+  "ink": 0.5415,
+  "r10": null,
+  "injected": null,
+  "purity": 0.599,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "ConvexGeometry per entity + sub (every 3rd tick while settling, then static)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "d3-force-3d + zForce in a Blob worker; ?layout=baked = fdp positions, no sim"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "one InstancedMesh per form · one atlas layer for badges · one sphere layer · one label atlas layer"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "built",
+    "how": "atlas quads: slot A lower-right, slot B upper-right"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "one LineSegments per CONN kind, LineDashedMaterial with lineDistance rewritten per update"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "one Points layer along the cross links"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "bandOf(l) → per-vertex end colours"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "colour-id pass over the glyph layers with the wires hidden (1×1 readback)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "a second colour-id pass over the wire LineSegments alone (1 px lines — no hover tolerance yet)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "built",
+    "how": "zero-scale instances + wire visibility; positions untouched"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "walk mode (?walk=1)",
+    "state": "na",
+    "how": "pointer lock + WASD/QE, capsule vs the buildings"
+   },
+   {
+    "row": "GLB fleets (?ships=1)",
+    "state": "na",
+    "how": "NOT BUILT YET — the stretch row (one InstancedMesh per GLB)"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "built",
+    "how": "the worker is a Blob URL that importScripts() the vendored d3 UMDs"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "layout_thread": "blob worker + importScripts(file:// d3 UMDs)",
+   "ticks_at_stop": 240
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-02-sigma.html",
+  "lib": "sigma.js 3.0.3 + graphology 0.26",
+  "ver": "WebGL2 · instanced programs",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 9,
+   "up_ms": 11.6,
+   "visible_t0": 197,
+   "visible_t3": 1351,
+   "moved": 0,
+   "n": 1351,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 21255,
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 1351,
+  "drawn_ok": true,
+  "boot_ms": 0.9,
+  "first_frame_ms": 1232.6,
+  "settle_ms": 1127.1,
+  "settled": true,
+  "ticks": null,
+  "settle_note": null,
+  "fps": 7,
+  "frame_ms": 152.27,
+  "draws": 4,
+  "tris": null,
+  "geos": null,
+  "texs": null,
+  "pick": {
+   "tries": 20,
+   "hits": 20,
+   "other": 0,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 281.45
+  },
+  "heap_mb": 41.1,
+  "bundle": {
+   "station": 25390,
+   "vendor": 461118,
+   "feed": 1216106,
+   "lab": 34525
+  },
+  "ink": 0.9045,
+  "r10": null,
+  "injected": null,
+  "purity": 0.525,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "our overlay canvas: convex hulls cached in graph space, projected per camera update (no grouping primitive in sigma)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "?layout=live = d3-force-3d in 2D + the adapter's zForce (the SAME law as lab-01); ?layout=fa2 = sigma's own FA2 (no anchors)"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "lost",
+    "how": "core ships circle/point programs only; a glyph roster needs @sigma/node-square/image bundles or a custom GLSL NodeProgram"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "lost",
+    "how": "no node composition; a badge would be a second node or a custom program"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "lost",
+    "how": "edge colour per kind (and the heat band) draws; dash/dotted/longdash need a custom EdgeProgram"
+   },
+   {
+    "row": "directional particles",
+    "state": "lost",
+    "how": "no per-edge animation primitive"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "the band colours the whole edge (no per-end gradient in the core edge program)"
+   },
+   {
+    "row": "node picking → card",
+    "state": "free",
+    "how": "enterNode/clickNode + getNodeAtPosition from sigma's pick buffer (the probe uses the same call; a viewport scan is the fallback)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "free",
+    "how": "clickEdge (enableEdgeEvents); the probe pick is our segment scan"
+   },
+   {
+    "row": "label collision",
+    "state": "free",
+    "how": "labelDensity + labelGridCellSize — the built-in de-collider, the reason this page exists"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "nodeReducer/edgeReducer hide; refresh() never relays out"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; sigma draws a circle in the generic grey"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "three UMDs, no worker, no wasm (the FA2 worker build would need a Blob URL — the sync assign() is used)"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL2 under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "layout_engine": "d3-force-3d in 2D + zForce, 240 ticks on-thread",
+   "label_grid": "labelDensity 0.22 · cell 70"
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-03-cytoscape.html",
+  "lib": "cytoscape.js 3.34.2 (canvas)",
+  "ver": "fcose 2.2 at core only",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 30.6,
+   "up_ms": 27.8,
+   "visible_t0": 197,
+   "visible_t3": 1351,
+   "moved": 0,
+   "n": 1351,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 64962,
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 1351,
+  "drawn_ok": true,
+  "boot_ms": 0.7,
+  "first_frame_ms": 3460.4,
+  "settle_ms": 1147.8,
+  "settled": true,
+  "ticks": null,
+  "settle_note": null,
+  "fps": 1,
+  "frame_ms": 1812,
+  "draws": null,
+  "tris": null,
+  "geos": null,
+  "texs": null,
+  "pick": {
+   "tries": 20,
+   "hits": 20,
+   "other": 0,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 3.23
+  },
+  "heap_mb": 107.8,
+  "bundle": {
+   "station": 25390,
+   "vendor": 790767,
+   "feed": 1216106,
+   "lab": 34525
+  },
+  "ink": 0.8608,
+  "r10": null,
+  "injected": null,
+  "purity": 0.525,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "free",
+    "how": "compound parents (entity > sub): containment is data the stylesheet paints and every layout respects"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "preset from d3-force-3d 2D + zForce (the SAME law as lab-01) or the fdp bake; fcose only at core"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "shape by selector (ellipse · rectangle · barrel · diamond · triangle · star · hexagon · vee); the bubble is the endpoint ring border"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "built",
+    "how": "layered background-image data-URI discs at 100%/100% and 100%/0%"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "line-style + line-dash-pattern per kind on the canvas renderer"
+   },
+   {
+    "row": "directional particles",
+    "state": "lost",
+    "how": "no per-edge animation primitive (a per-frame style write would repaint the scene)"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "line-fill linear-gradient with the band colour (canvas only)"
+   },
+   {
+    "row": "node picking → card",
+    "state": "free",
+    "how": "tap/mouseover on the element model; the probe uses a rendered-position scan"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "free",
+    "how": "tap on edges (haystack/straight); the probe uses a segment scan"
+   },
+   {
+    "row": "label collision",
+    "state": "lost",
+    "how": "no solver — min-zoomed-font-size is the only LOD"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "free",
+    "how": "display:none by class inside cy.batch(); positions untouched"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "query algebra",
+    "state": "free",
+    "how": "selectors + collections + BFS/dijkstra on the same object (not exercised here)"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic shape is an ellipse"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "four UMDs, no worker, no wasm"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "Canvas2D under swiftshader (WebGL preview with ?webgl=1)"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "layout_engine": "d3-force-3d in 2D + zForce, 240 ticks on-thread, then preset"
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-04-cosmos-layout-three.html",
+  "lib": "@cosmos.gl/graph 3.4.1 → three r185 raw",
+  "ver": "GPU layout · lab-01's renderer",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 8.1,
+   "up_ms": 22.3,
+   "visible_t0": 197,
+   "visible_t3": 1351,
+   "moved": 0,
+   "n": 1351,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 60696,
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 1351,
+  "drawn_ok": true,
+  "boot_ms": 1.9,
+  "first_frame_ms": 1065,
+  "settle_ms": null,
+  "settled": false,
+  "ticks": 91,
+  "settle_note": "not settled within 400000 ms (tick 91)",
+  "fps": 3,
+  "frame_ms": 316.2,
+  "draws": 130,
+  "tris": 349582,
+  "geos": 65,
+  "texs": 22,
+  "pick": {
+   "tries": 20,
+   "hits": 14,
+   "other": 6,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": 530.87
+  },
+  "heap_mb": 23.5,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 701405,
+   "feed": 1216106,
+   "lab": 72050
+  },
+  "ink": 0.5672,
+  "r10": null,
+  "injected": null,
+  "purity": 0.93,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "three-view.js (ConvexGeometry per entity + sub)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "cosmos cluster force to RING anchors (setPointClusters + setClusterPositions — the adapter's x-line anchors collapse a 2D force onto a band); the sub rings and the kind rings (KRADF) are NOT expressible — a cluster is one centre"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "three-view.js — cosmos itself draws points only (its canvas sits off-screen)"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "built",
+    "how": "three-view.js"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "three-view.js"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "three-view.js"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "three-view.js"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "three-view.js colour-id"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "three-view.js colour-id"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "built",
+    "how": "three-view.js; the cosmos sim is paused after the tick cap"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "GPU simulation off the main thread",
+    "state": "free",
+    "how": "the force pass runs in shaders (CPU-emulated under swiftshader — the tick cost here is NOT the GPU's)"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "one UMD; cosmos fetches nothing"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL2 under swiftshader (two contexts: cosmos + three)"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "layout_engine": "@cosmos.gl/graph 3.4.1 GPU sim · cluster force 0.6 to the entity anchors · tick cap 120"
+  },
+  "warnings": [],
+  "baked": null
+ },
+ {
+  "page": "lab-05-babylon-spike.html",
+  "lib": "Babylon.js 9.25",
+  "ver": "thin instances · GreasedLine · GPUPicker available",
+  "feed": "example",
+  "scale": "full",
+  "layout": "live",
+  "tier": {
+   "down_ms": 22.3,
+   "up_ms": 33.2,
+   "visible_t0": 197,
+   "visible_t3": 1351,
+   "moved": 0,
+   "n": 1351,
+   "static": true
+  },
+  "ok": true,
+  "wall_ms": 26504,
+  "nodes": 1351,
+  "links": 4053,
+  "drawn": 1351,
+  "drawn_ok": true,
+  "boot_ms": 1,
+  "first_frame_ms": 386.9,
+  "settle_ms": 4044.1,
+  "settled": true,
+  "ticks": 240,
+  "settle_note": null,
+  "fps": 3,
+  "frame_ms": 312.93,
+  "draws": 62,
+  "tris": null,
+  "geos": 62,
+  "texs": 66,
+  "pick": {
+   "tries": 20,
+   "hits": 14,
+   "other": 4,
+   "none": 2,
+   "unpositioned": 0,
+   "ms": 0.86
+  },
+  "heap_mb": 91.1,
+  "bundle": {
+   "station": 1662427,
+   "vendor": 8348052,
+   "feed": 1216106,
+   "lab": 34525
+  },
+  "ink": 0.651,
+  "r10": null,
+  "injected": null,
+  "purity": 0.599,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "entity + sub-cluster hulls",
+    "state": "built",
+    "how": "a mesh per entity + sub from three's ConvexGeometry math (Babylon ships no convex hull / marching cubes)"
+   },
+   {
+    "row": "anchored deterministic layout",
+    "state": "built",
+    "how": "the same Blob-worker d3-force-3d + zForce as lab-01"
+   },
+   {
+    "row": "composed node: glyph + badges + bubble + label",
+    "state": "built",
+    "how": "glyph forms as thin instances (per-instance colour) + a thin-instanced bubble; badges and labels are OUT of the spike (custom ShaderMaterial + per-instance attribute each)"
+   },
+   {
+    "row": "badge slots A/B",
+    "state": "lost",
+    "how": "not in the spike (D4) — a thin-instanced atlas quad needs a custom ShaderMaterial"
+   },
+   {
+    "row": "7 typed wires with dash",
+    "state": "built",
+    "how": "one GreasedLine per CONN kind: useDash + dashCount/dashRatio (a ratio per line, not world units), per-point colour"
+   },
+   {
+    "row": "directional particles",
+    "state": "built",
+    "how": "a thin-instanced dot per cross link"
+   },
+   {
+    "row": "heat gradients (d2w / fed2w)",
+    "state": "built",
+    "how": "per-point colours on the GreasedLine"
+   },
+   {
+    "row": "node picking → card",
+    "state": "built",
+    "how": "scene.pick over thin instances (thinInstanceEnablePicking; CPU ray — GPUPicker is async and left as a note)"
+   },
+   {
+    "row": "link picking → wire card",
+    "state": "built",
+    "how": "scene.pick on the GreasedLine ribbon (faceId → segment)"
+   },
+   {
+    "row": "visibility without relayout (tier press)",
+    "state": "built",
+    "how": "zero-scale thin instances + wires rebuilt; positions untouched"
+   },
+   {
+    "row": "tiers T0–T3",
+    "state": "built",
+    "how": "setTier(t) over the adapter's tier field"
+   },
+   {
+    "row": "walk mode (?walk=1)",
+    "state": "na",
+    "how": "UniversalCamera + checkCollisions against invisible cluster spheres (ellipsoid 6)"
+   },
+   {
+    "row": "labels",
+    "state": "lost",
+    "how": "not in the spike — a DynamicTexture atlas + thin-instanced quads with a custom material"
+   },
+   {
+    "row": "depth highlight · journeys · search · legend · Sources rows",
+    "state": "na",
+    "how": "station chrome — deliberately absent from every lab page"
+   },
+   {
+    "row": "honest-empty · unknown kind drawn",
+    "state": "free",
+    "how": "the adapter keeps it; the generic form is a sphere"
+   },
+   {
+    "row": "file:// · no network",
+    "state": "free",
+    "how": "one 8.3 MB UMD, no wasm, no fetch (Havok would need an inlined wasm — out by D4)"
+   },
+   {
+    "row": "headless provable",
+    "state": "free",
+    "how": "WebGL2 under swiftshader"
+   },
+   {
+    "row": "probe surface",
+    "state": "built",
+    "how": "LABG registered"
+   }
+  ],
+  "notes": {
+   "layout_thread": "blob worker + importScripts(file:// d3 UMDs) — the same law as lab-01",
+   "ticks_at_stop": 240
   },
   "warnings": [],
   "baked": null

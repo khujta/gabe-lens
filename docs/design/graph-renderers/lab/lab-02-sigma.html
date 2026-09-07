@@ -1,0 +1,136 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>lab-02 — sigma.js 3.0.3 + graphology (2D WebGL, the label answer)</title>
+<link rel="stylesheet" href="./lab.css">
+<div id="g"></div>
+<canvas id="hulls" style="position:absolute;inset:0;pointer-events:none;z-index:5"></canvas>
+<div class="lab-tip" id="tip"></div>
+<div class="lab-card" id="card"></div>
+<div class="lab-knobs" id="knobs"></div>
+<div class="lab-legend"><b>lab-02 · sigma.js v3 (2D WebGL)</b>
+  Instanced node/edge programs and a <b>built-in label collision grid</b> — the one thing no other page gets free. Entity + sub-cluster
+  hulls are OUR overlay canvas (convex hulls cached in graph space, projected through <code>graphToViewport</code> on every camera update).
+  Glyph roster, badge slots, dash styles and particles are NOT in the core library (each needs a custom GLSL program or a separate @sigma/node-* bundle) — recorded as lost.<br>
+  Layout: <code>?layout=live</code> = d3-force-3d in 2D + the adapter's zForce (the SAME law as lab-01) · <code>?layout=fa2</code> = sigma's own ForceAtlas2 (no entity anchors) · <code>?layout=baked</code> = fdp.
+</div>
+<script src="./feed-loader.js"></script>
+<script src="../../../../templates/center/shell/assets/graph-grammar.js"></script>
+<script src="./vendor/d3-dispatch.min.js"></script><script src="./vendor/d3-timer.min.js"></script><script src="./vendor/d3-binarytree.min.js"></script>
+<script src="./vendor/d3-quadtree.min.js"></script><script src="./vendor/d3-octree.min.js"></script><script src="./vendor/d3-force-3d.min.js"></script>
+<script src="./vendor/graphology.umd.min.js"></script>
+<script src="./vendor/graphology-library.min.js"></script>
+<script src="./vendor/sigma.min.js"></script>
+<script src="./adapter.js"></script>
+<script src="./scorecard.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.GABE_FEED;
+  if (!F) { document.body.insertAdjacentHTML('beforeend', '<pre style="color:#f88;position:absolute;left:340px;top:14px">' + (window.GABE_FEED_ERR || 'no feed') + '</pre>'); LAB.ready({ err: [window.GABE_FEED_ERR || 'no feed'] }); return; }
+  var SigmaCls = (window.Sigma && (window.Sigma.Sigma || window.Sigma.default)) || window.Sigma;
+  var GraphCls = window.graphology && (window.graphology.Graph || window.graphology.default || window.graphology);
+  var FA2 = window.graphologyLibrary && window.graphologyLibrary.layoutForceAtlas2;
+  if (typeof SigmaCls !== 'function' || typeof GraphCls !== 'function') { LAB.ready({ err: ['sigma/graphology globals missing (Sigma=' + typeof SigmaCls + ', graphology=' + typeof GraphCls + ')'] }); return; }
+  var LAYOUT = LAB.qs('layout', 'live'), REDRAW = LAB.qs('redraw', '1') === '1', TIER = F.tier, nodes = F.nodes, links = F.links, byId = F.byId, N = nodes.length;
+  LAB.mark('boot_ms');
+  document.getElementById('knobs').innerHTML = [['layout=live', LAYOUT === 'live'], ['layout=fa2', LAYOUT === 'fa2'], ['layout=baked', LAYOUT === 'baked'], ['scale=x4', F.scale === 'x4'], ['feed=onyx', F.fixture === 'onyx'], ['fn=1', F.opts.fn]]
+    .map(function (k) { var u = new URL(location.href), kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : kv[0] === 'layout' ? 'live' : kv[0] === 'scale' ? 'full' : '0') : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
+
+  /* ── positions: seeds · the bake · d3 2D + zForce · sigma's FA2 ─────────────────────────────────────────────── */
+  F.seedPositions(1); var BAKED = F.layout === 'baked';
+  nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.bx; n.y = n.by; } else { n.x = n.sx; n.y = n.sy; } });
+  var SIZE = { endpoint: 4.2, model: 4.6, schema: 3.0, web: 4.0, external: 3.4, element: 3.2, middleware: 3.2, flag: 2.8, provider: 3.4, component: 3.2, hook: 3.2, store: 3.8, route: 3.6, module: 2.8, type: 2.2, 'function': 2.6 };
+  var settleMs = null, t0 = performance.now();
+  if (!BAKED && LAYOUT !== 'fa2') {   // the same law as lab-01, in 2D, on the main thread (2D pages have no worker precedent to keep fair; the cost is reported as settle)
+    var d3f = window.d3, sn = nodes.map(function (n, i) { return { i: i, x: n.x, y: n.y }; }), ls = []; links.forEach(function (l) { var a = F.byId[l.source], b = F.byId[l.target]; if (a && b) ls.push({ source: nodes.indexOf(a), target: nodes.indexOf(b) }); });
+    var idx = Object.create(null); nodes.forEach(function (n, i) { idx[n.id] = i; }); ls = []; links.forEach(function (l) { ls.push({ source: idx[l.source], target: idx[l.target] }); });
+    var force = F.force; force.__n = sn.map(function (s, i) { s.ent = nodes[i].ent; s.sub = nodes[i].sub; s.kind = nodes[i].kind; return s; });
+    var sim = d3f.forceSimulation(sn, 2).force('link', d3f.forceLink(ls).id(function (d) { return d.i; })).force('charge', d3f.forceManyBody().strength(-60).distanceMax(150)).force('center', d3f.forceCenter()).force('layer', force).alphaDecay(0.0228).stop();
+    for (var t = 0; t < 240; t++) sim.tick();
+    sn.forEach(function (s, i) { nodes[i].x = s.x; nodes[i].y = s.y; }); settleMs = performance.now() - t0;
+  }
+
+  /* ── the graph ─────────────────────────────────────────────────────────────────────────────────────────────── */
+  LAB.mark('build_ms');
+  var g = new GraphCls({ multi: true, type: 'directed' });
+  nodes.forEach(function (n) { g.addNode(n.id, { x: n.x, y: n.y, size: SIZE[n.kind] || 3, color: F.colorOf(n), label: n.label, hidden: n.tier > TIER }); });
+  var linkOf = []; links.forEach(function (l, li) { var cfg = F.conn[l.kind] || F.conn.calls, band = F.bandOf(l); try { var k = g.addEdge(l.source, l.target, { color: band ? band.color : cfg.color, size: l.cross ? 0.9 : 0.45, hidden: false, li: li }); linkOf.push(k); } catch (e) { linkOf.push(null); } });
+  if (LAYOUT === 'fa2' && !BAKED && FA2) { FA2.assign(g, { iterations: 220, settings: Object.assign({ barnesHutOptimize: true, gravity: 1.1, scalingRatio: 12, slowDown: 6, strongGravityMode: true }, FA2.inferSettings ? FA2.inferSettings(g) : {}) }); g.forEachNode(function (id, a) { var n = byId[id]; if (n) { n.x = a.x; n.y = a.y; } }); settleMs = performance.now() - t0; LAB.note('layout_engine', 'graphology-layout-forceatlas2 (sync, 220 it, no entity anchors)'); }
+  else LAB.note('layout_engine', BAKED ? 'baked fdp' : 'd3-force-3d in 2D + zForce, 240 ticks on-thread');
+  LAB.mark('build_done_ms');
+
+  /* ── the renderer ──────────────────────────────────────────────────────────────────────────────────────────── */
+  var host = document.getElementById('g'), draws = 0, drawsLast = 0;
+  var renderer = new SigmaCls(g, host, { renderEdgeLabels: false, defaultEdgeColor: '#2a3350', minEdgeThickness: 0.4, labelFont: 'Menlo, Consolas, ui-monospace, monospace', labelSize: 11, labelColor: { color: '#dfe4f2' },
+    labelDensity: 0.22, labelGridCellSize: 70, labelRenderedSizeThreshold: 6, zIndex: false, allowInvalidContainer: true, enableEdgeEvents: true, enableEdgeHoverEvents: true,
+    nodeReducer: function (id, a) { var n = byId[id]; return (n && n.tier > TIER) ? Object.assign({}, a, { hidden: true }) : a; },   /* a sigma reducer returns the FULL attribute object it wants drawn — never null */
+    edgeReducer: function (id, a) { var l = links[a.li]; if (!l) return a; var s = byId[l.source], t = byId[l.target]; return (s && t && s.tier <= TIER && t.tier <= TIER) ? a : Object.assign({}, a, { hidden: true }); } });
+  // draw-call counter: wrap the WebGL context sigma draws with (its programs call drawArrays/drawElements per program per frame)
+  (function () { try { var cs = renderer.getCanvases ? renderer.getCanvases() : {}; Object.keys(cs).forEach(function (k) { var c = cs[k], gl = c.getContext('webgl2') || c.getContext('webgl'); if (!gl || gl.__wrapped) return; gl.__wrapped = true; ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced'].forEach(function (fn) { var o = gl[fn]; if (typeof o !== 'function') return; gl[fn] = function () { draws++; return o.apply(gl, arguments); }; }); }); } catch (e) { LAB.note('draw_counter', 'unavailable: ' + e); } })();
+  var frames = 0, fpsm = LAB.fps; renderer.on('afterRender', function () { frames++; fpsm(); if (frames === 2) LAB.mark('first_frame_ms'); drawsLast = draws; draws = 0; });
+  var cam = renderer.getCamera();
+
+  /* ── hulls: our overlay canvas, cached in graph space ──────────────────────────────────────────────────────── */
+  var hc = document.getElementById('hulls'), hx = hc.getContext('2d'), HULLS = [];
+  function convexHull(P) { P = P.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }); function cr(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); } var lo = [], hi = [], i;
+    for (i = 0; i < P.length; i++) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], P[i]) <= 0) lo.pop(); lo.push(P[i]); } for (i = P.length - 1; i >= 0; i--) { while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], P[i]) <= 0) hi.pop(); hi.push(P[i]); } lo.pop(); hi.pop(); return lo.concat(hi); }
+  function pad(poly, r) { if (poly.length < 3) return poly; var cx = 0, cy = 0; poly.forEach(function (p) { cx += p[0]; cy += p[1]; }); cx /= poly.length; cy /= poly.length; return poly.map(function (p) { var dx = p[0] - cx, dy = p[1] - cy, d = Math.sqrt(dx * dx + dy * dy) || 1; return [p[0] + dx / d * r, p[1] + dy / d * r]; }); }
+  function computeHulls() { HULLS = []; var byEnt = {}, bySub = {}; nodes.forEach(function (n) { if (n.tier > TIER) return; (byEnt[n.ent] = byEnt[n.ent] || []).push([n.x, n.y]); var k = n.ent + '|' + n.sub; (bySub[k] = bySub[k] || []).push([n.x, n.y]); });
+    Object.keys(byEnt).forEach(function (e) { var pts = byEnt[e]; if (pts.length < 1) return; HULLS.push({ poly: pad(pts.length >= 3 ? convexHull(pts) : pts, 26), color: F.entColor[e], label: F.entKind[e] === 'entity' ? e : ('fe · ' + e.replace(/^fe·/, '')), level: 'ent' }); });
+    Object.keys(bySub).forEach(function (k) { var pts = bySub[k]; if (pts.length < 2) return; HULLS.push({ poly: pad(pts.length >= 3 ? convexHull(pts) : pts, 10), color: F.entColor[k.split('|')[0]], level: 'sub' }); }); }
+  var hullMs = 0;
+  function drawHulls() { var t = performance.now(), w = host.clientWidth, h = host.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2); if (hc.width !== Math.round(w * dpr)) { hc.width = Math.round(w * dpr); hc.height = Math.round(h * dpr); } hx.setTransform(dpr, 0, 0, dpr, 0, 0); hx.clearRect(0, 0, w, h);
+    HULLS.forEach(function (H) { var poly = H.poly.map(function (p) { return renderer.graphToViewport({ x: p[0], y: p[1] }); }); if (poly.length < 2) return; hx.beginPath(); hx.moveTo(poly[0].x, poly[0].y); for (var j = 1; j < poly.length; j++) hx.lineTo(poly[j].x, poly[j].y); hx.closePath();
+      hx.fillStyle = H.color + (H.level === 'ent' ? '14' : '1f'); hx.fill(); hx.strokeStyle = H.color + (H.level === 'ent' ? 'aa' : '55'); hx.lineWidth = H.level === 'ent' ? 1.6 : 0.8; hx.stroke();
+      if (H.label) { var top = poly.reduce(function (m, p) { return p.y < m.y ? p : m; }, poly[0]); hx.fillStyle = H.color; hx.font = '700 12px Menlo, Consolas, ui-monospace, monospace'; hx.textAlign = 'center'; hx.strokeStyle = '#0b0e13'; hx.lineWidth = 3; hx.strokeText(H.label, top.x, top.y - 6); hx.fillText(H.label, top.x, top.y - 6); } });
+    hullMs = performance.now() - t; }
+  computeHulls(); drawHulls(); cam.on('updated', drawHulls); addEventListener('resize', drawHulls);
+
+  /* ── picking: sigma's events for the human; a viewport scan for the probe (sigma exposes no pixel→node call) ── */
+  var tip = document.getElementById('tip'), card = document.getElementById('card');
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function showCard(n) { card.style.display = 'block'; card.innerHTML = '<b>' + esc(n.label) + '</b><div class="row"><span>kind</span><span>' + n.kind + (n.m ? ' · ' + n.m : '') + (n.stream ? ' · stream' : '') + '</span></div><div class="row"><span>entity</span><span>' + esc(n.ent) + '</span></div><div class="row"><span>tier</span><span>T' + n.tier + ' · degree ' + n.deg + '</span></div>' + (n.det && n.det.file ? '<div class="row"><span>file</span><span>' + esc(n.det.file) + '</span></div>' : ''); }
+  function showLink(l) { card.style.display = 'block'; card.innerHTML = '<b>' + esc(byId[l.source].label) + ' → ' + esc(byId[l.target].label) + '</b><div class="row"><span>wire</span><span>' + l.rel + ' (' + l.kind + ')' + (l.cross ? ' · cross-entity' : '') + '</span></div>'; }
+  renderer.on('enterNode', function (ev) { var n = byId[ev.node]; if (!n) return; var p = renderer.graphToViewport(g.getNodeAttributes(ev.node)); tip.style.display = 'block'; tip.style.left = (p.x + 14) + 'px'; tip.style.top = (p.y + 14) + 'px'; tip.innerHTML = '<b>' + esc(n.label) + '</b><i>' + n.kind + ' · ' + esc(n.ent) + (n.m ? ' · ' + n.m : '') + '</i>'; });
+  renderer.on('leaveNode', function () { tip.style.display = 'none'; });
+  renderer.on('clickNode', function (ev) { var n = byId[ev.node]; if (n) showCard(n); });
+  renderer.on('clickEdge', function (ev) { var a = g.getEdgeAttributes(ev.edge); if (a && links[a.li]) showLink(links[a.li]); });
+  function pickNode(x, y) { try { if (typeof renderer.getNodeAtPosition === 'function') { var hit = renderer.getNodeAtPosition({ x: x, y: y }); if (hit && byId[hit] && byId[hit].tier <= TIER) return hit; } } catch (e) { /* fall through to the scan */ }   /* sigma's own pick buffer first */
+    var best = null, bd = 1e9; for (var i = 0; i < N; i++) { var n = nodes[i]; if (n.tier > TIER) continue; var p = renderer.graphToViewport({ x: n.x, y: n.y }); var r = Math.max(4, (SIZE[n.kind] || 3) * 1.4), dx = p.x - x, dy = p.y - y, d = dx * dx + dy * dy; if (d < r * r && d < bd) { bd = d; best = n.id; } } return best; }
+  function pickLink(x, y) { var best = null, bd = 9; for (var li = 0; li < links.length; li++) { var l = links[li], s = byId[l.source], t = byId[l.target]; if (!s || !t || s.tier > TIER || t.tier > TIER) continue; var a = renderer.graphToViewport({ x: s.x, y: s.y }), b = renderer.graphToViewport({ x: t.x, y: t.y }); var vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy || 1, u = Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / L2)); var px = a.x + vx * u - x, py = a.y + vy * u - y, d = px * px + py * py; if (d < bd) { bd = d; best = li; } } return best; }
+
+  /* ── the probe surface ─────────────────────────────────────────────────────────────────────────────────────── */
+  var G = LAB.graph({ nodes: nodes, links: links, byId: byId, settled: true,
+    setTier: function (t) { TIER = Math.max(0, Math.min(3, t | 0)); renderer.refresh(); computeHulls(); drawHulls(); return G.visible(); },
+    visible: function () { var c = 0; for (var i = 0; i < N; i++) if (nodes[i].tier <= TIER) c++; return c; },
+    visibleIds: function () { return nodes.filter(function (n) { return n.tier <= TIER; }).map(function (n) { return n.id; }); },
+    positions: function () { var o = {}; for (var i = 0; i < N; i++) { var n = nodes[i]; if (n.tier <= TIER) o[n.id] = [n.x, n.y, 0]; } return o; },
+    screenOf: function (id) { var n = byId[id]; if (!n) return null; var p = renderer.graphToViewport({ x: n.x, y: n.y }); return { x: p.x, y: p.y }; },
+    pick: pickNode, pickLink: pickLink,
+    stats: function () { return { calls: drawsLast, triangles: null, geometries: null, textures: null, hullMs: +hullMs.toFixed(2) }; } });
+  if (REDRAW) (function loop() { requestAnimationFrame(loop); renderer.refresh(); })();   // sigma renders on demand; the lab forces a frame per rAF so its paint cost is measured like the 3D pages'
+  LAB.panel({ lib: 'sigma.js 3.0.3 + graphology 0.26', ver: 'WebGL2 · instanced programs', bundle: '187,876 + 73,629 (+168,452 layout lib) B', license: 'MIT', role: '2D WebGL · the LABEL answer',
+    checklist: [
+      ['entity + sub-cluster hulls', 'built', 'our overlay canvas: convex hulls cached in graph space, projected per camera update (no grouping primitive in sigma)'],
+      ['anchored deterministic layout', 'built', '?layout=live = d3-force-3d in 2D + the adapter\'s zForce (the SAME law as lab-01); ?layout=fa2 = sigma\'s own FA2 (no anchors)'],
+      ['composed node: glyph + badges + bubble + label', 'lost', 'core ships circle/point programs only; a glyph roster needs @sigma/node-square/image bundles or a custom GLSL NodeProgram'],
+      ['badge slots A/B', 'lost', 'no node composition; a badge would be a second node or a custom program'],
+      ['7 typed wires with dash', 'lost', 'edge colour per kind (and the heat band) draws; dash/dotted/longdash need a custom EdgeProgram'],
+      ['directional particles', 'lost', 'no per-edge animation primitive'],
+      ['heat gradients (d2w / fed2w)', 'built', 'the band colours the whole edge (no per-end gradient in the core edge program)'],
+      ['node picking → card', 'free', 'enterNode/clickNode + getNodeAtPosition from sigma\'s pick buffer (the probe uses the same call; a viewport scan is the fallback)'],
+      ['link picking → wire card', 'free', 'clickEdge (enableEdgeEvents); the probe pick is our segment scan'],
+      ['label collision', 'free', 'labelDensity + labelGridCellSize — the built-in de-collider, the reason this page exists'],
+      ['visibility without relayout (tier press)', 'free', 'nodeReducer/edgeReducer hide; refresh() never relays out'],
+      ['tiers T0–T3', 'built', 'setTier(t) over the adapter\'s tier field'],
+      ['depth highlight · journeys · search · legend · Sources rows', 'na', 'station chrome — deliberately absent from every lab page'],
+      ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it; sigma draws a circle in the generic grey'],
+      ['file:// · no network', 'free', 'three UMDs, no worker, no wasm (the FA2 worker build would need a Blob URL — the sync assign() is used)'],
+      ['headless provable', 'free', 'WebGL2 under swiftshader'],
+      ['probe surface', 'built', 'LABG registered']],
+    verdict: 'Labels de-collide for free and the paint is cheap; but the composed-node grammar and the typed wires are all custom GLSL here. A READING lane, not the instrument.' });
+  LAB.note('label_grid', 'labelDensity 0.22 · cell 70'); if (settleMs != null) { LAB.set('settle_ms', +settleMs.toFixed(1)); LAB.set('layout_ms', +settleMs.toFixed(1)); } else LAB.set('settle_ms', 0);
+  var hud = setInterval(function () { LAB.hud({ nodes: G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'gl draws': drawsLast, 'hull ms': hullMs.toFixed(1), layout: (window.__LAB.notes.layout_engine || '').split(' ')[0], labels: 'grid' }); LAB.set('draws', drawsLast); }, 500);
+  setTimeout(function () { LAB.ready({ nodes: N, links: links.length, drawn: G.visible(), tier: TIER }); }, 2500);
+})();
+</script>

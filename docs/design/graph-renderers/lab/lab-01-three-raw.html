@@ -1,0 +1,90 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>lab-01 — raw three.js r185, no wrapper (THE DECISIVE PAGE)</title>
+<link rel="stylesheet" href="./lab.css">
+<div id="g"></div>
+<div class="lab-tip" id="tip"></div>
+<div class="lab-card" id="card"></div>
+<div class="lab-knobs" id="knobs"></div>
+<div class="lab-legend"><b>lab-01 · raw three, everything instanced</b>
+  Glyphs: one <code>InstancedMesh</code> per form (≤11 draws). Badges: one atlas quad layer. Bubbles: one sphere layer. Labels: one canvas atlas
+  + billboard quads. Wires: one <code>LineSegments</code> per CONN kind (7), per-vertex colour, the kind's dash. Particles: one <code>Points</code>
+  layer. Hulls: <code>ConvexGeometry</code> per entity + sub. Picking: a colour-id pass over nodes, then over link segments (1×1 readback).<br>
+  Layout: d3-force-3d + the adapter's zForce in a <b>Blob-URL worker</b> (<code>?worker=0</code> on-thread) · <code>?layout=baked</code> · <code>?walk=1</code>
+  first-person (click to lock, WASD/QE, collides with the buildings) · <code>?ships=1</code> not built yet (the stretch row). The view itself is <code>three-view.js</code>, shared with lab-04.
+</div>
+<script src="./feed-loader.js"></script>
+<script src="../../../../templates/center/shell/assets/3d-bundle.js"></script>
+<script src="../../../../templates/center/shell/assets/graph-grammar.js"></script>
+<script src="./vendor/d3-dispatch.min.js"></script><script src="./vendor/d3-timer.min.js"></script><script src="./vendor/d3-binarytree.min.js"></script>
+<script src="./vendor/d3-quadtree.min.js"></script><script src="./vendor/d3-octree.min.js"></script><script src="./vendor/d3-force-3d.min.js"></script>
+<script src="./adapter.js"></script>
+<script src="./scorecard.js"></script>
+<script src="./three-kit.js"></script>
+<script src="./three-view.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.GABE_FEED;
+  if (!F) { document.body.insertAdjacentHTML('beforeend', '<pre style="color:#f88;position:absolute;left:340px;top:14px">' + (window.GABE_FEED_ERR || 'no feed') + '</pre>'); LAB.ready({ err: [window.GABE_FEED_ERR || 'no feed'] }); return; }
+  var WORKER = LAB.qs('worker', '1') !== '0', WALK = LAB.qs('walk', '0') === '1', SHIPS = LAB.qs('ships', '0') === '1', PARTICLES = LAB.qs('particles', '1') === '1', LABELS = LAB.qs('labels', '1') === '1';
+  var nodes = F.nodes, links = F.links, N = nodes.length, idx = Object.create(null); nodes.forEach(function (n, i) { idx[n.id] = i; });
+  LAB.mark('boot_ms');
+  document.getElementById('knobs').innerHTML = [['worker=1', WORKER], ['walk=1', WALK], ['particles=1', PARTICLES], ['layout=baked', F.layout === 'baked'], ['scale=x4', F.scale === 'x4'], ['feed=onyx', F.fixture === 'onyx'], ['fn=1', F.opts.fn]]
+    .map(function (k) { var u = new URL(location.href), kv = k[0].split('='); u.searchParams.set(kv[0], k[1] ? (kv[0] === 'feed' ? 'example' : kv[0] === 'layout' ? 'live' : kv[0] === 'scale' ? 'full' : '0') : kv[1]); return '<a href="' + u.search + '" class="' + (k[1] ? 'on' : '') + '">' + k[0] + '</a>'; }).join('');
+  F.seedPositions(1); var BAKED = F.layout === 'baked';
+  nodes.forEach(function (n) { if (BAKED && n.bx != null) { n.x = n.bx; n.y = n.by; n.z = n.bz; } else { n.x = n.sx; n.y = n.sy; n.z = n.sz; } });
+  var V = TV.create(F, { labels: LABELS, particles: PARTICLES, walk: WALK });
+
+  /* ── layout: d3-force-3d + zForce in a Blob worker (or on-thread) — 240 ticks, the wrapper's own cooldown law ────── */
+  var worker = null, sim = null, tickN = 0, TICKS = 240, t0 = performance.now();
+  var E = []; links.forEach(function (l) { var a = idx[l.source], b = idx[l.target]; if (a != null && b != null) E.push(a, b); });
+  var A = F.anchors, tables = { EX: A.EX, EY: A.EY, EZ: A.EZ, RENT: A.RENT, SUB: A.SUB, KRADF: F.kradf, ent: nodes.map(function (n) { return n.ent; }), sub: nodes.map(function (n) { return n.sub; }), kind: nodes.map(function (n) { return n.kind; }), seed: nodes.map(function (n) { return [n.x, n.y, n.z]; }) };
+  var ZFORCE = 'function zForce(alpha){var ns=zForce.__n||[];for(var i=0;i<ns.length;i++){var n=ns[i],x=n.x||0,y=n.y||0,z=n.z||0,e=TB.ent[i],sa=(TB.SUB[e]||{})[TB.sub[i]],ax=TB.EX[e]||0,ay=TB.EY[e]||0,az=TB.EZ[e]||0;' +
+    'n.vx+=(ax+(sa?sa.x:0)-x)*0.08*alpha;n.vy+=(ay+(sa?sa.y:0)-y)*0.08*alpha;n.vz+=(az+(sa?sa.z:0)-z)*0.08*alpha;var dx=x-ax,dy=y-ay,dz=z-az,r=Math.sqrt(dx*dx+dy*dy+dz*dz);if(!(r>1e-3)||!isFinite(r))continue;' +
+    'var R0=TB.RENT[e]||60,f=TB.KRADF[TB.kind[i]];if(f){var kr=0.30*alpha*(R0*f-r)/r;n.vx+=dx*kr;n.vy+=dy*kr;n.vz+=dz*kr;}var rmax=R0*1.6;if(r>rmax){var kc=0.6*alpha*(rmax-r)/r;n.vx+=dx*kc;n.vy+=dy*kc;n.vz+=dz*kc;}}}zForce.initialize=function(ns){zForce.__n=ns;};';
+  function onPositions(p) { for (var i = 0; i < N; i++) { nodes[i].x = p[i * 3]; nodes[i].y = p[i * 3 + 1]; nodes[i].z = p[i * 3 + 2]; } }
+  function finish() { V.setSettled(); LAB.note('ticks_at_stop', tickN); }
+  function startWorker() { var base = location.href.replace(/[^/]*$/, '') + 'vendor/';
+    var src = ['importScripts(' + ['d3-dispatch', 'd3-timer', 'd3-binarytree', 'd3-quadtree', 'd3-octree', 'd3-force-3d'].map(function (m) { return JSON.stringify(base + m + '.min.js'); }).join(',') + ');', 'var TB=null,sim=null,N=0,pos=null,tick=0,TICKS=240;', ZFORCE,
+      'self.onmessage=function(e){var m=e.data;if(m.t!=="init")return;TB=m.tables;N=m.n;pos=new Float32Array(N*3);TICKS=m.ticks;var nodes=[];for(var i=0;i<N;i++)nodes.push({i:i,x:TB.seed[i][0],y:TB.seed[i][1],z:TB.seed[i][2]});var links=[];for(var k=0;k<m.e.length;k+=2)links.push({source:m.e[k],target:m.e[k+1]});',
+      'sim=d3.forceSimulation(nodes,3).force("link",d3.forceLink(links).id(function(d){return d.i;})).force("charge",d3.forceManyBody().strength(-60).distanceMax(150)).force("center",d3.forceCenter()).force("layer",zForce).alphaDecay(0.0228).stop();step();};',
+      'function step(){var t0=Date.now();for(var s=0;s<2&&tick<TICKS;s++){sim.tick();tick++;}var ns=sim.nodes();for(var i=0;i<N;i++){pos[i*3]=ns[i].x;pos[i*3+1]=ns[i].y;pos[i*3+2]=ns[i].z;}var cp=pos.slice();postMessage({t:"tick",pos:cp,tick:tick,ms:Date.now()-t0},[cp.buffer]);if(tick<TICKS&&sim.alpha()>sim.alphaMin())setTimeout(step,0);else postMessage({t:"done",tick:tick});}'].join('\n');
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    var flat = new Int32Array(E);
+    worker.onmessage = function (ev) { var m = ev.data; if (m.t === 'tick') { onPositions(m.pos); tickN = m.tick; LAB.set('layout_worker_ms', m.ms); } else if (m.t === 'done') finish(); };
+    worker.onerror = function (e) { LAB.note('worker_error', String(e.message || e)); worker = null; startInline(); };
+    worker.postMessage({ t: 'init', n: N, e: flat, tables: tables, ticks: TICKS }, [flat.buffer]); LAB.note('layout_thread', 'blob worker + importScripts(file:// d3 UMDs)'); }
+  function startInline() { var d3f = window.d3, sn = nodes.map(function (n, i) { return { i: i, x: n.x, y: n.y, z: n.z }; }), TB = tables, zf = new Function('TB', ZFORCE + 'return zForce;')(TB), ls = []; for (var k = 0; k < E.length; k += 2) ls.push({ source: E[k], target: E[k + 1] });
+    sim = d3f.forceSimulation(sn, 3).force('link', d3f.forceLink(ls).id(function (d) { return d.i; })).force('charge', d3f.forceManyBody().strength(-60).distanceMax(150)).force('center', d3f.forceCenter()).force('layer', zf).alphaDecay(0.0228).stop(); sim.__n = sn; LAB.note('layout_thread', 'main thread'); }
+  if (!BAKED) { if (WORKER) { try { startWorker(); } catch (e) { LAB.note('worker_error', String(e)); startInline(); } } else startInline(); }
+  else { LAB.note('layout_thread', 'baked (no sim)'); LAB.note('baked', F.baked); V.setSettled(); }
+
+  V.surface({ ticks: function () { return tickN; } });
+  var simMs = 0;
+  V.hud = function (i2) { LAB.hud({ nodes: V.G.visible(), links: links.length, fps: window.__LAB.fps, 'frame ms': window.__LAB.frame_ms, 'draw calls': i2.render.calls, tris: (i2.render.triangles / 1000).toFixed(0) + 'k', 'geo/tex': i2.memory.geometries + '/' + i2.memory.textures, layout: V.isSettled() ? 'settled' : ('tick ' + tickN + '/' + TICKS), 'sim ms': (window.__LAB.layout_worker_ms != null ? window.__LAB.layout_worker_ms : simMs.toFixed(1)) }); };
+  V.run(function () { if (sim && !V.isSettled()) { var lt = performance.now(); for (var s = 0; s < 2 && tickN < TICKS; s++) { sim.tick(); tickN++; } simMs = performance.now() - lt; var sn = sim.__n; for (var i = 0; i < N; i++) { nodes[i].x = sn[i].x; nodes[i].y = sn[i].y; nodes[i].z = sn[i].z; } if (tickN >= TICKS || sim.alpha() < sim.alphaMin()) finish(); return true; } return !V.isSettled(); });
+  LAB.panel({ lib: 'three.js r185 raw' + (WALK ? ' · walk' : ''), ver: 'no wrapper · the station\'s own 3d-bundle.js', bundle: '1,637,037 B shared (a raw build would ship ~880 KB) + 52 KB d3 UMDs', license: 'MIT', role: 'THE DECISIVE PAGE',
+    checklist: [
+      ['entity + sub-cluster hulls', 'built', 'ConvexGeometry per entity + sub (every 3rd tick while settling, then static)'],
+      ['anchored deterministic layout', 'built', 'd3-force-3d + zForce in a Blob worker; ?layout=baked = fdp positions, no sim'],
+      ['composed node: glyph + badges + bubble + label', 'built', 'one InstancedMesh per form · one atlas layer for badges · one sphere layer · one label atlas layer'],
+      ['badge slots A/B', 'built', 'atlas quads: slot A lower-right, slot B upper-right'],
+      ['7 typed wires with dash', 'built', 'one LineSegments per CONN kind, LineDashedMaterial with lineDistance rewritten per update'],
+      ['directional particles', 'built', 'one Points layer along the cross links'],
+      ['heat gradients (d2w / fed2w)', 'built', 'bandOf(l) → per-vertex end colours'],
+      ['node picking → card', 'built', 'colour-id pass over the glyph layers with the wires hidden (1×1 readback)'],
+      ['link picking → wire card', 'built', 'a second colour-id pass over the wire LineSegments alone (1 px lines — no hover tolerance yet)'],
+      ['visibility without relayout (tier press)', 'built', 'zero-scale instances + wire visibility; positions untouched'],
+      ['tiers T0–T3', 'built', 'setTier(t) over the adapter\'s tier field'],
+      ['walk mode (?walk=1)', WALK ? 'built' : 'na', 'pointer lock + WASD/QE, capsule vs the buildings'],
+      ['GLB fleets (?ships=1)', SHIPS ? 'lost' : 'na', 'NOT BUILT YET — the stretch row (one InstancedMesh per GLB)'],
+      ['depth highlight · journeys · search · legend · Sources rows', 'na', 'station chrome — deliberately absent from every lab page'],
+      ['honest-empty · unknown kind drawn', 'free', 'the adapter keeps it; the generic form is a sphere'],
+      ['file:// · no network', 'built', 'the worker is a Blob URL that importScripts() the vendored d3 UMDs'],
+      ['headless provable', 'free', 'WebGL under swiftshader'],
+      ['probe surface', 'built', 'LABG registered']],
+    verdict: 'Every layer is ONE draw call. If this page keeps the composed-node grammar and the typed wires at a draw-call count that does not grow with the node count, the 3D lane is <b>raw three</b> and the wrapper is a render-path swap away.' });
+  setTimeout(function () { LAB.ready({ nodes: N, links: links.length, drawn: V.G.visible(), tier: V.tier() }); }, 2500);
+})();
+</script>
