@@ -148,6 +148,9 @@ ck(feats["d:t1"]["anchor_cls"] == "T1" and feats["d:t1"]["anchor_table"] == "t1"
 ck(feats["d:t1"]["screens"] == 1 and feats["d:t1"]["fetchers"] == 2 and "fe:w/x.ts#useXPost" not in HM["derived"] and "fe:w/x.ts#useXPost" not in HM["proposed"],
    f"screens counts FILES (two exports of w/x.ts = 1 screen · 2 fetchers) and an export that is not an fe piece is never homed ({feats['d:t1']['screens']} · {feats['d:t1']['fetchers']})")
 ck(all(r["named_by"] in ("domain", "table") for r in feats.values()), "named_by ∈ {domain, table} — no unreachable rung")
+_m1 = feats["d:t1"]["members"]; _ne = sum(1 for m in _m1 if m.startswith("endpoint:"))
+ck(_ne >= 2 and all(m.startswith("endpoint:") for m in _m1[:_ne]) and not any(m.startswith("endpoint:") for m in _m1[_ne:]) and _m1[:_ne] == sorted(_m1[:_ne]),
+   f"members: endpoint ids FIRST, each run sorted — a capped list never clips the labels a name is computed from (naming-plan; a plain sorted() reddens this) ({_m1[:4]})")
 ck(all(HM["derived"].get(m) in (r["id"], r["twin"]) for r in feats.values() for m in r["members"]) and "members_more" in feats["d:t1"] and feats["d:t1"]["members_more"] == 0,
    "members are rebuilt from the FINAL homes — a card never names a piece the map homes elsewhere; the clipped-count sibling rides every row")
 ck(HM["derived"].get("endpoint:GET /x/a") == "d:t1" and HM["derived"].get("schema:AOut") == "d:t1" and HM["derived"].get("a/api.py#get_a") == "d:t1" and HM["derived"].get("a/svc.py#helper") == "d:t1",

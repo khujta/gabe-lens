@@ -33,13 +33,13 @@ _CASE_RX = re.compile(r"^(.*?)( · | — )(.*)$")
 
 
 def _case(run: str, how: str) -> str:
-    ws = [w for w in re.split(r"[\s_\-]+", run) if w]
+    ws = [w for w in re.split(r"[\s_\-/&]+", run) if w]                     # mirrors _a3_naming._case: interiors kept
     if not ws:
         return run
     if how == "camel":
-        return ws[0].lower() + "".join(w[:1].upper() + w[1:].lower() for w in ws[1:])
+        return ws[0][:1].lower() + ws[0][1:] + "".join(w[:1].upper() + w[1:] for w in ws[1:])
     if how == "pascal":
-        return "".join(w[:1].upper() + w[1:].lower() for w in ws)
+        return "".join(w[:1].upper() + w[1:] for w in ws)
     return run
 
 
@@ -47,7 +47,8 @@ def _render(form: str, name: str) -> str:
     """The three-line substitution every surface owns (mirrors _a3_naming.render): {name} · {name|camel} · {name|pascal} on the leading word-run."""
     m = _CASE_RX.match(name or "")
     head, sep, tail = (m.group(1), m.group(2), m.group(3)) if m else (name or "", "", "")
-    return (form or "{name}").replace("{name|camel}", _case(head, "camel") + sep + tail).replace("{name|pascal}", _case(head, "pascal") + sep + tail).replace("{name}", name or "")
+    out = (form or "{name}").replace("{name|camel}", _case(head, "camel") + sep + tail).replace("{name|pascal}", _case(head, "pascal") + sep + tail).replace("{name}", name or "")
+    return re.sub(r"\{name\|[a-z]+\}", name or "", out)
 
 
 def _naming(block: dict) -> dict:

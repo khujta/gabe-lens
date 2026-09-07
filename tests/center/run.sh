@@ -354,6 +354,26 @@ assert "models" not in g, "a half-attached models block survived the error"
 assert l["models"]["present"] is False and "boom" in l["models"]["reason"], l.get("models")
 assert l.get("homing") is not None, "the homing block still rides levels.json"
 PY
+MN="$T/mnaming"; rm -rf "$MN"; cp -r "$FIX" "$MN"; rm -f "$MN/docs/site/center/c4-graph.json"
+_mn=$(cd "$T" && GABE_REPO_ROOT="$MN" GABE_SHELL_SRC="$SHELL_SRC" python3 - "$GEN" >"$T/build-mnaming.out" 2>&1 <<'PY'
+import sys, runpy; gen = sys.argv[1]; sys.path.insert(0, gen)
+import _a3_naming
+def boom(*a, **k): raise RuntimeError("words gone")
+_a3_naming.apply = boom                       # the vocabulary blows up — the models block must still ship, and the line must SAY it
+sys.argv = [gen + "/build_center_a3.py"]; runpy.run_path(gen + "/build_center_a3.py", run_name="__main__")
+PY
+echo $?)
+[ "$_mn" = 0 ] && grep -q "naming: ⚠ naming error — RuntimeError: words gone" "$T/build-mnaming.out" \
+  && python3 -c "import json,sys; g=json.load(open('$MN/docs/site/center/c4-graph.json')); assert g['stats']['models']['present'] is True and g['models']['naming']['present'] is False and 'words gone' in g['models']['naming']['reason']" \
+  && ok || { bad "naming SILENT: a raising _a3_naming.apply keeps the models block, ships naming.present False with the reason, and the report line NAMES it (exit $_mn)"; grep -i "naming\|Traceback" "$T/build-mnaming.out" | head -4; }
+python3 - "$MB/docs/site/center" <<'PY' && ok || bad "A9 SILENT (dup guard): the models absence is still honest after the naming case"
+import json, sys; from pathlib import Path
+c = Path(sys.argv[1]); g = json.loads((c / "c4-graph.json").read_text()); l = json.loads((c / "levels.json").read_text())
+assert g["stats"]["models"] == {"present": False, "reason": "entity-models error: boom"}, g["stats"].get("models")
+assert "models" not in g, "a half-attached models block survived the error"
+assert l["models"]["present"] is False and "boom" in l["models"]["reason"], l.get("models")
+assert l.get("homing") is not None, "the homing block still rides levels.json"
+PY
 # Data-model Description column: kwarg + trailing-comment sources render,
 # a bare field stays an em dash (never invented).
 grep -q '<th>Description</th>' "$FIX/docs/site/center/feature-gadget.html" \

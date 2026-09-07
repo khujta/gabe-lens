@@ -2195,7 +2195,9 @@ def main() -> int:
                                        f"{(_mv.get('proposed') or {}).get('candidates', 0)} candidate(s)) · {len(_mod.get('shared') or [])} shared hub(s) — views over the claim, nothing re-homed")
                                       if _mod.get("present") else f"absent — {_mod.get('reason')}"))
         _nm = (_mod.get("naming") or {}) if _mod.get("present") else {}
-        if _nm:
+        if _nm and _nm.get("present") is False:
+            print("    naming: ⚠ %s — the map ships without names{} (the station, gabe-map and the drafter fall back to row.name)" % _nm.get("reason"))
+        elif _nm:
             _cv = _nm.get("coverage") or {}
             print("    naming: default %s (%s) · %s · fe mark %s%s%s" % (_nm.get("default"), _nm.get("source"),
                   " · ".join("%s %s/%s" % (k, _cv.get(k, 0), _cv.get("rows", 0)) for k in ("table", "class", "path", "action", "config", "both")),

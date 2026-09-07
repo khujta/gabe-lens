@@ -29,6 +29,8 @@ ck(N.class_words("LLMModelFlow") == "llm model flow" and N.class_words("ChatMess
 ck(N.class_words("OAuthConfig") == "o auth config", "class: OAuthConfig reads 'o auth config' — honest, never guessed (a project renames it in naming.words.tables)")
 ck(N.path_name(["/cooking/sessions/{id}/photos", "/cooking/sessions"]) == "sessions" and N.path_name(["/a/x", "/b/x", "/c/y"]) == "x" and N.path_name([]) is None,
    "path: the deepest common segment, else the most frequent leaf (ties alphabetical), None without paths")
+ck(N.path_name(["/recipe/a", "/recipe/b", "/other/c"]) == "recipe" and N.path_name(["/a/x", "/b/y"]) is None,
+   "path: every leaf unique → the level-1 majority prefix names it, else NO name (honest-empty beats an alphabetical pick)")
 ck(N._majority_prefix(["/y/a", "/y/b", "/z/c"]) == "y" and N._majority_prefix(["/y/a", "/z/b"]) is None, "both: the level-1 prefix only under a strict majority")
 
 # ── a synthetic block: three features (one domain-named, two table-named, two of them colliding on `path`), one candidate ──
@@ -44,7 +46,7 @@ ATOMS = [{"ep": "endpoint:GET /x/a", "method": "GET", "path": "/x/a", "via": "ht
          {"ep": "endpoint:GET /y/c", "method": "GET", "path": "/y/c", "via": "http", "anchor": "t2"}, {"ep": "endpoint:GET /z/c", "method": "GET", "path": "/z/c", "via": "http", "anchor": "t2"},
          {"ep": "endpoint:GET /w/c", "method": "GET", "path": "/w/c", "via": "http", "anchor": "t3"}, {"ep": "endpoint:DELETE /w/c/{id}", "method": "DELETE", "path": "/w/c/{id}", "via": "http", "anchor": "t3"}]
 LABELS = {"alpha": "Alpha Feature", "beta": "beta"}
-FE = {"present": True, "homes": 3}
+FE = {"present": True, "by_home": {"fe·alpha": 4, "fe·beta": 2, "design-system": 9}}
 b0 = block(); nm0 = N.apply(b0, ATOMS, LABELS, None, None, FE)
 F = {r["id"]: r for r in b0["rosters"]["derived"] if r.get("kind") == "feature"}
 ck(F["d:t1"]["names"]["table"] == "t1" and F["d:t1"]["names"]["class"] == "llm model flow" and F["d:t3"]["names"]["class"] == "o auth config" and F["d:t2"]["names"]["class"] == "t2",
@@ -60,7 +62,7 @@ nmE = N.apply(block(), ATOMS, {}, None, None, FE)
 ck(nmE["disabled"].get("config", "").startswith("no naming.words") and nmE["entities"] == {}, f"config: no words AND no display names → the position is disabled with the reason ({nmE['disabled']})")
 ck(all(r["name"] in ("x", "t2", "t3") for r in F.values()) and b0["rosters"]["candidates"][0]["names"] == F["d:t3"]["names"] and "names" not in [r for r in b0["rosters"]["derived"] if r["kind"] == "aspect"][0],
    "row.name is untouched (the domain strategy IS row.name); a candidate copies its feature's names{}; an aspect carries none")
-ck(nm0["default"] == "domain" and nm0["source"] == "built-in" and nm0["fe"]["convention"] == "case" and nm0["fe"]["present"] and nm0["fe"]["twins"] == 1 and nm0["config_error"] is None and nm0["unused_words"] == [] and nm0["unknown_entities"] == [],
+ck(nm0["present"] is True and nm0["default"] == "domain" and nm0["source"] == "built-in" and nm0["fe"]["convention"] == "case" and nm0["fe"]["present"] and nm0["fe"]["homes"] == 3 and nm0["fe"]["twins"] == 1 and nm0["config_error"] is None and nm0["unused_words"] == [] and nm0["unknown_entities"] == [],
    f"contract: built-in defaults domain · case, fe present, twins counted, no error ({ {k: nm0.get(k) for k in ('default','source','config_error')} })")
 ck(nm0["entities"] == {"alpha": {"display": "Alpha Feature", "source": "adoption display_name"}}, f"config for a claim entity: adoption display_name when it differs from the slug ({nm0['entities']})")
 fm = nm0["fe"]["forms"]
@@ -68,6 +70,12 @@ ck(fm["case"] == {"fe": "{name|camel}", "be": "{name|pascal}"} and fm["prefix"][
    f"forms: the seven templates with the suite's default words substituted ({fm})")
 ck(N.render(fm["case"]["fe"], "cooking sessions · /cooking") == "cookingSessions · /cooking" and N.render(fm["case"]["be"], "legal-consent") == "LegalConsent" and N.render(fm["case"]["be"], "Manage cooking — readiness · stage") == "ManageCooking — readiness · stage" and N.render(fm["bracket"]["be"], "cooking") == "[api] cooking",
    "render: camel/pascal on the leading word-run only; separators and the trailing detail keep their words; a word form substitutes {name}")
+ck(N.render(fm["case"]["fe"], "iPhone sync") == "iPhoneSync" and N.render(fm["case"]["be"], "Legal/Consent") == "LegalConsent" and N.render(fm["case"]["be"], "R&D lane") == "RDLane",
+   "render: word interiors survive (the project's own casing); `/` and `&` split words")
+ck(N.render("{name|shout}", "cooking") == "cooking" and N.forms(N.DEFAULT_WORDS, {"frontend": "none", "backend": "pascal"})["case"] == {"fe": "{name}", "be": "{name|pascal}"},
+   "render: an unknown transform degrades to the bare name; an identity case emits the bare token — no renderer ever sees {name|none}")
+bN = block(); nmN = N.apply(bN, ATOMS, LABELS, {"fe": {"case": {"frontend": "none", "backend": "none"}}}, None, FE)
+ck(nmN["config_error"] is None and nmN["fe"]["forms"]["case"] == {"fe": "{name}", "be": "{name}"} and "|none" not in json.dumps(nmN["fe"]["forms"]), f"case none is legal and renders bare ({nmN['fe']['forms']['case']})")
 
 # ── config: words · entities · legacy url_domain_map · the project's marks and case pair ──
 CFG = {"strategy": "class", "fe": {"convention": "bracket", "frontend": "screens", "backend": "services", "case": {"frontend": "pascal", "backend": "camel"}},
@@ -82,14 +90,30 @@ ck(nm1["entities"]["alpha"] == {"display": "The Alpha", "source": "naming.entiti
    f"config: naming.entities wins over display_name; an unknown slug and an unused word are NAMED, never a crash ({nm1['unknown_entities']} · {nm1['unused_words']})")
 b2 = block(); nm2 = N.apply(b2, ATOMS, LABELS, {"words": {"domains": {}}}, {"x": "legacy x"}, FE)
 ck({r["id"]: r for r in b2["rosters"]["derived"] if r.get("kind") == "feature"}["d:t1"]["names"]["config"] == "legacy x", "config: the legacy top-level url_domain_map is the fallback for words.domains — never moved, still read")
-b3 = block(); nm3 = N.apply(b3, ATOMS, LABELS, {"strategy": "verb", "fe": {"convention": "emoji", "case": {"frontend": "shout"}}}, None, FE)
-ck(nm3["default"] == "domain" and nm3["fe"]["convention"] == "case" and nm3["fe"]["case"] == {"frontend": "camel", "backend": "pascal"} and "naming.strategy 'verb'" in nm3["config_error"] and "naming.fe.convention 'emoji'" in nm3["config_error"] and "shout" not in json.dumps(nm3["fe"]["forms"]),
-   f"validation is report-never-gate: a bad strategy, convention and case keep the built-ins and are NAMED in config_error ({nm3['config_error']})")
+b3 = block(); nm3 = N.apply(b3, ATOMS, LABELS, {"strategy": "verb", "fe": {"convention": "emoji", "case": {"frontend": "shout", "backend": 7}}}, None, FE)
+ck(nm3["default"] == "domain" and nm3["fe"]["convention"] == "case" and nm3["fe"]["case"] == {"frontend": "camel", "backend": "pascal"} and "naming.strategy 'verb'" in nm3["config_error"] and "naming.fe.convention 'emoji'" in nm3["config_error"]
+   and "naming.fe.case.frontend is not one of camel · pascal · none" in nm3["config_error"] and "naming.fe.case.backend is not" in nm3["config_error"] and "shout" not in json.dumps(nm3["fe"]["forms"]),
+   f"validation is report-never-gate: a bad strategy, convention and BOTH case keys keep the built-ins and are NAMED under their real keys ({nm3['config_error']})")
+nmM = N.apply(block(), ATOMS, LABELS, "domain", None, FE)
+ck("naming is a str, not an object — the whole block was ignored" in nmM["config_error"] and nmM["source"] == "center.config.json#naming (ignored — see config_error)" and nmM["default"] == "domain",
+   f"a naming block that is not an object is NAMED and the source says ignored ({nmM['config_error']} · {nmM['source']})")
+nmM2 = N.apply(block(), ATOMS, LABELS, {"strategy": ["class"], "fe": 7, "words": {"domains": ["x"], "tables": {"t3": None}}, "entities": {"alpha": 3}}, "not-a-map", FE)
+ck(all(x in nmM2["config_error"] for x in ("naming.strategy ['class']", "naming.fe is a int", "naming.words.domains is a list", "naming.words.tables.t3 is not a word", "naming.entities.alpha is not a word", "url_domain_map is a str")) and nmM2["default"] == "domain" and nmM2["fe"]["convention"] == "case",
+   f"every wrong-typed level is NAMED (strategy · fe · words.domains · a table word · an entity word · url_domain_map) and the built-ins stand ({nmM2['config_error']})")
+nmW = N.apply(block(), ATOMS, LABELS, {"fe": {"words": {"frontend": "", "backend": "server"}}}, None, FE)
+ck("naming.fe.words.frontend is not a word" in nmW["config_error"] and nmW["fe"]["words"] == {"frontend": "ui", "backend": "server"}, f"the nested words shape names its real key; the good half still lands ({nmW['config_error']})")
+nmW2 = N.apply(block(), ATOMS, LABELS, {"fe": {"frontend": "client", "backend": 3}}, None, FE)
+ck("naming.fe.backend is not a word" in nmW2["config_error"] and nmW2["fe"]["words"] == {"frontend": "client", "backend": "api"}, f"the flat words shape (the template's) names its real key ({nmW2['config_error']})")
 b4 = block(); nm4 = N.apply(b4, ATOMS, LABELS, None, None, {"present": False, "reason": "no frontend root"})
 ck(nm4["fe"]["present"] is False and nm4["fe"]["reason"] == "no frontend root" and nm4["fe"]["convention"] == "case", "fe absent → present False with the emitter's reason (the station disables the mark pill from this)")
 
 # ── the path self-disable (≥ 1/3 rows collide) ──
 b5 = block(); b5["rosters"]["derived"] = [r for r in b5["rosters"]["derived"] if r["id"] != "d:t1"]; nm5 = N.apply(b5, ATOMS, LABELS, None, None, FE)
+bZ = block(); bZ["rosters"]["derived"] = []; bZ["rosters"]["candidates"] = []; nmZ = N.apply(bZ, ATOMS, LABELS, None, None, FE)
+ck(all(nmZ["disabled"].get(k, "").startswith("no derived cluster rows") for k in ("table", "class", "path", "action", "both")) and "config" not in nmZ["disabled"] and nmZ["coverage"]["rows"] == 0,
+   f"rows 0: every cluster position disables with ONE shared reason; config stays ON while a claim entity has a display name ({nmZ['disabled']})")
+nmZ2 = N.apply(bZ, ATOMS, {}, None, None, FE)
+ck("config" in nmZ2["disabled"] and "no derived cluster rows and no naming.words" in nmZ2["disabled"]["config"], "rows 0 and no display names: config disables too, with its reason")
 ck("path" in nm5["disabled"] and "2 of 2 rows collide" in nm5["disabled"]["path"], f"path: every row colliding → the position disables itself with the count ({nm5['disabled']})")
 
 # ── action: the law unreachable → absent, the reason names the path; coverage 0 ──
@@ -113,6 +137,7 @@ for st in N.STRATEGIES:
         same = same and strip(bb) == base and all(r["name"] in ("x", "t2", "t3") for r in bb["rosters"]["derived"] if r.get("kind") == "feature")
 ck(same, "JOIN KEY: under every strategy × convention the block minus names{} is byte-equal to the config-less block and row.name never changes")
 ck(json.dumps(N.apply(block(), ATOMS, LABELS, CFG, {"w": "legacy w"}, FE), sort_keys=True) == json.dumps(nm1, sort_keys=True), "deterministic: a second run is byte-identical")
+ck(nm1["action_source"]["path"].startswith("~/") and "/home/" not in json.dumps(nm1), f"PORTABLE: the naming-law path is home-relative on the map — never an operator-machine path (the doctor's lint) ({nm1['action_source']})")
 ck("orphan" not in (json.dumps(nm1) + json.dumps(b1) + (N.__doc__ or "")).lower(), "R10: no 'orphan' in the block, the rows or the doc")
 # ── REGISTRIES (naming-plan Phase 2): the id-resolution bodies never learn a naming word — a negative grep guard over the functions
 #    that join on fe·/d: ids in the generators and the gabe-map tools; a fixture inserting the word proves the guard fires ──
@@ -122,10 +147,14 @@ import _a3_homing, _a3_graft, tools as T, tools_wave2 as W2, tools_wave4 as W4
 GUARD = ("naming", "convention", "names[", "camel", "pascal")
 def clean(src):
     return not any(w in src for w in GUARD)
+import _a3_models as MM
+ck(hasattr(W2, "t_center_overview") and hasattr(W4, "t_entity_models") and hasattr(MM, "attach") and hasattr(MM, "levels_slice"), "REGISTRIES guard targets exist (a rename must redden, never pass silently)")
 bodies = {"_a3_graft._fe_pair": inspect.getsource(_a3_graft._fe_pair), "_a3_graft._fe_home": inspect.getsource(_a3_graft._fe_home),
           "tools.t_entity_context": inspect.getsource(T.t_entity_context), "tools.detect_kind": inspect.getsource(T.detect_kind),
-          "tools_wave2 fe_home site": inspect.getsource(W2.t_center_overview) if hasattr(W2, "t_center_overview") else "",
-          "tools_wave4._resolve_piece": inspect.getsource(W4._resolve_piece), "tools_wave4._claim_of": inspect.getsource(W4._claim_of), "tools_wave4._cluster_row": inspect.getsource(W4._cluster_row)}
+          "tools_wave2.t_center_overview": inspect.getsource(W2.t_center_overview),
+          "tools_wave4._resolve_piece": inspect.getsource(W4._resolve_piece), "tools_wave4._claim_of": inspect.getsource(W4._claim_of),
+          "tools_wave4.t_entity_models (id resolution)": inspect.getsource(W4.t_entity_models).split("# ── model → the roster")[0],
+          "_a3_models.attach": inspect.getsource(MM.attach), "_a3_models.levels_slice": inspect.getsource(MM.levels_slice)}
 hom_src = open(repo + "/templates/center/generators/_a3_homing.py", encoding="utf-8").read()
 bodies["_a3_homing (whole module)"] = hom_src
 bad = [k for k, v in bodies.items() if not clean(v)]

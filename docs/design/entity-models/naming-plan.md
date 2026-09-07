@@ -152,8 +152,8 @@ clause (strategy in force · `config_error` · `unused_words`), no new trigger.
    shell README (the pill contract + the precedence law). `./install.sh` → `scripts/suite-doctor.sh` [H] CLEAN.
 7. **REGENS, serial:** `regen-example.sh` then `--check` → tier0 → tier1 → tier2 → tier3 → gustify and gastify via `propagate.sh`
    → regen → drafter per estate. Record per estate: strategy + source · coverage per position · positions disabled and why · path
-   collisions suffixed · action rows truncated · fe present/absent. The diff on each estate is the `names`/`naming` bytes and
-   nothing else — the reviewable proof that the default changed nothing.
+   collisions suffixed · action rows truncated · fe present/absent. The diff on each estate is the `names`/`naming` bytes plus the
+   members reorder (endpoint ids first) on every derived row — the reviewable proof that the default changed no name.
 
 **Estimate:** ≈ 20 files · ≈ 700 lines of code/config/docs + ≈ 300 battery lines; `gabe-universe.html` +~130/−30 in the TEMPLATE only
 (6,226 → ~6,330, over the 800 CODE budget already — state the numbers in the commit); three skill bumps; 1.5–2 sessions, the last

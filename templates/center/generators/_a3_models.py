@@ -635,7 +635,7 @@ def build(amap: dict, graph: dict, levels: dict | None, hom: dict | None = None,
     try:
         block["naming"] = _a3_naming.apply(block, d.get("atoms") or [], labels or {}, naming_cfg, url_domain_map, (graph.get("stats") or {}).get("fe"))
     except Exception as _ne:  # noqa: BLE001 — a vocabulary problem never costs the models block
-        block["naming"] = {"present": False, "reason": "naming error: %s" % _ne, "default": _a3_naming.DEFAULT_STRATEGY, "rule": _a3_naming.RULE}
+        block["naming"] = {"present": False, "reason": "naming error — %s: %s" % (_ne.__class__.__name__, _ne), "default": _a3_naming.DEFAULT_STRATEGY, "rule": _a3_naming.RULE}
     return block
 
 

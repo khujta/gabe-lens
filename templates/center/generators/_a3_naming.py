@@ -79,8 +79,11 @@ def path_name(paths: list[str]) -> str | None:
     if common:
         return _words(common[-1])
     leaves = Counter(s[-1] for s in segl)
-    top = sorted(leaves.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
-    return _words(top)
+    top, n = sorted(leaves.items(), key=lambda kv: (-kv[1], kv[0]))[0]
+    if n > 1:
+        return _words(top)
+    mp = _majority_prefix(paths)                                         # every leaf unique — no frequency witness; the level-1 majority names it, else nothing (honest-empty beats an alphabetical pick)
+    return _words(mp) if mp else None
 
 
 def _majority_prefix(paths: list[str]) -> str | None:
@@ -97,43 +100,58 @@ def load_draft_name() -> tuple:
     """(draft_name callable | None, path, reason) — the ONE copy of the 2026-09-05 law lives in the installed gabe-cc-update skill
     (three consumers import it there); GABE_DRAFT_WORKFLOWS overrides the path (the GABE_GRAFT_INDEX precedent)."""
     p = Path(os.environ.get("GABE_DRAFT_WORKFLOWS") or (Path.home() / ".claude" / "skills" / "gabe-cc-update" / "scripts" / "draft-workflows.py"))
+    shown = _portable(p)                                       # the map is a shipped surface: never an operator-machine path (portability lint)
     if not p.is_file():
-        return None, str(p), "draft-workflows.py not found at %s — install the suite or set GABE_DRAFT_WORKFLOWS" % p
+        return None, shown, "draft-workflows.py not found at %s — install the suite or set GABE_DRAFT_WORKFLOWS" % shown
     try:
         spec = importlib.util.spec_from_file_location("gabe_draft_workflows_naming", p)
         if spec is None or spec.loader is None:
-            return None, str(p), "draft-workflows.py could not be loaded from %s" % p
+            return None, shown, "draft-workflows.py could not be loaded from %s" % shown
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         fn = getattr(mod, "draft_name", None)
         if not callable(fn):
-            return None, str(p), "draft-workflows.py at %s carries no draft_name()" % p
-        return fn, str(p), None
+            return None, shown, "draft-workflows.py at %s carries no draft_name()" % shown
+        return fn, shown, None
     except Exception as e:  # noqa: BLE001
-        return None, str(p), "draft-workflows.py at %s failed to import (%s)" % (p, e.__class__.__name__)
+        return None, shown, "draft-workflows.py at %s failed to import (%s)" % (shown, e.__class__.__name__)
+
+
+def _portable(p: Path) -> str:
+    """`/home/<user>/.claude/…` → `~/.claude/…`; any other path under the home → `~/…`; elsewhere unchanged."""
+    try:
+        return "~/" + str(p.resolve().relative_to(Path.home()))
+    except Exception:  # noqa: BLE001
+        return str(p)
 
 
 # ── conventions ───────────────────────────────────────────────────────────────
-def _pair(cfg: dict | None, key: str, default: dict, allowed: tuple | None = None) -> tuple[dict, str | None]:
+def _pair(raw, default: dict, where: str, allowed: tuple | None = None) -> tuple[dict, list[str]]:
+    """A {frontend, backend} pair from the config — every bad value NAMED under its real key (`where`), all of them, never the first alone."""
     out = dict(default)
-    err = None
-    raw = (cfg or {}).get(key)
-    if isinstance(raw, dict):
-        for k in ("frontend", "backend"):
-            v = raw.get(k)
-            if isinstance(v, str) and v.strip() and (allowed is None or v.strip() in allowed):
-                out[k] = v.strip()
-            elif v is not None:
-                err = "naming.fe.%s.%s is not %s" % (key if key != "words" else "", k, ("one of " + " · ".join(allowed)) if allowed else "a word")
-    return out, err
+    errs: list[str] = []
+    if raw is None:
+        return out, errs
+    if not isinstance(raw, dict):
+        return out, ["%s is a %s, not an object — ignored" % (where, type(raw).__name__)]
+    for k in ("frontend", "backend"):
+        v = raw.get(k)
+        if v is None:
+            continue
+        if isinstance(v, str) and v.strip() and (allowed is None or v.strip() in allowed):
+            out[k] = v.strip()
+        else:
+            errs.append("%s.%s is not %s" % (where, k, ("one of " + " · ".join(allowed)) if allowed else "a word"))
+    return out, errs
 
 
 def forms(words: dict, case: dict) -> dict:
     """The seven form templates with the project's words substituted; `{name}` · `{name|camel}` · `{name|pascal}` are the tokens
     every surface substitutes (the case mark applies to the name's leading word-run — up to the first ` · ` or ` — `)."""
     fw, bw = words["frontend"], words["backend"]
+    _ct = lambda how: "{name}" if how == "none" else "{name|%s}" % how          # an identity case is the bare token — no renderer ever sees `{name|none}`
     return {
-        "case": {"fe": "{name|%s}" % case["frontend"], "be": "{name|%s}" % case["backend"]},
+        "case": {"fe": _ct(case["frontend"]), "be": _ct(case["backend"])},
         "prefix": {"fe": "fe · {name}", "be": "{name}"},
         "suffix": {"fe": "{name} (%s)" % fw, "be": "{name}"},
         "bracket": {"fe": "[%s] {name}" % fw, "be": "[%s] {name}" % bw},
@@ -144,13 +162,15 @@ def forms(words: dict, case: dict) -> dict:
 
 
 def _case(run: str, how: str) -> str:
-    ws = [w for w in re.split(r"[\s_\-]+", run) if w]
+    """camel / pascal over the words of a run — word INTERIORS are kept (`iPhone sync` → `iPhoneSync`, the project's own casing survives);
+    words split on whitespace, `_`, `-`, `/` and `&` (`Legal/Consent` → `LegalConsent`)."""
+    ws = [w for w in re.split(r"[\s_\-/&]+", run) if w]
     if not ws:
         return run
     if how == "camel":
-        return ws[0].lower() + "".join(w[:1].upper() + w[1:].lower() for w in ws[1:])
+        return ws[0][:1].lower() + ws[0][1:] + "".join(w[:1].upper() + w[1:] for w in ws[1:])
     if how == "pascal":
-        return "".join(w[:1].upper() + w[1:].lower() for w in ws)
+        return "".join(w[:1].upper() + w[1:] for w in ws)
     return run
 
 
@@ -159,15 +179,31 @@ def render(form: str, name: str) -> str:
     m = re.match(r"^(.*?)( · | — )(.*)$", name)
     head, sep, tail = (m.group(1), m.group(2), m.group(3)) if m else (name, "", "")
     out = form.replace("{name|camel}", _case(head, "camel") + sep + tail).replace("{name|pascal}", _case(head, "pascal") + sep + tail)
-    return out.replace("{name}", name)
+    out = out.replace("{name}", name)
+    return re.sub(r"\{name\|[a-z]+\}", name, out)                                 # an unknown transform degrades to the bare name, never a leaked token
 
 
 # ── the names per row + the naming block ─────────────────────────────────────
-def _cfg_words(cfg: dict | None) -> tuple[dict, dict]:
-    w = (cfg or {}).get("words") if isinstance((cfg or {}).get("words"), dict) else {}
-    dom = w.get("domains") if isinstance(w.get("domains"), dict) else {}
-    tab = w.get("tables") if isinstance(w.get("tables"), dict) else {}
-    return {str(k): str(v) for k, v in dom.items() if isinstance(v, str) and v.strip()}, {str(k): str(v) for k, v in tab.items() if isinstance(v, str) and v.strip()}
+def _cfg_words(cfg: dict | None) -> tuple[dict, dict, list[str]]:
+    """(domains, tables, errors) — a section or a value of the wrong type is NAMED, never dropped in silence."""
+    errs: list[str] = []
+    w = (cfg or {}).get("words")
+    if w is not None and not isinstance(w, dict):
+        return {}, {}, ["naming.words is a %s, not an object — ignored" % type(w).__name__]
+    w = w or {}
+    out = {}
+    for sec in ("domains", "tables"):
+        raw = w.get(sec)
+        if raw is not None and not isinstance(raw, dict):
+            errs.append("naming.words.%s is a %s, not an object — ignored" % (sec, type(raw).__name__)); raw = {}
+        good = {}
+        for k, v in sorted((raw or {}).items()):
+            if isinstance(v, str) and v.strip():
+                good[str(k)] = v.strip()
+            else:
+                errs.append("naming.words.%s.%s is not a word — ignored" % (sec, k))
+        out[sec] = good
+    return out["domains"], out["tables"], errs
 
 
 def names_for(row: dict, labels: list[str], draft_name, dom_words: dict, tab_words: dict, url_domain_map: dict) -> dict:
@@ -197,27 +233,39 @@ def names_for(row: dict, labels: list[str], draft_name, dom_words: dict, tab_wor
     return out
 
 
-def apply(mod: dict, atoms: list[dict], labels_by_slug: dict, cfg: dict | None, url_domain_map: dict | None, fe_stats: dict | None) -> dict:
+def apply(mod: dict, atoms: list[dict], labels_by_slug: dict, cfg, url_domain_map, fe_stats: dict | None) -> dict:
     """Attach `names{}` to every derived feature row and candidate row of the models block IN PLACE and return the `naming`
-    block. `atoms` are the emitter's uncapped request atoms (the labels come from here, never from the capped members list)."""
-    cfg = cfg if isinstance(cfg, dict) else {}
+    block. `atoms` are the emitter's uncapped request atoms (the labels come from here, never from the capped members list).
+    Every malformed config level is NAMED in `config_error` and the built-in stands — a regen never fails on a vocabulary file."""
     errors: list[str] = []
-    strategy = cfg.get("strategy") if isinstance(cfg.get("strategy"), str) else None
-    if strategy is not None and strategy not in STRATEGIES:
+    ignored = False
+    if cfg is not None and not isinstance(cfg, dict):
+        errors.append("naming is a %s, not an object — the whole block was ignored" % type(cfg).__name__); ignored = True
+    cfg = cfg if isinstance(cfg, dict) else {}
+    had_cfg = bool(cfg) or ignored
+    strategy = cfg.get("strategy")
+    if strategy is not None and (not isinstance(strategy, str) or strategy not in STRATEGIES):
         errors.append("naming.strategy %r is not one of %s" % (strategy, " · ".join(STRATEGIES)))
         strategy = None
-    fe_cfg = cfg.get("fe") if isinstance(cfg.get("fe"), dict) else {}
-    convention = fe_cfg.get("convention") if isinstance(fe_cfg.get("convention"), str) else None
-    if convention is not None and convention not in CONVENTIONS:
+    fe_raw = cfg.get("fe")
+    if fe_raw is not None and not isinstance(fe_raw, dict):
+        errors.append("naming.fe is a %s, not an object — ignored" % type(fe_raw).__name__)
+    fe_cfg = fe_raw if isinstance(fe_raw, dict) else {}
+    convention = fe_cfg.get("convention")
+    if convention is not None and (not isinstance(convention, str) or convention not in CONVENTIONS):
         errors.append("naming.fe.convention %r is not one of %s" % (convention, " · ".join(CONVENTIONS)))
         convention = None
-    words, werr = _pair(fe_cfg, "words", DEFAULT_WORDS) if isinstance(fe_cfg.get("words"), dict) else _pair({"words": {k: fe_cfg.get(k) for k in ("frontend", "backend")}}, "words", DEFAULT_WORDS)
-    if werr:
-        errors.append(werr)
-    case, cerr = _pair(fe_cfg, "case", DEFAULT_CASE, ("camel", "pascal", "none"))
-    if cerr:
-        errors.append(cerr)
-    dom_words, tab_words = _cfg_words(cfg)
+    if "words" in fe_cfg:
+        words, werr = _pair(fe_cfg.get("words"), DEFAULT_WORDS, "naming.fe.words")
+    else:
+        words, werr = _pair({k: fe_cfg[k] for k in ("frontend", "backend") if k in fe_cfg} or None, DEFAULT_WORDS, "naming.fe")
+    errors.extend(werr)
+    case, cerr = _pair(fe_cfg.get("case"), DEFAULT_CASE, "naming.fe.case", ("camel", "pascal", "none"))
+    errors.extend(cerr)
+    dom_words, tab_words, w_err = _cfg_words(cfg)
+    errors.extend(w_err)
+    if url_domain_map is not None and not isinstance(url_domain_map, dict):
+        errors.append("url_domain_map is a %s, not an object — ignored" % type(url_domain_map).__name__); url_domain_map = None
     draft_name, dn_path, dn_reason = load_draft_name()
     # the cluster's UNCAPPED endpoint labels, by anchor table
     labels_by_anchor: dict[str, list[str]] = {}
@@ -260,7 +308,13 @@ def apply(mod: dict, atoms: list[dict], labels_by_slug: dict, cfg: dict | None, 
         if src is not None:
             c["names"] = dict(src.get("names") or {})
     # claim entities: the project's display words
-    ent_cfg = cfg.get("entities") if isinstance(cfg.get("entities"), dict) else {}
+    ent_raw = cfg.get("entities")
+    if ent_raw is not None and not isinstance(ent_raw, dict):
+        errors.append("naming.entities is a %s, not an object — ignored" % type(ent_raw).__name__)
+    ent_cfg = ent_raw if isinstance(ent_raw, dict) else {}
+    for k, v in sorted(ent_cfg.items()):
+        if not (isinstance(v, str) and v.strip()):
+            errors.append("naming.entities.%s is not a word — ignored" % k)
     entities: dict = {}
     unknown = sorted(k for k in ent_cfg if k not in labels_by_slug)
     for slug in sorted(labels_by_slug):
@@ -274,6 +328,11 @@ def apply(mod: dict, atoms: list[dict], labels_by_slug: dict, cfg: dict | None, 
     long_action = sum(1 for r in feats if len((r.get("names") or {}).get("action") or "") > NAME_MAX)
     long_both = sum(1 for r in feats if len((r.get("names") or {}).get("both") or "") > NAME_MAX)
     disabled: dict = {}
+    if not n_rows:
+        for k in ("table", "class", "path", "action", "both"):
+            disabled[k] = "no derived cluster rows on this feed (the derived view has no features) — nothing to name"
+        if not entities:
+            disabled["config"] = "no derived cluster rows and no naming.words / naming.entities / adoption display_name — nothing to name from"
     if n_rows and cov.get("config", 0) == 0 and not entities:
         disabled["config"] = "no naming.words / naming.entities in center.config.json and no adoption display_name — nothing to name from"
     if n_rows and cov.get("action", 0) == 0:
@@ -283,9 +342,9 @@ def apply(mod: dict, atoms: list[dict], labels_by_slug: dict, cfg: dict | None, 
     fe_present = bool((fe_stats or {}).get("present"))
     fe_block = {"present": fe_present, "reason": None if fe_present else ((fe_stats or {}).get("reason") or "no frontend arm on this map"),
                 "convention": convention or DEFAULT_CONVENTION, "words": words, "case": case, "forms": forms(words, case),
-                "homes": (fe_stats or {}).get("homes"), "twins": sum(1 for r in feats if r.get("twin"))}
+                "homes": (len((fe_stats or {}).get("by_home") or {}) if fe_present else None), "twins": sum(1 for r in feats if r.get("twin"))}
     unused = sorted([k for k in dom_words if k not in used_dom] + [k for k in tab_words if k not in used_tab])
-    return {"default": strategy or DEFAULT_STRATEGY, "source": ("center.config.json#naming" if cfg else "built-in"),
+    return {"present": True, "default": strategy or DEFAULT_STRATEGY, "source": ("center.config.json#naming (ignored — see config_error)" if ignored else ("center.config.json#naming" if had_cfg else "built-in")),
             "positions": list(STRATEGIES), "coverage": {**{k: (n_rows if k == "domain" else cov.get(k, 0)) for k in STRATEGIES}, "rows": n_rows},
             "collisions": {"path": collided}, "long": {"action": long_action, "both": long_both}, "disabled": disabled,
             "entities": entities, "fe": fe_block, "action_source": {"path": dn_path, "reason": dn_reason},
