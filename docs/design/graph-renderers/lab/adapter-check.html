@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>adapter-check — the ONE adapter, no renderer</title>
+<link rel="stylesheet" href="./lab.css">
+<script src="./feed-loader.js"></script>
+<script src="../../../../templates/center/shell/assets/graph-grammar.js"></script>
+<script src="./adapter.js"></script>
+<script src="./scorecard.js"></script>
+<div style="position:absolute;left:340px;top:14px;color:#9aa5b1;font-size:12px;max-width:640px" id="out"></div>
+<script>
+(function () {
+  var F = window.GABE_FEED; if (!F) { document.getElementById('out').textContent = window.GABE_FEED_ERR || 'no feed'; LAB.ready({ err: [window.GABE_FEED_ERR || 'no feed'] }); return; }
+  var st = F.selfTest();
+  var rows = st.checks.map(function (c) { return [c.name, c.ok ? 'free' : 'lost', c.detail]; });
+  LAB.panel({ lib: 'adapter selfTest', ver: 'no renderer', bundle: '0 B', license: '—', role: 'the count law', checklist: rows,
+    verdict: (st.ok ? '<b>all checks pass</b>' : '<b>FAILED</b>') + ' · ' + F.counts.nodes + ' nodes · ' + F.counts.links + ' links · ' + F.counts.ents + ' ents · tiers ' + F.counts.byTier.join('/') });
+  document.getElementById('out').innerHTML = '<b>' + F.fixture + '</b> @ ' + F.head + ' · scale ' + F.scale + ' · fn ' + F.opts.fn + ' · fe ' + F.opts.fe + '<br>byKind ' + JSON.stringify(F.counts.byKind) + '<br>absorbed ' + F.counts.absorbed + ' · generic ' + F.counts.generic + ' · fn ' + F.counts.fn + ' · cross ' + F.counts.cross + ' · feLinks ' + F.counts.feLinks + ' · dropped ' + F.counts.droppedLinks + ' · unknownRels ' + JSON.stringify(F.counts.unknownRels) + (F.warnings.length ? '<br>warn: ' + F.warnings.join(' · ') : '');
+  LAB.note('norender', true); LAB.note('selftest', st);
+  LAB.ready({ nodes: F.counts.nodes, links: F.counts.links, drawn: 0, err: st.ok ? [] : st.checks.filter(function (c) { return !c.ok; }).map(function (c) { return c.name + ': ' + c.detail; }) });
+})();
+</script>

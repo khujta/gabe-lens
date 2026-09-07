@@ -1,0 +1,8 @@
+# vendored library bundles are fetched by vendor.sh (exact pins) — only the manifest is committed
+vendor/*
+!vendor/MANIFEST.json
+# the onyx fixture is a COPY of the repo-study tier3 center (fetch-onyx.sh) — never committed
+fixtures/onyx/
+# screenshots + per-run shots; the probe-results*.json ARE committed (the numbers, small)
+_shots/
+node_modules/

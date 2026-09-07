@@ -1,0 +1,180 @@
+[
+ {
+  "page": "adapter-check.html",
+  "lib": "adapter selfTest",
+  "ver": "no renderer",
+  "feed": "onyx",
+  "scale": "full",
+  "layout": "live",
+  "tier": null,
+  "ok": true,
+  "wall_ms": 546,
+  "nodes": null,
+  "links": null,
+  "drawn": null,
+  "drawn_ok": true,
+  "boot_ms": null,
+  "first_frame_ms": null,
+  "settle_ms": null,
+  "settled": true,
+  "fps": null,
+  "frame_ms": null,
+  "draws": null,
+  "tris": null,
+  "geos": null,
+  "texs": null,
+  "pick": {
+   "tries": 0,
+   "hits": 0,
+   "other": 0,
+   "none": 0,
+   "unpositioned": 0,
+   "ms": null
+  },
+  "heap_mb": 18.7,
+  "bundle": {
+   "station": 25390,
+   "vendor": 0,
+   "feed": 4998167,
+   "lab": 34070
+  },
+  "ink": null,
+  "r10": null,
+  "injected": null,
+  "purity": null,
+  "offline": true,
+  "net": [],
+  "errs": [],
+  "matrix": [
+   {
+    "row": "ids unique",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "link ends resolve",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
+    "state": "free",
+    "how": "3174 vs 3174 (L2 794 · fe 0 · absorbed 0 · fn 2380)"
+   },
+   {
+    "row": "unknown kind kept, never dropped",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "fe=0 yields no fe node/link",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "method never defaults to GET",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "every node has a tier 0..3",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "deterministic (build twice, identical)",
+    "state": "free",
+    "how": ""
+   },
+   {
+    "row": "seed positions deterministic + finite",
+    "state": "free",
+    "how": ""
+   }
+  ],
+  "notes": {
+   "norender": true,
+   "selftest": {
+    "ok": true,
+    "checks": [
+     {
+      "name": "ids unique",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "link ends resolve",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "count law: L2(dedup) + fe − absorbed web + fn (+inject) = nodes",
+      "ok": true,
+      "detail": "3174 vs 3174 (L2 794 · fe 0 · absorbed 0 · fn 2380)"
+     },
+     {
+      "name": "unknown kind kept, never dropped",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "fe=0 yields no fe node/link",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "method never defaults to GET",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "every node has a tier 0..3",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "deterministic (build twice, identical)",
+      "ok": true,
+      "detail": ""
+     },
+     {
+      "name": "seed positions deterministic + finite",
+      "ok": true,
+      "detail": ""
+     }
+    ],
+    "counts": {
+     "nodes": 3174,
+     "links": 5320,
+     "ents": 10,
+     "byKind": {
+      "middleware": 4,
+      "endpoint": 545,
+      "web": 80,
+      "provider": 9,
+      "model": 155,
+      "external": 1,
+      "function": 2380
+     },
+     "byTier": [
+      780,
+      794,
+      3174,
+      3174
+     ],
+     "fe": 0,
+     "absorbed": 0,
+     "generic": 0,
+     "fn": 2380,
+     "cross": 1626,
+     "feLinks": 0,
+     "droppedLinks": 0,
+     "unknownRels": {}
+    },
+    "warnings": []
+   }
+  },
+  "warnings": [],
+  "baked": null
+ }
+]
