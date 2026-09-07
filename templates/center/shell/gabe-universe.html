@@ -1015,6 +1015,7 @@
 <div id="elegend"></div>
 <div class="hint">Orbit: drag = rotate (up stays up) · right-drag = pan · scroll = zoom · click a node</div>
 <script src="./assets/3d-bundle.js"></script>
+<script src="./assets/three-kit.js"></script>
 <script src="./assets/chip-assets.js"></script>
 <script src="./c4-graph.js"></script>
 <script src="./levels.js"></script>
@@ -1444,6 +1445,16 @@ var CFG={ shape:"polygon", entLayout:"force", coreBy:"layer", coreByBE:null, cor
   warOn:true, warDist:7, shellH:0.6, concave:0.72, lift:0.65,   // war zones baked ALWAYS ON (operator settle 2026-08-19); warDist/shellH/concave/lift are dead (fleets ignore them)
   conns:true, stars:true, transports:true,   // ELEMENTS-LAB fleets · connectors · star field · transports — all baked ALWAYS ON (settled)
   zDef:true, zAtk:true, zCfl:true, zSat:true };   // per-planet-zone visibility (defence · attack · conflict · satellites), toggled in the Planet group
+(function(){ try{ var q=new URLSearchParams(location.search).get("render"), st=null; try{ st=window.localStorage.getItem("gabe:universe:render"); }catch(e){} if((q||st)==="instanced"){ CFG.warOn=false; CFG.transports=false; CFG.stars=false; } }catch(e){} })();   /* INSTANCED (below): the per-node GLB fleets, the shuttles and the star sprites stay on the objects path in this cut */
+/* ── the INSTANCED render path (graph-renderer lab, 2026-09-07). The real page drew 6,232 calls a frame at its boot tier because every node
+   is a Group of 5–7 objects and every wire its own Line; the SAME picture instanced drew 68. ?render=instanced (URL > localStorage
+   gabe:universe:render > objects). Under it: icons · badges · bubbles · labels · wires draw as ONE layer each from assets/three-kit.js; the
+   wrapper keeps the simulation, the camera, the node click (an invisible proxy per node still answers the raycaster) and every panel. On the
+   OBJECTS path only, in this cut: the fleets · transports · the cluster star field · curved wires · the encoding extras (rings · glow · verts)
+   — the Sources row says so. A mode switch reloads (the whole scene is rebuilt either way). ── */
+var INST=(function(){ try{ var q=new URLSearchParams(location.search).get("render"); if(q) return q==="instanced"; return window.localStorage.getItem("gabe:universe:render")==="instanced"; }catch(e){ return false; } })();
+window.__uniRenderMode=INST?"instanced":"objects";   /* NOT __uniRender — that name is the naming FORMATTER (form,name) at the top of this file; the collision left Graph null and the page dead */
+window.__uniSetRender=function(m){ m=(m==="instanced")?"instanced":"objects"; try{ window.localStorage.setItem("gabe:universe:render", m); }catch(e){} try{ var u=new URL(location.href); u.searchParams.delete("render"); location.href=u.toString(); }catch(e2){ location.reload(); } };
 var RADMIN=0.6, RADMAX=1.6;
 var NR=9;   // a node's visual radius (icon + bubble) — the clearance the boundary must clear
 /* metaball (fused-liquid WRAP) tuning — one iso-surface over the whole cluster so you cannot tell
@@ -1687,11 +1698,63 @@ function connectorWire(grp, a, b, kind, R, hf, ea, eb, hov, sel, band){ var cfg=
   if(cfg.style==="solid") mat=new T.LineBasicMaterial({color:_hlc||(band!=null?band:(_gr?0xffffff:cfg.color)), vertexColors:(_gr&&band==null), transparent:true, opacity:Math.min(1,cfg.trust*_bm*hf), blending:((_bm>1||hf>1)?T.AdditiveBlending:T.NormalBlending)});
   else{ var base=({dashed:[1.7,1.0], dotted:[0.35,0.95], sparse:[1.4,2.8], longdash:[2.6,1.2]})[cfg.style]||[1.2,1.0], dn=cfg.density||1; mat=new T.LineDashedMaterial({color:_hlc||(band!=null?band:(_gr?0xffffff:cfg.color)), vertexColors:(_gr&&band==null), transparent:true, opacity:Math.min(1,cfg.trust*_bm*hf), blending:((_bm>1||hf>1)?T.AdditiveBlending:T.NormalBlending), dashSize:base[0]/dn, gapSize:base[1]/dn}); }
   if(hov){ try{ var _crv=new T.CatmullRomCurve3(_pts); var _isSel=!!sel; if(_isSel){ window.__uniSelCurve=_crv; window.__uniSelMeshes=[]; } var _sr=(typeof CFG!=="undefined"&&CFG.selThick!=null)?CFG.selThick:0.2, _so=(typeof CFG!=="undefined"&&CFG.selOpacity!=null)?CFG.selOpacity:0.5, _sp=(typeof CFG!=="undefined"&&CFG.selPattern)?CFG.selPattern:"solid"; if(typeof CFG!=="undefined"&&CFG.selGlow){ var _gm=new T.MeshBasicMaterial({color:_hlc||0xffffff, transparent:true, opacity:(CFG.selGlowInt!=null?CFG.selGlowInt:0.05), blending:T.AdditiveBlending, depthWrite:false, depthTest:false}); var _gt=new T.TubeGeometry(_crv, Math.max(2,_pts.length-1), _sr*2.6, 6, false); var _gme=new T.Mesh(_gt,_gm); _gme.userData.kind=kind; _gme.userData.__selBaseOp=(CFG.selGlowInt!=null?CFG.selGlowInt:0.05); grp.add(_gme); if(_isSel) window.__uniSelMeshes.push(_gme); } var _tm=new T.MeshBasicMaterial({color:_hlc||0xffffff, transparent:true, opacity:_so, blending:T.AdditiveBlending, depthWrite:false, depthTest:false}); if(_sp==="solid"){ var _tube=new T.TubeGeometry(_crv, Math.max(2,_pts.length-1), _sr, 6, false); var _m=new T.Mesh(_tube,_tm); _m.userData.kind=kind; _m.userData.__selBaseOp=_so; grp.add(_m); if(_isSel) window.__uniSelMeshes.push(_m); } else { var _dn=(_sp==="dotted")?26:13; for(var _di=0;_di<_dn;_di+=2){ var _a=_di/_dn, _b2=Math.min(1,(_di+1)/_dn); var _sc=new T.CatmullRomCurve3([_crv.getPoint(_a), _crv.getPoint((_a+_b2)/2), _crv.getPoint(_b2)]); var _dm=new T.Mesh(new T.TubeGeometry(_sc, 3, _sr, 6, false), _tm); _dm.userData.kind=kind; _dm.userData.__selBaseOp=_so; grp.add(_dm); if(_isSel) window.__uniSelMeshes.push(_dm); } } return; }catch(_te){} } if(cfg.thick&&cfg.thick>1.05){ try{ var _tc=new T.CatmullRomCurve3(_pts), _tr=0.12*cfg.thick,   _tm2=new T.MeshBasicMaterial({color:(band!=null?band:cfg.color), transparent:true, opacity:Math.min(1,cfg.trust*_bm*hf), blending:((_bm>1||hf>1)?T.AdditiveBlending:T.NormalBlending), depthWrite:false});   if(cfg.style==='solid'){ var _tb=new T.Mesh(new T.TubeGeometry(_tc, Math.max(2,_pts.length-1), _tr, 6, false), _tm2); _tb.userData.kind=kind; _tb.raycast=function(){}; grp.add(_tb); }   else { var _sn=Math.max(6, Math.round((cfg.density||2)*6)); for(var _ti=0;_ti<_sn;_ti+=2){ var _ta=_ti/_sn, _tbb=Math.min(1,(_ti+1)/_sn); var _dtb=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([_tc.getPoint(_ta), _tc.getPoint((_ta+_tbb)/2), _tc.getPoint(_tbb)]),3,_tr,6,false), _tm2); _dtb.userData.kind=kind; _dtb.raycast=function(){}; grp.add(_dtb); } }   return; }catch(_tk){} } var line=new T.Line(geo,mat); line.userData.kind=kind; if(mat.isLineDashedMaterial) line.computeLineDistances(); grp.add(line); }
+/* ── INSTANCED layers (INST above): built once per graphData, synced every engine tick + on every visibility/colour change ── */
+window.__uniInst=null;
+function _instIconKey(n){ var k=(n.kind==="component"&&n.feClass==="view"&&billTex["screen"])?"screen":n.kind; return billTex[k]?k:"__generic"; }
+function _instSlots(n){ var a=null,b=null;   /* the buildNode badge branches, verbatim */
+  if(n.kind==="endpoint"&&n.m&&n.m.method) a={family:"method",value:n.m.method};
+  else if(n.kind==="function"&&n.role) a={family:"role",value:n.role};
+  else if(n.kind==="schema"&&n.__foldN>0) a={family:"count",value:n.__foldN};
+  else if(n.kind==="component"&&(n.feClass==="connector"||n.feClass==="container"||n.feClass==="leaf"||n.feClass==="private"||n.feClass==="detached")) a={family:"feclass",value:n.feClass};
+  else if(n.kind==="module"&&n.mclass) a={family:"mclass",value:n.mclass};
+  else if(n.kind==="hook"&&n.hrole) a={family:"hrole",value:n.hrole};
+  if(n.kind==="provider"&&n.pclass) a={family:"pclass",value:n.pclass};
+  if(n.kind==="endpoint"&&n.stream) b={family:"delivery",value:"stream"};
+  return [a,b]; }
+function _instBadgeDraw(c,x,y,S,e){ var cv=document.createElement("canvas"); cv.width=cv.height=128; if(window.__badgeGlyph) __badgeGlyph(cv.getContext("2d"), e.family, e.value); c.drawImage(cv,x,y,S,S); }   /* ONE badge-glyph source — the 3D badge, the legend swatch and the instanced atlas all draw from __badgeGlyph */
+function _instWireColor(l, end){ var L=l.l, cfg=CONN[l.kind]||CONN.calls, cs=NIDS[lid(L.source)], ct=NIDS[lid(L.target)], gm=cfg.gmode||"ent";
+  var tcol=function(n){ if(!n) return null; if(n.kind==="endpoint"&&n.m&&n.m.method&&typeof METHOD!=="undefined"&&METHOD[n.m.method]) return METHOD[n.m.method]; if(n.kind==="function"&&n.role&&window.__BADGE_COL&&__BADGE_COL.role&&__BADGE_COL.role[n.role]) return __BADGE_COL.role[n.role]; return null; };
+  var band=(L.rel==="calls"&&window.__d2wBand)?__d2wBand(ct):(L.write&&window.__feD2WBand)?__feD2WBand(ct):null;   /* the same heat law updateConnectors applies */
+  var col=(band!=null)?band:cfg.color;
+  if(band==null&&cfg.grad){ var ea=(((gm==="type"||gm==="type-ent")&&tcol(cs))||((cs&&typeof ENT!=="undefined"&&ENT[cs.ent])||null)), eb=(((gm==="type"||gm==="ent-type")&&tcol(ct))||((ct&&typeof ENT!=="undefined"&&ENT[ct.ent])||null)); if(ea!=null&&eb!=null) col=end?eb:ea; }   /* fk · rollup gradients: per-vertex end colours */
+  var f=(window._hlLinkF?_hlLinkF(L):1); if(L.chrome) f*=0.4;   /* the per-wire factor (focus rest · chrome plumbing) becomes a mix toward the background — one material per kind carries no per-segment opacity */
+  if(f<1){ var c0=new T.Color(col); c0.lerp(new T.Color("#0e1524"), 1-Math.max(0,f)); return "#"+c0.getHexString(); }
+  return col; }
+function _instWireVisible(l){ var L=l.l, cs=NIDS[lid(L.source)], ct=NIDS[lid(L.target)];
+  if(!cs||!ct||!_nodeVisibleFn(cs)||!visN(cs).wires||!_nodeVisibleFn(ct)||!visN(ct).wires) return false;
+  if(window.__uniSelLink===L||window.__uniHovLink===L) return false;   /* the selected / hovered wire is the objects path's tube (connectorWire) — never drawn twice */
+  var bm=(window.__uniBeam&&window.__uniBeam[l.kind]!=null)?window.__uniBeam[l.kind]:1; if(!bm) return false;
+  if(window._hlLinkF&&_hlLinkF(L)===0) return false; return true; }
+function __uniInstBuild(){ if(!INST||!window.TK||!Graph) return; __uniInstDispose();
+  var imgs=Object.keys(billTex).map(function(k){ return {key:k, image:billTex[k].image}; }); var gcv=document.createElement("canvas"); gcv.width=gcv.height=128; var gc=gcv.getContext("2d"); gc.fillStyle="#ffffff"; gc.beginPath(); gc.arc(64,64,40,0,6.2832); gc.fill(); imgs.push({key:"__generic", image:gcv});
+  var atlas=TK.imageAtlas(imgs,128), is=ENC.iconSize;
+  var icons=TK.iconLayer(nodes, atlas, _instIconKey, is), bub=TK.sphereLayer(nodes.length, BUB, OPMAP.bubble[CFG.bubble], 1, 24), rim=TK.sphereLayer(nodes.length, BUB, OPMAP.bubble[CFG.bubble]*1.7, 1, BUBSEG[0], true);
+  var badges=TK.badgeLayer(nodes, _instSlots, (CFG.mbSize!=null?CFG.mbSize:3.5), _instBadgeDraw, (CFG.mbOp!=null?CFG.mbOp:0.6));
+  var labels=TK.labelLayer(nodes, function(n){ return n.label; }, 2000, {cw:512, w:68, h:8.5, color:"#cdd6ea"});
+  var ilinks=links.map(function(l){ return {source:lid(l.source), target:lid(l.target), kind:REL2KIND[l.rel]||"calls", l:l}; });
+  var wires=TK.wireLayers(ilinks, {conn:CONN}, _instWireColor);
+  var scene=Graph.scene(), objs=[icons.mesh, bub.mesh, rim.mesh].concat(badges.mesh?[badges.mesh]:[], labels.mesh?[labels.mesh]:[], wires.meshes);
+  objs.forEach(function(m){ m.raycast=function(){}; scene.add(m); });   /* the layers are decoration to the picker — the proxies answer clicks */
+  window.__uniInst={ icons:icons, bub:bub, rim:rim, badges:badges, labels:labels, wires:wires, ilinks:ilinks, objs:objs, unlabelled:Math.max(0, nodes.length-(labels.pick||[]).length) };
+  __uniInstResync(); }
+function __uniInstDispose(){ var I=window.__uniInst; if(!I||!Graph) return; var scene=Graph.scene(); I.objs.forEach(function(m){ scene.remove(m); try{ m.geometry.dispose(); m.material.dispose(); }catch(e){} }); window.__uniInst=null; }
+function __uniInstResync(){ var I=window.__uniInst; if(!I) return; nodes.forEach(function(n,i){ I.icons.setColor(i, iconCol(n)); I.icons.setSize(i, ENC.iconSize, ENC.iconSize); }); I.icons.flush(); __uniInstSync(); }
+function __uniInstSync(){ var I=window.__uniInst; if(!I) return; var slot=I.labels.slotOf||{};
+  nodes.forEach(function(n,i){ var on=_nodeVisibleFn(n)&&n.x!=null&&isFinite(n.x), ls=slot[i]; if(!on){ I.icons.hide(i); I.bub.hide(i); I.rim.hide(i); if(ls!=null) I.labels.hide(ls); return; }
+    var br=massR(n); I.icons.set(i,n.x,n.y,n.z); I.bub.set(i,n.x,n.y,n.z,br); I.rim.set(i,n.x,n.y,n.z,br); if(ls!=null) I.labels.set(ls,n.x,n.y-(br+4.5),n.z); });
+  I.icons.flush(); I.bub.flush(); I.rim.flush(); I.labels.flush(); __uniInstBadgeTick(); __uniInstWires(); }
+function __uniInstBadgeTick(){ var I=window.__uniInst; if(!I||!I.badges.mesh||!Graph) return; var cam=Graph.camera(); if(!cam) return; var e=cam.matrixWorld.elements;
+  var ox=(CFG.mbX!=null)?CFG.mbX:2, oy=(CFG.mbY!=null)?CFG.mbY:-2.5, sz=(CFG.mbSize!=null)?CFG.mbSize:3.5;
+  I.badges.items.forEach(function(it,q){ var n=nodes[it.i]; if(!(_nodeVisibleFn(n)&&n.x!=null)){ I.badges.hide(q); return; } var sx=ox+it.slot*(sz*0.72), sy=oy;
+    I.badges.set(q, n.x+e[0]*sx+e[4]*sy+e[8]*3, n.y+e[1]*sx+e[5]*sy+e[9]*3, n.z+e[2]*sx+e[6]*sy+e[10]*3); });   /* the _mbTick law (camera right · up · toward), per instance */
+  I.badges.flush(); }
+function __uniInstWires(){ var I=window.__uniInst; if(!I) return; I.ilinks.forEach(function(l,li){ I.wires.setVisible(li, _instWireVisible(l)); }); I.wires.recolor(_instWireColor);
+  I.wires.update(function(id){ var p=_npos[id]; return p?[p.x,p.y,p.z]:null; }); }
 var connGroup=null;
 function updateConnectors(){ if(!connGroup) return;
   while(connGroup.children.length){ var ch=connGroup.children.pop(); if(ch.geometry&&ch.geometry.dispose)ch.geometry.dispose(); connGroup.remove(ch); }
   if(!CFG.conns) return;
-  links.forEach(function(l){ var a=_npos[lid(l.source)], b=_npos[lid(l.target)]; if(!a||!b) return;   // EVERY link → its kind's connector wire
+  (INST?links.filter(function(l){ return window.__uniSelLink===l||window.__uniHovLink===l; }):links).forEach(function(l){ var a=_npos[lid(l.source)], b=_npos[lid(l.target)]; if(!a||!b) return;   // EVERY link → its kind's connector wire (INSTANCED: only the selected / hovered wire takes the tube path; the rest are the layers)
     var _cs=NIDS[lid(l.source)], _ct=NIDS[lid(l.target)];
     if((_cs&&(!_nodeVisibleFn(_cs)||!visN(_cs).wires))||(_ct&&(!_nodeVisibleFn(_ct)||!visN(_ct).wires))) return;   // fleet: hidden node OR wires-off entity/cluster
     var _whf=(window._hlLinkF?_hlLinkF(l):1); if(window.__uniSelLink===l||window.__uniHovLink===l) _whf=Math.max(_whf,1)*2.6;
@@ -1703,7 +1766,7 @@ function updateConnectors(){ if(!connGroup) return;
     var _band=(l.rel==="calls"&&window.__d2wBand)?__d2wBand(_ct):(l.write&&window.__feD2WBand)?__feD2WBand(_ct):null;   // FE write wires ride the SEPARATE fed2w gradient (blue→magenta)
     connectorWire(connGroup, new T.Vector3(a.x,a.y,a.z), new T.Vector3(b.x,b.y,b.z), _gk, 8, _whf, _ea, _eb, (window.__uniHovLink===l||window.__uniSelLink===l), (window.__uniSelLink===l), _band); });
   if(window.__uniDrawStubs) __uniDrawStubs(connGroup); if(window.__uniDrawWriteRings) __uniDrawWriteRings(); if(window.__uniDrawJourneyNums) __uniDrawJourneyNums();
-  connGroup.traverse(function(c){ c.raycast=function(){}; }); }
+  connGroup.traverse(function(c){ c.raycast=function(){}; }); if(INST&&window.__uniInst) try{ __uniInstWires(); }catch(e){} }
 /* ── INTER-ENTITY TRANSPORTS — data shuttles ferrying the cross-entity routes, LIVE (ping-pong along the link,
    nose leading). cargoB = a good-fit cargo hauler (the settled 'hauler' GLB has a broken bbox — deferred). ── */
 var NENT={}; nodes.forEach(function(n){ NENT[n.id]=n.ent; });   // node → entity
@@ -1755,7 +1818,9 @@ function methodBadge(m, br){ var cv=document.createElement('canvas'); cv.width=c
 function roleBadge(role){ var cv=document.createElement('canvas'); cv.width=cv.height=128; var c=cv.getContext('2d'); if(window.__badgeGlyph) window.__badgeGlyph(c,'role',role); else { c.fillStyle='#8794ab'; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill(); } var _o=(typeof CFG!=='undefined'&&CFG.mbOp!=null)?CFG.mbOp:0.95, _z=(typeof CFG!=='undefined'&&CFG.mbSize!=null)?CFG.mbSize:3.5, _x=(typeof CFG!=='undefined'&&CFG.mbX!=null)?CFG.mbX:2, _y=(typeof CFG!=='undefined'&&CFG.mbY!=null)?CFG.mbY:-2.5; var s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv), transparent:true, opacity:_o, depthWrite:false, depthTest:false })); s.scale.set(_z,_z,1); s.position.set(_x,_y,4); s.raycast=function(){}; if(window.__uniBadges) window.__uniBadges.push(s); return s; }
 function countBadge(nn){ var cv=document.createElement('canvas'); cv.width=cv.height=128; var c=cv.getContext('2d'); if(window.__badgeGlyph) window.__badgeGlyph(c,'count',nn); else { c.fillStyle='#0e9aa7'; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill(); } var _o=(typeof CFG!=='undefined'&&CFG.mbOp!=null)?CFG.mbOp:0.95, _z=(typeof CFG!=='undefined'&&CFG.mbSize!=null)?CFG.mbSize:3.5, _x=(typeof CFG!=='undefined'&&CFG.mbX!=null)?CFG.mbX:2, _y=(typeof CFG!=='undefined'&&CFG.mbY!=null)?CFG.mbY:-2.5; var s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv), transparent:true, opacity:_o, depthWrite:false, depthTest:false })); s.scale.set(_z,_z,1); s.position.set(_x,_y,4); s.raycast=function(){}; if(window.__uniBadges) window.__uniBadges.push(s); return s; }
 function feclassBadge(fc, kind){ var cv=document.createElement('canvas'); cv.width=cv.height=128; var c=cv.getContext('2d'); if(window.__badgeGlyph) window.__badgeGlyph(c,kind||'feclass',fc); else { c.fillStyle='#8a8f98'; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill(); } var _o=(typeof CFG!=='undefined'&&CFG.mbOp!=null)?CFG.mbOp:0.95, _z=(typeof CFG!=='undefined'&&CFG.mbSize!=null)?CFG.mbSize:3.5, _x=(typeof CFG!=='undefined'&&CFG.mbX!=null)?CFG.mbX:2, _y=(typeof CFG!=='undefined'&&CFG.mbY!=null)?CFG.mbY:-2.5; var s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv), transparent:true, opacity:_o, depthWrite:false, depthTest:false })); s.scale.set(_z,_z,1); s.position.set(_x,_y,4); s.raycast=function(){}; if(window.__uniBadges) window.__uniBadges.push(s); return s; }
-function buildNode(n){ var grp=new T.Group(); var col=iconCol(n), br=massR(n);
+var _INST_PROXY_GEO=null, _INST_PROXY_MAT=null;
+function buildNode(n){ if(INST){ if(!_INST_PROXY_GEO){ _INST_PROXY_GEO=new T.IcosahedronGeometry(1,0); _INST_PROXY_MAT=new T.MeshBasicMaterial({visible:false}); } var g0=new T.Object3D(), px=new T.Mesh(_INST_PROXY_GEO,_INST_PROXY_MAT); px.scale.setScalar(massR(n)); g0.add(px); return g0; }   /* INSTANCED: an invisible proxy keeps the wrapper's raycaster (click · tooltip · hover halo anchor); the drawn body is the layers' — zero draw calls here */
+  var grp=new T.Group(); var col=iconCol(n), br=massR(n);
   var ic, is=ENC.iconSize;
   var _ik=(n.kind==="component"&&n.feClass==="view"&&billTex["screen"])?"screen":n.kind;   /* VIEW wears the SCREEN glyph (operator) */ if(billTex[_ik]){ ic=billboardMesh(_ik,col); ic.scale.set(is,is,1); }   // ICON = a CONSTANT display size (operator-set), same for every element
   else { ic=primitiveMesh(n.kind, col); ic.scale.multiplyScalar(is/13); }
@@ -1778,7 +1843,7 @@ function buildNode(n){ var grp=new T.Group(); var col=iconCol(n), br=massR(n);
   grp.add(labelSprite(n.label, 26, -(br+4.5)));
   return grp;
 }
-function rebuildNodes(){ PULSE=[]; ORBIT=[]; WAVE=[]; FLEETTICK=[]; if(Graph) Graph.nodeThreeObject(function(n){ return buildNode(n); }); }
+function rebuildNodes(){ PULSE=[]; ORBIT=[]; WAVE=[]; FLEETTICK=[]; if(Graph) Graph.nodeThreeObject(function(n){ return buildNode(n); }); if(INST&&window.__uniInstResync) try{ __uniInstResync(); }catch(e){} }   /* INSTANCED: colour · size · visibility re-read per instance (the five rebuild callers land here) */
 /* re-apply ALL encodings: rebuild node objects + re-trigger the edge accessors (they read ENC live) */
 function applyEnc(){ if(!Graph) return; rebuildNodes();
   Graph.linkWidth(linkWidthFn).linkColor(linkColorFn)
@@ -4129,6 +4194,7 @@ window.__badgeGlyph=function(c, kind, key){
 };
 window.__uniBadges=[];
 (function _mbTick(){ requestAnimationFrame(_mbTick);
+  if(INST&&window.__uniInst) try{ __uniInstBadgeTick(); }catch(e){}   /* INSTANCED: the badge quads ride the camera basis each frame, like the sprites below */
   var arr=window.__uniBadges; if(!arr||!arr.length||typeof Graph==="undefined"||!Graph) return;
   var cam=Graph.camera(); if(!cam) return; var e=cam.matrixWorld.elements;   // cols: [0..2]=right · [4..6]=up · [8..10]=toward-viewer
   var ox=(typeof CFG!=="undefined"&&CFG.mbX!=null)?CFG.mbX:2, oy=(typeof CFG!=="undefined"&&CFG.mbY!=null)?CFG.mbY:-2.5,
@@ -5154,7 +5220,7 @@ function updateClusters(force){ _wtick++; _npos={}; nodes.forEach(function(n){ i
       c.mc.update();
     }
     if(c.lbl){ c.lbl.position.set(c.level==="ent"?cx:cx-28, c.level==="ent"?top+26:cy, cz); var _lh=c.level==="ent"?12.5:7.5, _la=(c.lbl.material.map&&c.lbl.material.map.image)?(c.lbl.material.map.image.width/c.lbl.material.map.image.height):4; c.lbl.scale.set(_lh*_la, _lh, 1); }
-  }); if(window.__uniHLTick) __uniHLTick(); if(force || _wtick%3===0) updateConnectors(); }
+  }); if(INST&&window.__uniInst) try{ __uniInstSync(); }catch(e){} if(window.__uniHLTick) __uniHLTick(); if(force || _wtick%3===0) updateConnectors(); }
 function build(){
   if(Graph){ try{ Graph._destructor(); }catch(e){} document.getElementById("g").innerHTML=""; }
   Graph=ForceGraph3D({ controlType: st.ctl })(document.getElementById("g"))
@@ -5170,7 +5236,7 @@ function build(){
     .linkPositionUpdate(function(sprite,coords){ if(sprite && coords && coords.start && coords.end) sprite.position.set((coords.start.x+coords.end.x)/2,(coords.start.y+coords.end.y)/2,(coords.start.z+coords.end.z)/2); })
     .linkDirectionalParticles(linkPartFn).linkDirectionalParticleSpeed(linkSpeedFn).linkDirectionalParticleWidth(linkPWidthFn).linkDirectionalParticleColor(function(l){ return RELCOL[l.rel]||"#889"; })
     .nodeVisibility(function(n){ return _nodeVisibleFn(n); }).enableNodeDrag(false)   /* no node dragging → removes the controls-change handler that read an undefined subject.x on click */
-    .numDimensions(3).cooldownTicks(240).onEngineTick(updateClusters)
+    .numDimensions(3).cooldownTicks(240).cooldownTime(1e9).onEngineTick(updateClusters)   /* settle by TICKS: the bundle's 15 s wall-clock default stopped the layout at ~17 ticks on a slow GPU and looked settled (graph-renderer lab 2026-09-07) */
     .onEngineStop(function(){ updateClusters(true); if(window.__uniSettleDone) window.__uniSettleDone();
       if(window.__drive && !window.__driveDone){ window.__driveDone=true;   // regression: flip shape AFTER settle (the path that was broken)
         CFG.shape=window.__drive; CFG.subOn=true; CFG.entOn=true; buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); buildClusters(); updateClusters(true); }
@@ -5182,6 +5248,9 @@ function build(){
   try{ tuneLinkForce(); }catch(e){}
   buildClusters();
   connGroup=new T.Group(); Graph.scene().add(connGroup);   // typed connectors live here, refilled each updateClusters
+  if(INST){ var _gdF=Graph.graphData; Graph.graphData=function(){ var r=_gdF.apply(Graph, arguments); if(arguments.length){ try{ __uniInstBuild(); }catch(e){ console.warn("gabe-universe: instanced layers — "+e); } } return r; };   /* a new node array (fn/type layers · capsules) rebuilds the layers */
+    var _nvF=Graph.nodeVisibility; Graph.nodeVisibility=function(){ var r=_nvF.apply(Graph, arguments); if(arguments.length) requestAnimationFrame(function(){ try{ __uniInstSync(); }catch(e){} }); return r; };   /* a tier / kind / class toggle re-reads visibility per instance */
+    try{ __uniInstBuild(); }catch(e){ console.warn("gabe-universe: instanced layers failed — "+e); } }
   moverGroup=new T.Group(); Graph.scene().add(moverGroup);   // inter-entity transport shuttles live here
   setTimeout(function(){ Graph.cameraPosition(window.__cam==="top"?{x:0,y:520,z:2}:DEF,{x:0,y:0,z:0},700); },1800);   // ?cam=top → the above-view (defense/attack/conflict from overhead)
 }
@@ -5841,6 +5910,8 @@ var KINDCARD=(function(){
         {icon:"info",cls:"info",text:"The committed feeds this graph is drawn from — each row is one input and what it contributed."}));
       if(window.__uniBudgetHit) w.append(srcRow("entity","scale", window.__uniBudgetHit.nodes+" nodes > budget "+window.__uniBudgetHit.budget+" — booted at tier 0 (Skeleton)",
         "above its node budget the station boots at tier 0 (Skeleton) so a large repo stays navigable — raise the tier, or window.__uniBudget, to draw more"));
+      w.append(srcRow("info","render", (INST?"instanced — one draw call per layer (icons · badges · bubbles · labels · wires); on the objects path only in this cut: fleets · transports · cluster stars · curved wires · the encoding extras":"objects — one three.js object per node and per wire (the shipped path); ?render=instanced draws the same picture as one call per layer")+((window.__uniInst&&window.__uniInst.unlabelled)?(" · "+window.__uniInst.unlabelled+" label(s) past the atlas cap"):""),
+        "the render path (graph-renderer lab 2026-09-07): the real page drew 6,232 calls a frame at its boot tier, the same picture instanced 68 — switch with ?render=instanced|objects, or window.__uniSetRender(mode) to remember it in this browser"));
       /* the ENTITY MODEL row (Phase 2, 2026-09-06): which model clusters the field and what the switch did — live counts, said out loud */
       var _mv=window.__uniModel||"claim", _mm=(window.GABE_C4&&GABE_C4.models)||null, _mvw=(_mm&&_mm.views&&_mm.views[_mv])||null, _mst=window.__uniModelStats||{};
       var _others=_mm&&_mm.views?["seeded","derived","proposed"].filter(function(k){ return (_mm.views[k]||{}).present; }):[];

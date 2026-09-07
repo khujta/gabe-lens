@@ -94,6 +94,7 @@ helper fold (`n.__solo` in `visN`) hides, a station control the adapter does not
 | renderer | nodes drawn | draw calls | triangles | frame ms | fps* | heap MB | pick hit + occluded | what it says |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | **the station itself** (the real page) | 389 | **6,232** | 688,786 | **400** | 2.6 | 175 | — | today's cost on this host: 2.6 frames a second at its boot tier |
+| **the station instanced** (`?render=instanced`) | 389 | **189** | 1,550,600 | 565 | 1.8 | **45** | — | the SAME page, the same 843 nodes settled in the same 237 ticks: 33× fewer submissions and 3.9× less heap; the triangles rise because the layers allocate an instance per NODE (843) while the objects path only bodies the 389 the tier draws — 454 zero-scale spheres rasterise nothing but still run the vertex stage, which is what swiftshader charges for |
 | lab-00 · the wrapper as shipped | 430 | 2,236 | 453,362 | 400 | 3 | 99 | 11 + 1 | the same library and per-node object model as the station (glyph · badges · bubble · label per node, connectors, hulls); the station's extra calls are its sub-labels, particles, tubes and chrome |
 | lab-00 · hollow wrapper (`?hollow=1`) | 430 | **68** | 346,138 | 207 | 5 | 20 | 11 + 1 | the wrapper keeps the sim, camera, drag and reheat; every layer draws instanced from `three-kit.js` |
 | lab-01 · raw three | 430 | 91 | 347,212 | 232 | 4 | 16 | 12 + 1 | one call per layer + one mesh per hull and hull label |
@@ -111,12 +112,30 @@ not in this set), so it is not the lab's 0.60 measured over all 1,351 — a like
 its boot tier the station's own zForce + EX band + `recomputeSubAnchors` keeps the drawn entities together, so on this estate the render path,
 not the layout engine, is the beat that changes what the operator sees; D7 (the bake) moves down the list.
 
-**The move this licenses** (a station beat, needs "land it"): the hollow render path INSIDE the real station — `nodeThreeObject` returns an
+**The move this licenses — SHIPPED 2026-09-07** (`?render=instanced`, default off; the gabe-universe battery carries it as `instOk`): the hollow render path INSIDE the real station — `nodeThreeObject` returns an
 empty `Object3D`, `linkThreeObject` likewise, and the instanced layers of `three-kit.js` (forms · badge atlas · label atlas · wires per kind ·
 particles) draw into `Graph.scene()` from the wrapper's own node positions each frame; hulls, journeys, depth highlight and the legend keep
 their code because they never went through the wrapper's per-node objects. Behind a knob (`?render=instanced`, default off until the
 gabe-universe battery carries it), measured on the real page with `capture-station.mjs`'s baseline (6,232 calls · 400 ms · 175 MB) as the
 before row. The `cooldownTime` wall-clock fix rides the same beat (one line + one assert).
+
+**What it measured, and what it did not.** `capture-station.mjs --query=render=instanced --no-write` at head `e40a2096`: **6,232 → 189 draw
+calls** and **175 → 45 MB** of heap on the same 389 drawn nodes, 0 page errors, the same 237 ticks to settle. The picture is complete — a probe
+at tier 1 counts 389 icons · 389 bubbles · 389 rims · 389 labels · 210 badges against 389 visible nodes, 0 labels past the atlas cap. What did
+NOT improve is the swiftshader frame (400 → 565 ms) and the triangle count (689k → 1.55M), and both have one cause: the layers size themselves
+to `nodes.length` (843) while the objects path only builds bodies for the nodes the tier draws (389). A hidden instance is zero-scaled — it
+rasterises no pixels — but its vertices still run, and a CPU rasteriser bills for exactly that. On a GPU the submission count is the bottleneck
+and the 33× is what the frame feels; this rig cannot show that, which is why the knob ships default-off.
+
+**The named next lever** (not built): compact `mesh.count` to the visible high-water mark by keeping the visible slots contiguous across a
+visibility change. That retires the whole triangle debt without touching the picture, and it is the prerequisite for making `instanced` the
+default. Until then the two rows above are the honest pair — read the draw-call and heap columns, not `frame ms`.
+
+Two defects were found landing it, both worth naming because neither could fail in a static check: the render-mode global was published as
+`window.__uniRender`, a name the naming FORMATTER already owned, so `__uniAddWireView` called a string, threw, and left `Graph` null — the page
+was dead under the knob and the capture just timed out waiting. And the battery's new headless rows sat AFTER `await b.close()`, so they could
+only ever throw. The battery now pins the collision negatively (`window.__uniRender=INST` must not appear) and asserts `drawnIcons === vis`,
+because a bare `> 0` accepted a picture missing 90% of its glyphs.
 <!-- station:end -->
 
 ## D7 — the layout question (owed)
