@@ -64,6 +64,14 @@ so the station, gabe-map and the drafter each own a three-line `{name}` substitu
 
 ## The conventions (pill `#entfeconv`, each button renders its ACTUAL mark — legend-visual law)
 
+> **SETTLED 2026-09-07 (operator), superseding everything below about the CHOOSERS.** The NAMES and FRONTEND MARK
+> pills were REMOVED, with their setters and their `?naming=` / `?feconv=` deep links. NAMES could never relabel a
+> claim or a seeded cluster — only a derived/candidate row carries `names{}` — so under the settled entity model it
+> did nothing, by design; the frontend mark is settled at `case` (frontend camelCase · backend PascalCase). The
+> EMITTER half of this plan is untouched: `_a3_naming.py` still computes every name and every form, and
+> `__uniStrategy()` / `__uniConvention()` still read them as the label path. What follows is the record of the pass
+> that built the choosers, kept for its rulings.
+>
 > 2026-09-07 (operator, after the pass shipped): the three config pills now carry ICONS; the rendered mark ("frontend myFeature · backend MyFeature") and the strategy's rule moved to the hover title. The CAPSULES option below them was dropped ("we will not move forward with that option").
 
 | Convention | Form | Note |

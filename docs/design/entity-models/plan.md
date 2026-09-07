@@ -135,6 +135,11 @@ Verdict carried from Design B, verified: the switch is LIVE, no reboot — `gabe
 - **Change:** `D.pieces[n.entClaim||n.ent]` — otherwise every moved piece loses its use-case/community/fk sub-cluster on any non-claim view and lands in "other". The single highest-value line in the pass.
 - **Battery:** FIRE: `D.pieces[n.entClaim` present; SILENT: `D.pieces[n.ent]` absent. Headless: switching to seeded does not raise the `sub==='other'` count.
 
+> **SETTLED 2026-09-07 (operator): B3 and B6 below were REMOVED.** The station always shows `seeded`; the pill, the
+> setter `__uniSetModel` and the `?model=` deep link are gone. B5's re-cluster chain SURVIVES as the internal
+> `_applyEntityModel`, run once at boot — the deltas are the mechanism, and a label without them is a lie on the
+> station's face. B4 (the DATA) and everything under Phase 3-5 that reads `c4.models` is unaffected.
+
 ### B3 · The 4-position ENTITY MODEL pill replaces R2–R4
 - **Anchor:** `:4082 window.__uniAddWireView=function(){` · `:4087 var DEF=[["cap","CAP","capsules — …` · `:5113 function wireCfg(){` (snapshots `#cfg .pill` BEFORE `__uniAddWireView` runs at `:5136`, so the pill binds its OWN handler, as the CAP/wv buttons do) · call sites `:5042` · `:5136` · `:6125`.
 - **Change:** drop the r2/r3/r4 DEF entries (CAP stays alone in `#wireview` — it is the capsule master, not an R row); build `#entmodel` ABOVE it: single-select pill claim · seeded · derived · proposed (the tier-pill grammar at `:3653`), title in the reader's words; a position whose view is `present:false` renders DISABLED with the reason as title; no `models` key → three disabled, claim lit. Persistence `localStorage['gabe:universe:model']` in try/catch, default `claim` (the theme law `:3053`/`:3098`); a stored view the feed lacks falls back to claim with ONE console line.

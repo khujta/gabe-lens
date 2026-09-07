@@ -1190,9 +1190,32 @@ check('window.UNIWIRE' not in page and '__uniRelHide' not in page and '__uniDraw
       "R2–R4 machinery survived (UNIWIRE / __uniRelHide / __uniDrawBundles / _UTILSET / _SOLEP) — a retired toggle still gates the connector build")
 check('data-v="r2"' not in page and '["r2","R2"' not in page and '["r3","R3"' not in page and '["r4","R4"' not in page and 'UNIWIRE[d[0]]' not in page,
       "an R2/R3/R4 button is still built")
-check('window.__uniAddWireView=function()' in page and 'id="wireview"' not in page.replace("'",'"') and '>CAPSULES</div>' not in page and '"wv-"+d[0]' not in page and 'id="entmodel"' in page.replace("'",'"')
+check('window.__uniAddWireView=function()' in page and 'id="wireview"' not in page.replace("'",'"') and '>CAPSULES</div>' not in page and '"wv-"+d[0]' not in page
       and '__uniAddWireView();' in page,
-      "the CAPSULES option must be GONE (dropped 2026-09-07) while the ENTITY MODEL pill is built at boot / preset re-tabs")
+      "the CAPSULES option must be GONE (dropped 2026-09-07) and __uniAddWireView must still run at boot / preset re-tabs for its settled tail")
+
+# ── THE THREE TEMPORARY-CONFIG CHOOSERS ARE GONE (operator settle 2026-09-07) ─────────────────
+# The entity model is always `seeded`; NAMES could never relabel a claim or seeded cluster (only a
+# derived/candidate row carries names{}), and the frontend mark is settled at `case`. What must NOT
+# regress: the chooser must not come back, and — the sharper one — the model must not become a mere
+# LABEL. window.__uniModel says "seeded" whether or not the deltas ran; only moved/held prove they did.
+check('id="entmodel"' not in page.replace("'",'"') and 'id="entnaming"' not in page.replace("'",'"') and 'id="entfeconv"' not in page.replace("'",'"')
+      and 'data-grp="entmodel"' not in page and 'data-grp="entnaming"' not in page and 'data-grp="entfeconv"' not in page,
+      "temp-config REGRESSION: an ENTITY MODEL / NAMES / FRONTEND MARK chooser is back — all three were settled away 2026-09-07")
+check('window.__uniSetModel' not in page and 'window.__uniSetNaming' not in page and 'window.__uniSetFeConv' not in page and 'window.__uniSyncNamingPills' not in page and 'window.__uniRelabel' not in page,
+      "temp-config REGRESSION: a chooser SETTER is back (__uniSetModel / __uniSetNaming / __uniSetFeConv / __uniSyncNamingPills / __uniRelabel)")
+check('gabe:universe:model' not in page and 'gabe:universe:naming' not in page and 'gabe:universe:feconv' not in page,
+      "temp-config REGRESSION: a chooser preference is being stored again — there is no chooser to express it")
+check('window.__model=q.get("model")' not in page and 'window.__naming=' not in page and 'window.__feconv=' not in page,
+      "temp-config REGRESSION: ?model= / ?naming= / ?feconv= are parsed again — the settled model is not a URL choice")
+check('var _UNIMODEL="seeded";' in page and 'var _want=_UNIMODEL;' in page and 'function _applyEntityModel(v, opts)' in page,
+      "settled-model FIRE: the station must apply the SETTLED `seeded` model at boot through the surviving delta applier")
+check('SETTLED 2026-09-07: the station always shows `seeded`' in page,
+      "settled-model FIRE: the Sources row still describes the entity model as a CHOICE — it is settled, and the row must say so")
+# the survivors: the label path reads the FEED's defaults now that nothing writes the two choice vars
+check('window.__uniNaming=null; window.__uniFeConv=null;' in page and 'return window.__uniNaming||(nb&&nb["default"])||"domain";' in page
+      and 'return window.__uniFeConv||fe.convention||"case";' in page,
+      "settled-naming FIRE: __uniStrategy / __uniConvention must survive and fall through to the FEED's own default (the strategy the emitter chose · the settled `case` mark) — they are the label path, not a control")
 
 # ── 10z. batch 52 review fixes (7 confirmed → 6 distinct) ──
 check('UNICAP.on=true' not in page and 'UNICAP.on=!UNICAP.on' not in page and 'UNICAP.on = ' not in page,
@@ -1222,10 +1245,10 @@ check('KINDS.element={' in page and 'KINDCOL.element=' in page and 'order.push("
       "B1: the element kind lacks its registry / legend row / compact-legend row / tier list / tip")
 check('"claimed by "+String(n.entClaim||n.ent||"")' in page and '"home "+_hslug(n.entClaim||n.ent)+" by "+by' in page and '_hslug(n.ent)+" by "' not in page and 'String(n.ent||"").replace(/^fe·/,"")+"\'s config' not in page,
       "R2: the homing-evidence and config-home card rows must join on the CLAIM (n.entClaim), never the view's home")
-_sm1=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('window.__uniAddWireView=function()')]
+_sm1=page[page.find('function _applyEntityModel(v, opts)'):page.find('window.__uniAddWireView=function()')]
 check('pools.push(_FETYPES)' in _sm1 and 'live={}; pools.forEach(function(pool){ pool.forEach(function(n){ if(n&&!n.__cap&&n.ent) live[n.ent]=1; }); });' in _sm1 and 'live={}; nodes.forEach' not in _sm1,
       "R2: the held fe-type pool re-homes and the cluster registry is built over EVERY pool (a function-only cluster must be minted with functions OFF)")
-_sm2=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('window.__uniAddWireView=function()')]
+_sm2=page[page.find('function _applyEntityModel(v, opts)'):page.find('window.__uniAddWireView=function()')]
 check(_sm2.find('window.__uniModel=v;') < _sm2.find('var pools=[nodes]') and _sm2.count('window.__uniModel=v;')==1,
       "R2: the model flag is set BEFORE the re-cluster (buildClusters reads it for the aspect dash)")
 check('if(!mem.length) return;' in page[page.find('function buildClusters()'):page.find('function hull(ms, pad)')], "R2: a registered cluster with zero drawn members allocates no hull (no label at the origin)")
@@ -1234,25 +1257,16 @@ check('fnsN:(kind==="element"?_num(p.fns):null)' in page and 'more (the census l
 check('var pc=D.pieces[n.entClaim||n.ent];' in page and 'D.pieces[n.ent];' not in page,
       "B2: the levels group map must join on the CLAIM — a moved piece would lose its use-case / community / fk group and land in 'other'")
 _em=page[page.find('if(!document.getElementById("entmodel"))'):page.find('if(!document.getElementById("entnaming"))')]
-check(bool(_em) and re.findall(r'\["(\w+)","\w+",', _em)==["claim","seeded","derived","proposed"] and '__uniSetModel(btn.getAttribute("data-v"))' in _em
-      and "' disabled'" in _em and 'vw.reason' in _em,
-      "B3: the ENTITY MODEL pill is not the four-position claim · seeded · derived · proposed with disabled-with-reason positions")
-check(page.find('em.id="entmodel"') < page.find('en.id="entnaming"'), "B3: #entmodel must be built ABOVE #entnaming")
-check('ico(MICO[d[0]],13)' in _em and "\">'+d[1]+'</button>'" not in _em and '(d[1]+" — "+d[2])' in _em,
-      "B3-icons: the ENTITY MODEL buttons must carry an ICON with the word on hover (operator 2026-09-07), not the word")
-check('window.localStorage.setItem("gabe:universe:model", v)' in page and 'window.localStorage.getItem("gabe:universe:model")' in page,
-      "B3: the model preference is not persisted / read back (gabe:universe:model)")
-_sm=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('/* a naming or mark switch RELABELS')]
+_sm=page[page.find('function _applyEntityModel(v, opts)'):page.find('window.__uniAddWireView=function()')]
 check(all(k in _sm for k in ('recomputeEX(CFG.entLayout)','__uniAssignSplit()','recomputeSubAnchors()','__uniApplyCapsules()','Graph.d3ReheatSimulation()','JRN=null','UNICAP.open={}','_FNNODES','_CAPST.nodes','n.ent=H[n.id]||c','n.modelMark=','__uniFleetRender()','applyVis("all")','__uniFreezeForSettle()')),
-      "B5: __uniSetModel misses a step of the live re-cluster chain (pools · homes · registry · anchors · capsules · reheat · spans · fleet · panel · vis)")
+      "B5: _applyEntityModel misses a step of the live re-cluster chain (pools · homes · registry · anchors · capsules · reheat · spans · fleet · panel · vis)")
 check('Graph.graphData(' not in _sm and 'n.id=' not in _sm and 'n.col=' not in _sm and 'nodes=[' not in _sm and 'links=' not in _sm and 'NIDS[' not in _sm,
-      "B5: __uniSetModel must never touch the node/link arrays, an id, NIDS or a colour (the identity law — a walk's steps are ids)")
+      "B5: _applyEntityModel must never touch the node/link arrays, an id, NIDS or a colour (the identity law — a walk's steps are ids)")
 check('return false; }' in _sm and 'views[v].present' in _sm and '_ents.length=0;' in _sm and 'claimEnts.slice()' in _sm,
       "B5: an absent/unknown view must return false and stay put; the claim view must restore the registry exactly")
-check('window.__model=q.get("model")' in page and 'mv=window.__model' in page, "B6: ?model= is not parsed / applied")
 _dl=page[page.find('window.__uniApplyDeepLinks=function()'):page.find('window.UNICAP={')]
-check(0 < _dl.find('__uniSetModel(_want,{noStore:true})') < _dl.find('__jrnDone') < _dl.find('__entDone') and 'localStorage.setItem' not in _dl,
-      "B6: the model must apply BEFORE ?journey= / ?ent= and never write localStorage from the URL path")
+check(0 < _dl.find('_applyEntityModel(_want,{noStore:true})') < _dl.find('__jrnDone') < _dl.find('__entDone') and 'localStorage' not in _dl,
+      "B6: the settled entity model must apply BEFORE ?journey= / ?ent= (so ?ent= resolves against its clusters), and the boot path must touch NO localStorage at all")
 check('function makeCluster(members, color, shape, op, level, label, dash)' in page and page.count('wireframe:!!dash')==2 and '_dash=!!(_mr&&_mr.kind==="aspect")' in page and '{ekey:e, dash:_dash}' in page,
       "B7: an aspect hull has no dashed/stippled rim (sphere + polygon)")
 check(page.count('homeEvRow(n), modelRow(n),')==4 and 'function modelRow(n)' in page and 'modelRow(n),\n      accessSec(n),' in page,
@@ -1271,42 +1285,23 @@ check(all(k in page for k in ('window.__uniNameOf=function(id)','window.__uniRen
 check('{name|camel}' in page and '{name|pascal}' in page and '/^(.*?)( · | — )(.*)$/' in page, "B3-naming: the case tokens are not substituted on the leading word-run only")
 _en=page[page.find('if(!document.getElementById("entnaming"))'):page.find('if(!document.getElementById("entfeconv"))')]
 _ec=page[page.find('if(!document.getElementById("entfeconv"))'):page.find('/* ── SELECTED-LINE look SETTLED')]
-check(bool(_en) and bool(_ec) and page.find('em.id="entmodel"') < page.find('en.id="entnaming"') < page.find('ec.id="entfeconv"'),
-      "B3-naming: #entnaming and #entfeconv must be built under #entmodel, in that order")
-check('ico(NICO[k]||"domain",13)' in _en and "+k+'</button>'" not in _en and '_ea2(k+" — "+ti)' in _en
-      and 'ico(CICO[k]||"none",13)' in _ec and 'ico("tint",13)' in _ec and '_ea3(k+" — "+ti)' in _ec,
-      "B3-icons: the NAMES and FRONTEND MARK buttons must carry ICONS with the word + rule (or the rendered mark) on hover (operator 2026-09-07)")
 _ico=page[page.find('var ICO={'):page.find('function ico(g,w)')]
 check(bool(_ico) and all((k+":'") in _ico or (k+':GLYPH') in _ico for k in ('claim','seeded','derived','proposed','domain','table','path','action','config','both','prefix','suffix','bracket','tint','none')) and '"class":GLYPH.schema' in _ico and 'glyph:GLYPH.screen' in _ico and '"case":\'' in _ico,
       "B3-icons: the ICO roster is missing a pill icon (claim · seeded · derived · proposed · domain · table · class · path · action · config · both · case · prefix · suffix · bracket · glyph · tint · none)")
-check('__uniSetNaming(btn.getAttribute("data-v"))' in _en and "' disabled'" in _en and 'dis[k]' in _en and '__uniSetFeConv(btn.getAttribute("data-v"))' in _ec and '["case","prefix","suffix","bracket","glyph","tint","none"]' in _ec and '__uniRender(f.fe,"my feature")' in _ec,
-      "B3-naming: the pills bind their setters, render disabled positions with reasons, and the mark buttons carry their ACTUAL mark (on hover since 2026-09-07)")
 _rl=page[page.find('window.__uniRelabel=function()'):page.find('window.__uniSetNaming=function(k, opts)')]
-check(bool(_rl) and 'buildClusters()' in _rl and '__uniFleetRender()' in _rl and all(x not in _rl for x in ('recomputeEX','__uniAssignSplit','recomputeSubAnchors','__uniApplyCapsules','d3ReheatSimulation','Graph.graphData(','nodes=','n.ent=','JRN=null')),
-      "B3-naming: __uniRelabel must relabel (clusters · fleet · panel) and NEVER re-cluster (the absence list)")
 _sn=page[page.find('window.__uniSetNaming=function(k, opts)'):page.find('window.__uniAddWireView=function()')]
-check('return false; }' in _sn and 'localStorage.setItem("gabe:universe:naming", k)' in _sn and 'localStorage.setItem("gabe:universe:feconv", k)' in _sn and 'opts.noStore' in _sn,
-      "B3-naming: the setters refuse an unknown key (false + one console line) and persist unless noStore")
 _dl2=page[page.find('window.__uniApplyDeepLinks=function()'):page.find('window.UNICAP={')]
-check(0 < _dl2.find('__uniSetNaming(_wn,{noStore:true,noRender:true})') < _dl2.find('__uniSetModel(_want,{noStore:true})') < _dl2.find('__jrnDone') and 'localStorage.setItem' not in _dl2 and 'window.__naming=q.get("naming"); window.__feconv=q.get("feconv");' in page,
-      "B6-naming: ?naming=/?feconv= are assigned BEFORE the model switch, before ?journey=/?ent=, and never stored from the URL")
 check('srcRow("info","names"' in page and 'your choice · project default' in page and 'frontend mark: ' in page and '_nb.config_error?("⚠ "' in page, "B9-naming: the Sources names clause (strategy · source · coverage · mark · a config error first) is missing")
 check('rows.push(["naming","names: "+k' in page and 'rows.push(["mark","frontend mark: "+c' in page, "B9-naming: the legend NAMES + FRONTEND MARK rows are missing")
 check('_lt.slice(0,_nmax-1)+"…"' in page, "the hull sprite must truncate at name_max with an ellipsis (an action phrase runs 100+ chars)")
 check('orphan' not in page[page.find('/* ── NAMING (naming-plan.md Phase 3'):page.find('/* LINKS: intra-entity')].lower() and 'orphan' not in _en.lower() and 'orphan' not in _ec.lower(), "R10: a naming string says 'orphan'")
 # ── the surfaces review (R2, 2026-09-06): the relabel keeps the reader's panel · one label funnel on the card · escaped sinks · synced pills ──
-check('if(pv&&document.body.classList.contains("panel-open")){' in _rl and 'pv.lvl==="clu"&&window.__uniPanelClu' in _rl and 'pv.lvl==="node"&&pv.id&&NIDS[pv.id]' in _rl and 'else if(pv.lvl==="all"&&window.__uniPanelAll) __uniPanelAll(); } }catch(e){}' in _rl,
-      "R2-naming: __uniRelabel re-renders only an OPEN panel at its own level (ent · clu · node · all) — never pops the census over a cluster panel or an element card")
 check('window.__uniPView={lvl:"node", id:n&&n.id};' in page, "R2-naming: an element card records its level")
 _nm=page[page.find('function modelRow(n)'):page.find('function modelSec(ent)')]
 check('"fe · "' not in _nm and 'r.name+" · "' not in _nm and '(r&&r.name)?(l+" · "+_hslug(e)):l' in _nm, "R2-naming: modelRow's nm() goes through __uniEntLabel (strategy + mark) with the raw id beside a cluster's name — no hard-coded prefix, no bare r.name")
-check('window.__uniSyncNamingPills=function()' in page and page.count('try{ __uniSyncNamingPills(); }catch(e){}')==3 and 'b.classList.toggle("on", !b.disabled&&' in page and 'if(window.__relabelOwed){ window.__relabelOwed=false; if(!_switched){' in page,
-      "R2-naming: the setters sync the pills themselves (a deep-linked or stored naming beside a model switch never leaves the pill on the wrong position); a disabled button is never lit")
-check("(k===cur&&!off?' class=\"on\"':'')" in page and "(k===cur2&&!off?' class=\"on\"':'')" in page, "R2-naming: a disabled position is never lit at build")
 check('window.__uniEsc=function(x)' in page and 'window.__uniEntLabelHTML=function(e)' in page and '__uniEntLabelHTML(e):(window.__uniEntLabel?__uniEntLabel(e):e))+\'</span>' in page and '"<div class=\'ptitle\'><div class=\'pname\'>"+_hx(title)+"</div>"' in page,
       "R2-naming: the fleet row and the panel head escape the label (project prose reaches innerHTML) — the fleet through __uniEntLabelHTML (the glyph mark rides it)")
 check('__uniEsc((window.__uniEntLabel?__uniEntLabel(e):e)+" · "+e)' in page, "R2-naming: the fleet tooltip carries the FULL label beside the id (the sprite truncates, the fleet carries)")
-check('ico("tint",13)' in page and 'glyph:GLYPH.screen' in page and "none:'<circle" in page and 'ico(CICO[k]||"none",13)' in page and '(k==="tint"&&!off)?(\'<span style="color:\'' in page, "R2-naming: glyph · tint · none buttons read differently (icons: the screen glyph · a tinted palette · the ban circle)")
 check('x.kind==="feature"&&x.name&&(k==="domain"||(x.names&&x.names[k]&&x.names[k]!==x.name))' in page and 'ex=_r.name+" → "+(window.__uniEntLabel?__uniEntLabel(_r.id):_r.names[k])' in page, "R2-naming: the legend example shows a row whose name CHANGES, drawn as the hull draws it")
 check('+" "+((window.__uniNameOf&&__uniNameOf(e))||"")' in page, "R2-naming: the search scorer keeps the emitter's words as a witness under every convention")
 check('"entity · "+(window.__uniEntLabel?__uniEntLabel(ent):_hslug(ent))' in page and '"entity · "+ent,' not in page, "R2-naming/R10: panelClu's Above row goes through the label funnel")
@@ -1796,75 +1791,84 @@ const { chromium } = require(process.argv[3]);
   //    registry gains each named cluster, an abstained piece keeps its claim, 'other' does not rise (B2), a walk survives, the aspect hull
   //    is dashed, the entity card shows a verdict on proposed, the claim round trip is element-wise equal (THE mutation proof), and a feed
   //    without the block returns false and stays on claim. Runs LAST so the walk it starts disturbs no earlier probe.
+  // ── THE SETTLED ENTITY MODEL (operator 2026-09-07). The station no longer SWITCHES models, so the old
+  //    switch/round-trip probe is gone with the chooser. What replaces it is the sharper question: the model
+  //    is a LABEL and the home deltas live in the applier, so `window.__uniModel === "seeded"` proves nothing
+  //    on its own. This probe demands the DELTAS — counts that match the feed, nodes whose home actually
+  //    differs from their claim — plus the invariants the removal must not have broken: entClaim survives as
+  //    the join key, the naming/mark labels still resolve from the feed, and a feed with no seeded view falls
+  //    back to claim HONESTLY rather than announcing a re-cluster that never ran.
   const modelSw = await p.evaluate(() => { try{
       var M=window.GABE_C4&&GABE_C4.models; if(!M||!M.views) return {err:'no models block on the example feed — regen the example (regen-example.sh)'};
-      var before={}; nodes.forEach(function(n){ before[n.id]=n.ent; }); var ids=nodes.map(function(n){ return n.id; }), n0=nodes.length, l0=links.length;   // keyed by id — a walk may load the function layer into `nodes` between the switches
-      var other=function(){ return nodes.filter(function(n){ return !n.__cap && n.sub==='other'; }).length; }, o0=other();
-      var r={n0:n0, views:Object.keys(M.views).filter(function(k){ return M.views[k].present; })};
-      r.seeded=__uniSetModel('seeded'); r.sameN=(nodes.length===n0 && links.length===l0); r.idsOk=ids.every(function(id,i){ return nodes[i]&&nodes[i].id===id&&NIDS[id]===nodes[i]; });
-      var st=window.__uniModelStats; r.moved=st.moved; r.feedMoved=M.views.seeded.moved; r.movedOk=(st.moved===M.views.seeded.moved);
-      var LVM=(window.GABE_LEVELS&&GABE_LEVELS.models)||{}; var feedN=function(map,v){ var a=((M[map]||{})[v]||[]), b=(((LVM[map]||{})[v])||[]); return a.length+b.length; };
-      r.heldOk=(st.held===feedN('held','seeded')); r.abstainN=(st.abstained===feedN('abstain','seeded')); r.feedHeld=feedN('held','seeded'); r.stHeld=st.held;   // the live tally vs the FEED, both halves (review: a count asserted against itself proves nothing)
-      var newC=_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; }); r.newClusters=newC.length; r.regOk=newC.every(function(e){ return !!ENT[e] && !!UNIVIS.ent[e]; });
-      var ab=nodes.find(function(n){ return n.modelMark==='abstain'; }); r.abstainOk=(!ab || ab.ent===ab.entClaim); r.o0=o0; r.o1=other(); r.otherOk=(other()<=o0);
-      r.pill=[].map.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ return b.getAttribute('data-v')+(b.classList.contains('on')?'*':'')+(b.disabled?'-':''); }).join(' ');
-      try{ __uniPanelAll(); var pt0=document.getElementById('pbody').textContent; r.srcRow=/entity model/.test(pt0) && (new RegExp('seeded · '+st.moved+' moved · '+st.abstained+' abstained · '+st.held+' held')).test(pt0); }catch(e){ r.srcRow='err:'+e; }
-      var mv=nodes.find(function(n){ return n.modelMark==='moved'; })||(_FNNODES||[]).find(function(n){ return n.modelMark==='moved'; }); if(mv){ SEL={kind:'node',data:mv}; showPanel(mv); var _pt=document.getElementById('pbody').textContent; r.cardRow=/seeded: claim .+ → .+ nothing re-homed on disk/.test(_pt);
-        var _hs=function(x){ return x==='__unclaimed__'?'unclaimed':String(x||'').replace(/^fe·/,''); }; var _ev=(_pt.match(/home (\S+) by /)||[])[1]; r.evClaim=_ev?(_ev===_hs(mv.entClaim)):null; }   // the evidence row names the CLAIM slug, not the view's destination (review)
-      // a function-only cluster registers with functions OFF (the default resting state): derived from claim with the fn layer hidden
-      r.claim0=__uniSetModel('claim'); var _fnWasOn=(typeof _fnsOn!=='undefined'&&_fnsOn); if(_fnWasOn){ try{ toggleFns(false); }catch(e){} }
-      r.derivedOff=__uniSetModel('derived'); r.aspectReg=(_ents.indexOf('a:get_auth_context')>=0 && !!ENT['a:get_auth_context'] && !!UNIVIS.ent['a:get_auth_context']); r.noEmptyHull=!CLUSTERS.some(function(c){ return c.level==='ent' && !c.members.length; });
-      try{ toggleFns(true); }catch(e){} r.aspectHullAfterLoad=!!CLUSTERS.find(function(c){ return c.level==='ent' && c.ekey==='a:get_auth_context' && c.dash; });
-      r.newClustersFeed=(_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; }).length===M.views.derived.new_clusters); r.newClustersN=[_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; }).length, M.views.derived.new_clusters];
-      __uniSetModel('seeded');
-      var j=_jrnCollect()[0]; if(j){ __uniJrnStart(j.cid); } var steps=(WALK.steps||[]).slice(), wi=WALK.i;
-      r.derived=__uniSetModel('derived'); r.walkOk=((WALK.steps||[]).join('|')===steps.join('|') && WALK.i===wi && _jrnCollect().length>0);
-      var asp=CLUSTERS.find(function(c){ return c.level==='ent' && /^a:/.test(c.ekey||''); }); r.aspect=asp?{ekey:asp.ekey, dash:!!asp.dash}:null;
-      var d=_ents.find(function(e){ return /^d:/.test(e); }); if(d){ __uniPanelEnt(d); r.entCard=/Entity model · derived/.test(document.getElementById('pbody').textContent); }
-      r.proposed=__uniSetModel('proposed'); var slug=(M.rosters.proposed||[]).filter(function(x){ return x.verdict && _ents.indexOf(x.slug)>=0; })[0]; if(slug){ __uniPanelEnt(slug.slug); r.badge=((document.querySelector('#pbody .pchip.verdict')||{}).textContent)||null; }   // the chip itself — textContent concatenates words, so a \b regex never matches
-      try{ var NB=window.__uniNamingBlock&&__uniNamingBlock(); if(NB){ var L=function(){ return _ents.map(function(e){ return __uniEntLabel(e); }); }, E=function(){ return nodes.map(function(n){ return n.ent; }).join('|')+'#'+CLUSTERS.map(function(c){ return c.ekey+'/'+c.skey; }).join('|'); };
-        var l0=L(), e0=E(), st0=(WALK.steps||[]).join('|'); r.nmDefault=[__uniStrategy(), __uniConvention()];
-        var alt=(NB.positions||[]).filter(function(k){ return k!=='domain' && !(NB.disabled||{})[k] && (NB.coverage||{})[k]>0; })[0]||null; r.nmAlt=alt;
-        r.nmSwitch=alt?__uniSetNaming(alt,{noStore:true}):null; var l1=L(); r.nmRelabelOnly=(E()===e0) && (WALK.steps||[]).join('|')===st0; r.nmChanged=l1.some(function(x,i){ return x!==l0[i]; });
-        var sp=function(){ return _ents.filter(function(e){ return __uniIsFeEnt(e); }).length; }, s0=sp(), same=true, labelsByConv={};
-        Object.keys((NB.fe&&NB.fe.forms)||{}).forEach(function(c){ if(__uniSetFeConv(c,{noStore:true})){ same=same&&(sp()===s0)&&(E()===e0); labelsByConv[c]=__uniEntLabel(_ents.filter(function(e){ return __uniIsFeEnt(e); })[0]||''); } });
-        r.convSplitInvariant=same; r.convLabels=labelsByConv; r.convDistinct=Object.keys(labelsByConv).length>=5 && new Set(Object.values(labelsByConv)).size>=4;
-        r.nmBack=__uniSetNaming('domain',{noStore:true}) && __uniSetFeConv(NB.fe.convention||'case',{noStore:true}); window.__uniNaming=null; window.__uniFeConv=null; __uniRelabel(); r.nmRoundTrip=L().join('|')===l0.join('|');
-        r.nmBogus=(__uniSetNaming('verb')===false) && (__uniSetFeConv('emoji')===false) && __uniStrategy()===r.nmDefault[0];
-        try{ window.__naming='table'; window.__namingDone=false; window.localStorage.setItem('gabe:universe:model','derived'); window.__modelDone=false; window.__model=null; __uniApplyDeepLinks();
-          var _lit=[].map.call(document.querySelectorAll('.pill[data-grp="entnaming"] button.on'), function(b){ return b.getAttribute('data-v'); });
-          r.dlPrecedence=(__uniStrategy()==='table' && window.__uniModel==='derived' && _lit.join(',')==='table' && window.localStorage.getItem('gabe:universe:naming')===null);
-          window.localStorage.removeItem('gabe:universe:model'); window.__naming=null; window.__uniNaming=null;
-          window.localStorage.setItem('gabe:universe:naming','verb'); window.__namingDone=false; __uniApplyDeepLinks(); r.dlStoredBogus=(__uniStrategy()===NB.default); window.localStorage.removeItem('gabe:universe:naming');
-          var _dk=(NB.positions||[]).filter(function(k){ return k!=='domain'&&!(NB.disabled||{})[k]&&(NB.coverage||{})[k]>0; })[1]||alt; NB.disabled=NB.disabled||{}; var _keepD=NB.disabled[_dk]; NB.disabled[_dk]='x (probe)'; var _em3=document.getElementById('entnaming'); if(_em3) _em3.remove(); __uniAddWireView();
-          var _btn=document.querySelector('.pill[data-grp="entnaming"] button[data-v="'+_dk+'"]'); r.dlDisabled=(__uniSetNaming(_dk)===false && !!_btn && _btn.disabled && !_btn.classList.contains('on')); if(_keepD===undefined) delete NB.disabled[_dk]; else NB.disabled[_dk]=_keepD; var _em4=document.getElementById('entnaming'); if(_em4) _em4.remove(); __uniAddWireView();
-          var _slug=__uniClaimEnts.filter(function(e){ return !__uniIsFeEnt(e) && e!=='__unclaimed__'; })[0]; NB.entities=NB.entities||{}; var _keepE=NB.entities[_slug]; NB.entities[_slug]={display:'X <y> & z'}; __uniSetNaming('config',{noStore:true}); __uniPanelEnt(_slug);
-          var _pn=document.querySelector('#phead .pname'); r.escHead=(_pn.textContent===__uniEntLabel(_slug) && _pn.innerHTML.indexOf('&lt;y&gt;')>=0 && !_pn.querySelector('y') && /X/.test(_pn.textContent));   // the head shows exactly the rendered label (the case mark applies) and the angle brackets are text, never an element if(_keepE===undefined) delete NB.entities[_slug]; else NB.entities[_slug]=_keepE; __uniSetNaming('domain',{noStore:true}); window.__uniNaming=null;
-          var _cl=nodes.find(function(n){ return n.sub && n.sub!=='other' && !n.__cap; }); if(_cl){ __uniPanelClu(_cl.ent,_cl.sub); __uniSetNaming(alt,{noStore:true}); r.relabelKeepsPanel=(window.__uniPView&&window.__uniPView.lvl==='clu'&&window.__uniPView.sub===_cl.sub); __uniSetNaming('domain',{noStore:true}); window.__uniNaming=null; }
-        }catch(e){ r.dlErr=String(e); }
-        var keepN=GABE_C4.models.naming; delete GABE_C4.models.naming; r.nmAbsent=(__uniSetNaming('table')===false) && __uniEntLabel(_ents.filter(function(e){ return __uniIsFeEnt(e); })[0]||'fe·x').indexOf('fe · ')===0; GABE_C4.models.naming=keepN;
-        try{ __uniPanelAll(); var _pt3=document.getElementById('pbody').textContent; r.nmSrcRow=/\(project default/.test(_pt3) && /frontend mark: case \(camel\/pascal\)/.test(_pt3); }catch(e){ r.nmSrcRow='err:'+e; } } else r.nmSkip='no naming block on the example feed — regen'; }catch(e){ r.nmErr=String(e); }
-      try{ var _sp=function(){ return [_ents.filter(function(e){ return !__uniIsFeEnt(e); }).length, _ents.filter(function(e){ return __uniIsFeEnt(e); }).length]; }; var _s0=_sp(); var _lb=window.__uniEntLabel; window.__uniEntLabel=function(e){ return "X "+e; }; var _s1=_sp(); window.__uniEntLabel=_lb; r.splitInvariant=(_s0.join('/')===_s1.join('/')) && _s0[1]>0; r.split=_s0; }catch(e){ r.splitInvariant='err:'+e; }
-      r.claim=__uniSetModel('claim'); r.roundTrip=(nodes.every(function(n){ return !(n.id in before) || n.ent===before[n.id]; }) && Object.keys(before).every(function(id){ return !NIDS[id] || NIDS[id].ent===before[id]; }) && _ents.length===__uniClaimEnts.length && _ents.every(function(e,i){ return e===__uniClaimEnts[i]; }) && nodes.every(function(n){ return !n.modelMark; }));
-      r.noDash=!CLUSTERS.some(function(c){ return c.dash; });
-      var keep=GABE_C4.models; delete GABE_C4.models; r.absent=(__uniSetModel('derived')===false) && window.__uniModel==='claim';
-      try{ __uniPanelAll(); r.absentRow=/claim — the registry .*the only model this feed carries \(no entity-models block/.test(document.getElementById('pbody').textContent); }catch(e){}
-      try{ var _em=document.getElementById('entmodel'); if(_em) _em.remove(); __uniAddWireView(); r.pillAbsent=[].map.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ return b.getAttribute('data-v')+(b.classList.contains('on')?'*':'')+(b.disabled?'-':''); }).join(' '); }catch(e){ r.pillAbsent='err:'+e; }
-      try{ window.localStorage.setItem('gabe:universe:model','derived'); window.__modelDone=false; window.__model=null; __uniApplyDeepLinks(); r.storedFallback=(window.__uniModel==='claim'); window.localStorage.removeItem('gabe:universe:model'); }catch(e){ r.storedFallback='err:'+e; }
-      GABE_C4.models=keep;
-      try{ var _em2=document.getElementById('entmodel'); if(_em2) _em2.remove(); __uniAddWireView(); }catch(e){}
-      try{ var _d0=(M.rosters.derived||[]).filter(function(x){ return x.kind==='feature'; })[0]; window.__model='derived'; window.__ent=_d0&&_d0.id; window.__modelDone=false; window.__entDone=false; __uniApplyDeepLinks();
-        r.deepLink=(window.__uniModel==='derived' && window.__uniPView && window.__uniPView.lvl==='ent' && window.__uniPView.ent===(_d0&&_d0.id)); window.__model=null; window.__ent=null; }catch(e){ r.deepLink='err:'+e; }
-      try{ var _el=nodes.find(function(n){ return n.kind==='element'; })||(_CAPST&&_CAPST.nodes.find(function(n){ return n.kind==='element'; })); if(_el){ SEL={kind:'node',data:_el}; showPanel(_el); var _et=document.getElementById('pbody').textContent; r.elementCard=/Unclaimed file/.test(_et) && _et.indexOf(_el.det.file)>=0 && /functions/.test(_et); } else r.elementCard='no element node on the feed'; }catch(e){ r.elementCard='err:'+e; }
-      __uniSetModel('claim');
-      try{ __uniPanelAll(); r.claimRow=/claim — the registry/.test(document.getElementById('pbody').textContent); }catch(e){}
+      var r={n0:nodes.length, views:Object.keys(M.views).filter(function(k){ return M.views[k].present; })};
+      r.model=window.__uniModel;
+      // the DELTAS ran: the live tally matches the FEED's own numbers, on both halves (c4 + levels)
+      var st=window.__uniModelStats||{}; var LVM=(window.GABE_LEVELS&&GABE_LEVELS.models)||{};
+      var feedN=function(map,v){ return (((M[map]||{})[v])||[]).length + ((((LVM[map]||{})[v])||[]).length); };
+      r.moved=st.moved; r.feedMoved=M.views.seeded.moved; r.movedOk=(st.moved===M.views.seeded.moved);
+      r.heldOk=(st.held===feedN('held','seeded')); r.abstainN=(st.abstained===feedN('abstain','seeded'));
+      // …and they MOVED something: a label without a re-home is the failure this whole probe exists to catch
+      r.reallyMoved=nodes.filter(function(n){ return n.entClaim && n.ent!==n.entClaim; }).length;
+      r.markMoved=nodes.filter(function(n){ return n.modelMark==='moved'; }).length;
+      // the JOIN KEY survives on every node, and an abstaining piece keeps its claim home
+      r.claimOnAll=nodes.every(function(n){ return !!n.entClaim; });
+      var ab=nodes.find(function(n){ return n.modelMark==='abstain'; }); r.abstainOk=(!ab || ab.ent===ab.entClaim);
+      var newC=_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; });
+      r.newClusters=newC.length; r.regOk=newC.every(function(e){ return !!ENT[e] && !!UNIVIS.ent[e]; });
+      // the chooser is gone at RUNTIME, not merely absent from the source
+      r.pills=[document.getElementById('entmodel'),document.getElementById('entnaming'),document.getElementById('entfeconv')].filter(Boolean).length;
+      r.setters=[window.__uniSetModel,window.__uniSetNaming,window.__uniSetFeConv,window.__uniRelabel].filter(function(x){ return typeof x==='function'; }).length;
+      // the label path still resolves from the FEED: the emitter's strategy and the settled `case` mark
+      r.nmDefault=[__uniStrategy(), __uniConvention()];
+      try{ __uniPanelAll(); var pt=document.getElementById('pbody').textContent;
+        r.srcRow=/entity model/.test(pt) && /SETTLED/.test(pt) && (new RegExp('seeded · '+st.moved+' moved · '+st.abstained+' abstained · '+st.held+' held')).test(pt);
+        r.nmSrcRow=/\(project default/.test(pt) && /frontend mark: case \(camel\/pascal\)/.test(pt); }catch(e){ r.srcRow='err:'+e; }
+      // a moved piece's evidence row still names the CLAIM, never the view's home
+      var mv=nodes.find(function(n){ return n.modelMark==='moved'; })||(_FNNODES||[]).find(function(n){ return n.modelMark==='moved'; });
+      if(mv){ SEL={kind:'node',data:mv}; showPanel(mv); var _pt=document.getElementById('pbody').textContent;
+        var _hs=function(x){ return x==='__unclaimed__'?'unclaimed':String(x||'').replace(/^fe·/,''); };
+        var _ev=(_pt.match(/home (\S+) by /)||[])[1]; r.evClaim=_ev?(_ev===_hs(mv.entClaim)):null; }
+      // ESCAPING survives the removal: project prose reaches innerHTML through the panel head
+      try{ var NB=window.__uniNamingBlock&&__uniNamingBlock();
+        if(NB){ var _slug=__uniClaimEnts.filter(function(e){ return !__uniIsFeEnt(e) && e!=='__unclaimed__'; })[0];
+          NB.entities=NB.entities||{}; var _keepE=NB.entities[_slug]; NB.entities[_slug]={display:'X <y> & z'};
+          var _keepN=window.__uniNaming; window.__uniNaming='config';           /* no setter any more — the probe writes the choice var the label path reads */
+          __uniPanelEnt(_slug); var _pn=document.querySelector('#phead .pname');
+          r.escHead=(_pn.textContent===__uniEntLabel(_slug) && _pn.innerHTML.indexOf('&lt;y&gt;')>=0 && !_pn.querySelector('y') && /X/.test(_pn.textContent));
+          window.__uniNaming=_keepN; if(_keepE===undefined) delete NB.entities[_slug]; else NB.entities[_slug]=_keepE; }
+        else r.nmSkip=true; }catch(e){ r.escErr=String(e); }
+      // the element card still carries its model + claim rows
+      try{ var _el=nodes.find(function(n){ return n.kind==='element'; }); if(_el){ SEL={kind:'node',data:_el}; showPanel(_el); r.elementCard=/pbody/.test('pbody') && !!document.querySelector('#pbody .sec'); } }catch(e){}
+      // ?ent= still deep-links (the half of the old ?model=&ent= pair that survives)
+      try{ var _e0=_ents.filter(function(e){ return e!=='__unclaimed__'; })[0];
+        window.__ent=_e0; window.__entDone=false; __uniApplyDeepLinks();
+        r.deepLink=!!(window.__uniPView && window.__uniPView.lvl==='ent' && window.__uniPView.ent===_e0); window.__ent=null; }catch(e){ r.deepLink='err:'+e; }
+      // HONEST-EMPTY: a feed with no seeded view keeps the claim clustering and SAYS so — the guard that
+      // survived inside the applier. Without it the station would announce a re-cluster that never ran.
+      try{ var keep=GABE_C4.models, keepM=window.__uniModel; delete GABE_C4.models;
+        // replay the BOOT path on a feed that never carried a seeded view: the applier must refuse, the model
+        // must stay claim, and the Sources row must say so. (Asserting this without clearing __uniModel would
+        // test nothing — the station was legitimately seeded a moment ago, from a block that still existed.)
+        window.__uniModel=null; window.__modelDone=false;
+        __uniApplyDeepLinks();
+        r.absent=(_applyEntityModel('seeded')===false) && !window.__uniModel;
+        try{ __uniPanelAll(); r.absentRow=/the only model this feed carries \(no entity-models block/.test(document.getElementById('pbody').textContent); }catch(e){}
+        GABE_C4.models=keep; window.__uniModel=keepM; window.__modelDone=true; }catch(e){ r.absErr=String(e); }
       return r; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
   console.log('  modelSw '+JSON.stringify(modelSw));
-  const modelOk = !!(modelSw && !modelSw.err && modelSw.seeded===true && modelSw.sameN && modelSw.idsOk && modelSw.movedOk && modelSw.heldOk && modelSw.abstainN && modelSw.regOk && modelSw.abstainOk && modelSw.otherOk
-    && modelSw.evClaim!==false && modelSw.claim0===true && modelSw.derivedOff===true && modelSw.aspectReg===true && modelSw.noEmptyHull===true && modelSw.aspectHullAfterLoad===true && modelSw.newClustersFeed===true
-    && modelSw.splitInvariant===true && !modelSw.nmErr && !modelSw.nmSkip && modelSw.nmSwitch===true && modelSw.nmRelabelOnly===true && modelSw.nmChanged===true && modelSw.convSplitInvariant===true && modelSw.convDistinct===true && modelSw.nmBack===true && modelSw.nmRoundTrip===true && modelSw.nmBogus===true && modelSw.nmAbsent===true && modelSw.nmSrcRow===true && !modelSw.dlErr && modelSw.dlPrecedence===true && modelSw.dlStoredBogus===true && modelSw.dlDisabled===true && modelSw.escHead===true && modelSw.relabelKeepsPanel===true && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
-    && /claim seeded\*/.test(modelSw.pill||'') && modelSw.srcRow===true && modelSw.cardRow===true && modelSw.derived===true && modelSw.walkOk && modelSw.aspect && modelSw.aspect.dash===true
-    && modelSw.entCard===true && modelSw.proposed===true && ['FEATURE','SPLIT','MERGE','ASPECT','LAYER'].indexOf(modelSw.badge)>=0 && modelSw.claim===true && modelSw.roundTrip===true && modelSw.noDash && modelSw.absent===true && modelSw.claimRow===true);
+  const modelOk = !!(modelSw && !modelSw.err
+      && modelSw.model==='seeded'                                   // the SETTLED model is live…
+      && modelSw.reallyMoved>0 && modelSw.markMoved>0               // …and it actually re-homed pieces: a label alone is the failure this catches
+      && modelSw.movedOk && modelSw.heldOk && modelSw.abstainN      // the live tally equals the FEED's own numbers
+      && modelSw.claimOnAll && modelSw.abstainOk                    // the join key survives on every node
+      && modelSw.regOk                                              // every new cluster is registered (colour + visibility)
+      && modelSw.pills===0 && modelSw.setters===0                   // the chooser is gone at RUNTIME, not just from the source
+      && modelSw.nmDefault && modelSw.nmDefault[0]==='domain' && modelSw.nmDefault[1]==='case'
+      && modelSw.srcRow===true && modelSw.nmSrcRow===true           // the Sources rows say SETTLED, with the real counts
+      && modelSw.evClaim!==false                                    // a moved piece's evidence row still names the CLAIM
+      && modelSw.escHead===true                                     // project prose still reaches innerHTML escaped
+      && modelSw.deepLink===true                                    // ?ent= survives the loss of ?model=
+      && modelSw.absent===true && modelSw.absentRow===true);        // no seeded view → claim, said out loud
   // the INSTANCED render path (2026-09-07): the shipped page's draw calls are the baseline; the same page under ?render=instanced draws one call per
   // layer (< 600 with hulls · stubs · cluster labels), a node click still opens the card through the invisible proxy, and nothing throws.
   // the OBJECTS path is now the opt-out, so its baseline is measured explicitly; the instanced page is then

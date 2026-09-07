@@ -153,7 +153,7 @@ position for its clusters. The surfaces review's one deferred item: `both_owner`
 | tier3 / onyx (local) | 96 · 2 | 65 · 327/545 · 218 · 0.893 | FEATURE 1 · SPLIT 4 · ASPECT 2 · LAYER 2 | search settings · user user group | 28 |
 
 Every estate carries `entities.draft.json` (head-stamped); tier1's drafter wrote nothing and said why. On onyx
-`?model=derived&ent=d:persona` resolves against the derived clusters and the Sources row reads `327/545 atoms anchored · 218
+`?model=derived&ent=d:persona` (that deep link was REMOVED 2026-09-07 with the chooser — the station is settled on `seeded`; the reading below stands as the measurement it was) resolved against the derived clusters and the Sources row read `327/545 atoms anchored · 218
 abstained` (the station boots unfolded there — the T1 field is 794 nodes, under the scale guard's 1,600 budget). One reading
 worth a ruling: the sibling naming law yields `Manage manage — users · permissions …` for onyx's `/manage/*` candidate — the
 noun IS the domain word; the human renames on acceptance.

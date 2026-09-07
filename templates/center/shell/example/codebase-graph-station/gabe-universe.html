@@ -3993,18 +3993,17 @@ window.__uniBudget=1600;   /* review 2026-09-06 (repo-study — onyx draws ≈3.
 window.__uniScaleGuard=function(){ var n=(typeof nodes!=="undefined"&&nodes)?nodes.length:0, b=window.__uniBudget||1600; if(n<=b){ window.__uniBudgetHit=null; return false; }
   window.__uniBudgetHit={nodes:n, budget:b}; if(window.__uniSetTier){ try{ __uniSetTier(0); }catch(e){} }   /* tier 0 only — the capsule fold left with its option (2026-09-07) */
   try{ console.info("gabe-universe: "+n+" nodes > budget "+b+" — booted at tier 0 (Skeleton); raise window.__uniBudget to draw more"); }catch(e){} return true; };
-window.__uniApplyDeepLinks=function(){   /* ?model=<view> picks the entity model FIRST (so ?ent= resolves against its clusters) · ?journey=<name|cid> opens ONE walk · ?ent=<slug> opens that entity's panel — the ramp-up's "one trace per session" (review 2026-09-06) */
-  var jv=window.__jrn, ev=window.__ent, mv=window.__model, _stored=null;
+window.__uniApplyDeepLinks=function(){   /* the ENTITY MODEL is applied FIRST (so ?ent= resolves against its clusters) · ?journey=<name|cid> opens ONE walk · ?ent=<slug> opens that entity's panel — the ramp-up's "one trace per session" (review 2026-09-06) */
+  var jv=window.__jrn, ev=window.__ent;
   var _switched=false;
-  if(!window.__namingDone){ window.__namingDone=true; var _sn=null, _sc=null; try{ _sn=window.localStorage.getItem("gabe:universe:naming"); _sc=window.localStorage.getItem("gabe:universe:feconv"); }catch(e){}
-    var _wn=window.__naming||_sn, _wc=window.__feconv||_sc, _need=false;   /* URL > localStorage > the feed's default; a URL value is never stored */
-    if(_wn&&window.__uniSetNaming){ try{ if(__uniSetNaming(_wn,{noStore:true,noRender:true})) _need=true; }catch(e){} }
-    if(_wc&&window.__uniSetFeConv){ try{ if(__uniSetFeConv(_wc,{noStore:true,noRender:true})) _need=true; }catch(e){} }
-    window.__relabelOwed=_need; }
-  if(!mv){ try{ _stored=window.localStorage.getItem("gabe:universe:model"); }catch(e){} }
-  if(!window.__modelDone){ window.__modelDone=true; var _want=mv||_stored;   /* a URL model NEVER writes localStorage (the ?journey= law); the stored one is already stored */
-    if(_want&&_want!=="claim"&&window.__uniSetModel){ try{ if(__uniSetModel(_want,{noStore:true})) _switched=true; else console.info("gabe-universe: "+(mv?("?model="+mv):("the stored entity model "+_want))+" is not on this feed — showing claim"); }catch(e){} } }
-  if(window.__relabelOwed){ window.__relabelOwed=false; if(!_switched){ try{ __uniRelabel(); }catch(e){} } }   /* the model switch relabelled already; otherwise one relabel closes it (the pills were synced by the setters) */
+  /* SETTLED 2026-09-07 (operator): no ?model=, no stored key, no pill. The station always shows `seeded`.
+     The NAMES strategy and the FRONTEND MARK lost their choosers in the same ruling — __uniStrategy() and
+     __uniConvention() now read the FEED's own defaults every time, which is the naming strategy the emitter
+     chose and the `case` convention (frontend camelCase · backend PascalCase) the operator settled. NAMES
+     could never change a claim or a seeded label in the first place (only a derived/candidate row carries
+     names{}), which is why it appeared to do nothing: it did nothing, by design. */
+  if(!window.__modelDone){ window.__modelDone=true; var _want=_UNIMODEL;
+    if(_want&&_want!=="claim"){ try{ if(_applyEntityModel(_want,{noStore:true})) _switched=true; else console.info("gabe-universe: the settled entity model \""+_want+"\" is not on this feed — showing the claim registry (regen the centre to weigh the other three)"); }catch(e){} } }
   if(jv && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
     if(j) __uniJrnStart(j.cid); else console.info("gabe-universe: ?journey="+jv+" names no journey (workflows tab lists them)"); }catch(e){} }
   if(ev && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
@@ -4085,8 +4084,15 @@ window.__uniModelRoster=function(){ var m=(window.GABE_C4&&GABE_C4.models)||null
   window.__uniRosterCache={m:m, r:r}; return r; };
 window.__uniModelRosterRow=function(id){ return __uniModelRoster()[id]||null; };
 window.__uniModelHub=function(id){ var m=(window.GABE_C4&&GABE_C4.models)||null; if(!m||!m.shared) return null; if(!window.__uniHubCache||__uniHubCache.m!==m){ var r={}; m.shared.forEach(function(x){ r[x.id]=x; }); window.__uniHubCache={m:m, r:r}; } return __uniHubCache.r[id]||null; };
+var _UNIMODEL="seeded";   /* the SETTLED entity model (operator 2026-09-07) — not a default, the only one. */
 window.__uniModelStats={moved:0, abstained:0, held:0, clusters:0};
-window.__uniSetModel=function(v, opts){ opts=opts||{}; v=String(v||"claim"); var views=__uniModelViews();
+/* SETTLED 2026-09-07 (operator): the station no longer offers an entity-model CHOOSER — it always shows
+   `seeded`. What follows is NOT a control, it is the DELTA APPLIER, and it has to stay: window.__uniModel
+   is only a LABEL and the home deltas live in here. Setting the label without running this moves ZERO
+   nodes and makes the Sources row announce "seeded · 0 moved · 0 held" over a field that is 100% claim.
+   Called ONCE from the boot sequence; returns false, with a reason, on a feed that carries no seeded view
+   (an older centre then keeps the claim clustering and says so). */
+function _applyEntityModel(v, opts){ opts=opts||{}; v=String(v||"claim"); var views=__uniModelViews();
   if(!views[v]||!views[v].present){ try{ console.info("gabe-universe: entity model "+v+" is not on this feed ("+((views[v]||{}).reason||"unknown view")+") — the feed carries "+Object.keys(views).filter(function(k){ return views[k].present; }).join(" · ")+"; showing "+(window.__uniModel||"claim")); }catch(e){} return false; }
   var m=(window.GABE_C4&&GABE_C4.models)||{}, LV=(window.GABE_LEVELS&&GABE_LEVELS.models)||{};
   var H={}, AB={}, HD={};
@@ -4120,8 +4126,7 @@ window.__uniSetModel=function(v, opts){ opts=opts||{}; v=String(v||"claim"); var
   try{ if(window.__uniFleetRender) __uniFleetRender(); }catch(e){}
   try{ var pv=window.__uniPView; if(pv&&pv.lvl==="ent"){ if(_ents.indexOf(pv.ent)>=0) __uniPanelEnt(pv.ent); else if(window.__uniPanelAll) __uniPanelAll(); } else if(pv&&pv.lvl==="all"&&window.__uniPanelAll) __uniPanelAll(); }catch(e){}
   try{ applyVis("all"); }catch(e){}
-  try{ [].forEach.call(document.querySelectorAll('.pill[data-grp="entmodel"] button'), function(b){ b.classList.toggle("on", b.getAttribute("data-v")===v); }); if(window.__uniSyncGrpSel) __uniSyncGrpSel(); }catch(e){}
-  if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:model", v); }catch(e){} }   /* a URL ?model= passes noStore — a shared link never rewrites the reader's preference */
+  if(window.__uniSyncGrpSel) try{ __uniSyncGrpSel(); }catch(e){}   /* the pill sync and the stored preference went with the chooser (2026-09-07); the group selector still refreshes */
   return true; };
 
 /* ── ONE badge-glyph source (legend law — the legend cell reuses the very draw fn the 3D badge uses).
@@ -4232,59 +4237,21 @@ window.__uniHLDefaults={ focRing:true, focSize:"sphere", focPat:"dashed", focAni
             othGlow:true, glowRad:2.2, glowInt:0.3, glowFall:0.15, othRing:true, othRingInt:0.3 };   // operator defaults (fixed)
 window.__uniHLSeed=function(){ for(var _dk in window.__uniHLDefaults){ if(CFG[_dk]==null) CFG[_dk]=window.__uniHLDefaults[_dk]; } };
 window.__uniAddFocusCfg=function(){ window.__uniHLSeed(); };   // SEEDER ONLY — the focus/highlight config panel was retired (toggles live in the entity pane)
-/* a naming or mark switch RELABELS — cluster label sprites, the fleet, the open panel, the Sources row — and never re-clusters: no anchors,
-   no capsules, no reheat, no node touched (the static pin is the absence list) */
-window.__uniRelabel=function(){ try{ buildClusters(); updateClusters(true); }catch(e){} try{ if(window.__uniFleetRender) __uniFleetRender(); }catch(e){}
-  try{ var pv=window.__uniPView; if(pv&&document.body.classList.contains("panel-open")){   /* only an OPEN panel re-renders, at its own level — a relabel never throws the reader out of a cluster panel or an element card (review) */
-    if(pv.lvl==="ent"&&window.__uniPanelEnt) __uniPanelEnt(pv.ent); else if(pv.lvl==="clu"&&window.__uniPanelClu) __uniPanelClu(pv.ent,pv.sub); else if(pv.lvl==="node"&&pv.id&&NIDS[pv.id]) showPanel(NIDS[pv.id]); else if(pv.lvl==="all"&&window.__uniPanelAll) __uniPanelAll(); } }catch(e){}
-  try{ __uniSyncNamingPills(); }catch(e){} };
-window.__uniSyncNamingPills=function(){ [].forEach.call(document.querySelectorAll('.pill[data-grp="entnaming"] button'), function(b){ b.classList.toggle("on", !b.disabled&&b.getAttribute("data-v")===__uniStrategy()); }); [].forEach.call(document.querySelectorAll('.pill[data-grp="entfeconv"] button'), function(b){ b.classList.toggle("on", !b.disabled&&b.getAttribute("data-v")===__uniConvention()); }); if(window.__uniSyncGrpSel) __uniSyncGrpSel(); };
-window.__uniSetNaming=function(k, opts){ opts=opts||{}; k=String(k||""); var nb=__uniNamingBlock(); var valid=(nb&&nb.positions)||["domain"];
-  if(valid.indexOf(k)<0||(nb&&nb.disabled&&nb.disabled[k])){ try{ console.info("gabe-universe: naming "+k+" is not on this feed ("+((nb&&nb.disabled&&nb.disabled[k])||("valid: "+valid.join(" · ")))+") — keeping "+__uniStrategy()); }catch(e){} return false; }
-  window.__uniNaming=k; try{ __uniSyncNamingPills(); }catch(e){} if(!opts.noRender) __uniRelabel(); if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:naming", k); }catch(e){} } return true; };
-window.__uniSetFeConv=function(k, opts){ opts=opts||{}; k=String(k||""); var nb=__uniNamingBlock(); var fe=nb&&nb.fe; var valid=(fe&&fe.present!==false&&fe.forms)?Object.keys(fe.forms):[];
-  if(valid.indexOf(k)<0){ try{ console.info("gabe-universe: frontend mark "+k+" is not on this feed ("+(fe&&fe.present===false?fe.reason:("valid: "+(valid.join(" · ")||"none — no naming block")))+") — keeping "+__uniConvention()); }catch(e){} return false; }
-  window.__uniFeConv=k; try{ __uniSyncNamingPills(); }catch(e){} if(!opts.noRender) __uniRelabel(); if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:feconv", k); }catch(e){} } return true; };
+/* the NAMES and FRONTEND MARK choosers were removed 2026-09-07 (operator); nothing writes
+   window.__uniNaming / __uniFeConv any more, which is exactly how __uniStrategy() and __uniConvention()
+   fall through to the feed's own defaults. */
 window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbody")||document.getElementById("cfg"); if(!body) return;
-  /* ── ENTITY MODEL (Phase 2, 2026-09-06): the four-position pill claim · seeded · derived · proposed, above the capsule master. A view the
-     feed lacks renders DISABLED with the reason as its title; no models block → three disabled, claim lit. Persisted per reader
-     (localStorage gabe:universe:model); a URL ?model= never writes it. Replaces the R2–R4 lab (retired with its machinery). ── */
-  if(!document.getElementById("entmodel")){ var em=document.createElement("div"); em.className="grp"; em.id="entmodel";
-    var _ea=function(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); };
-    var views=(window.__uniModelViews?__uniModelViews():{claim:{present:true}}), cur=window.__uniModel||"claim";
-    var MDEF=[["claim","claim","the map today — where each file's entity config puts it; the registry every tool joins on"],
-              ["seeded","seeded","the claim, with the pieces the evidence says clearly belong elsewhere moved — shared plumbing held back"],
-              ["derived","derived","features found from the code alone — an endpoint, its shapes and the hook that calls it, grouped by the table they write, named by their URL"],
-              ["proposed","proposed","one verdict per declared entity — keep · split · merge · aspect · layer — plus features no entity declares, drawn as if you accepted them"]];
-    var ph='<div class="grplbl" title="which ENTITY MODEL clusters the field — the claim is the registry; the other three are views over it (nothing is re-homed on disk)">ENTITY MODEL</div><div class="pill" data-grp="entmodel">';
-    var MICO={claim:"claim", seeded:"seeded", derived:"derived", proposed:"proposed"};   /* icons, the word on hover (operator 2026-09-07) */
-    MDEF.forEach(function(d){ var vw=views[d[0]]||{present:false}, on=vw.present!==false; ph+='<button data-v="'+d[0]+'"'+(d[0]===cur?' class="on"':'')+(on?'':' disabled')+' title="'+_ea(on?(d[1]+" — "+d[2]):(d[1]+" — not on this feed: "+(vw.reason||"absent")))+'">'+ico(MICO[d[0]],13)+'</button>'; });
-    em.innerHTML=ph+'</div>'; body.appendChild(em);
-    [].forEach.call(em.querySelectorAll('.pill[data-grp="entmodel"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetModel) __uniSetModel(btn.getAttribute("data-v")); }; }); }
-  /* ── NAMES + FRONTEND MARK (naming-plan Phase 3): two single-select pills under ENTITY MODEL. A position the feed cannot serve renders
-     DISABLED with its reason; the mark buttons render their ACTUAL mark (legend-visual law). A switch is a RELABEL, never a re-cluster. ── */
-  if(!document.getElementById("entnaming")){ var nb=(window.__uniNamingBlock?__uniNamingBlock():null), _ea2=function(x){ return String(x).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); };
-    var en=document.createElement("div"); en.className="grp"; en.id="entnaming";
-    var RULE={domain:"the URL domain at adaptive depth, else the table in words — today's rule", table:"the table the cluster's endpoints write — unique by construction", "class":"the ORM class in words (acronym-aware; OAuthConfig reads 'o auth config', honestly)", path:"the deepest URL segment every endpoint shares, else the most frequent leaf — collisions carry their table", action:"what the person does — verb phrase · noun · actions (the naming law)", config:"the project's own words — naming.words / naming.entities / adoption display names", both:"table · /url prefix — the two machine witnesses side by side"};
-    var pos=(nb&&nb.positions)||["domain"], cur=(window.__uniStrategy?__uniStrategy():"domain"), cov=(nb&&nb.coverage)||{}, dis=(nb&&nb.disabled)||{}, lng=(nb&&nb.long)||{}, col=(nb&&nb.collisions)||{};
-    var NICO={domain:"domain", table:"table", "class":"class", path:"path", action:"action", config:"config", both:"both"};   /* icons, the rule + coverage on hover (operator 2026-09-07) */
-    var nh='<div class="grplbl" title="which WORDS a cluster wears — a rendering over the same ids; the claim slug and every cluster id are unchanged">NAMES</div><div class="pill" data-grp="entnaming">';
-    pos.forEach(function(k){ var off=!nb||!!dis[k]||(k!=="domain"&&k!=="config"&&(cov[k]||0)===0), why=!nb?"no naming block on this feed — regen with the current generators":(dis[k]||"no cluster carries this name on this feed");   /* the key is prefixed ONCE, on the title */
-      var ti=off?why:(RULE[k]||k)+(cov[k]!=null?(" · "+cov[k]+"/"+(cov.rows||0)+" named"):"")+(k==="path"&&col.path?(" · "+col.path+" collide (suffixed)"):"")+((k==="action"||k==="both")&&lng[k]?(" · "+lng[k]+" over "+(((nb||{}).caps||{}).name_max||40)+" chars — the hull sprite truncates"):"")+(k==="config"&&nb&&nb.entities&&Object.keys(nb.entities).length?(" · "+Object.keys(nb.entities).length+" entity display name(s) on the claim model"):"");
-      nh+='<button data-v="'+k+'"'+(k===cur&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea2(k+" — "+ti)+'">'+ico(NICO[k]||"domain",13)+'</button>'; });
-    en.innerHTML=nh+'</div>'; body.appendChild(en);
-    [].forEach.call(en.querySelectorAll('.pill[data-grp="entnaming"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetNaming) __uniSetNaming(btn.getAttribute("data-v")); }; }); }
-  if(!document.getElementById("entfeconv")){ var nb2=(window.__uniNamingBlock?__uniNamingBlock():null), fe2=nb2&&nb2.fe, forms2=(fe2&&fe2.present!==false&&fe2.forms)||null, _ea3=function(x){ return String(x).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); };
-    var ec=document.createElement("div"); ec.className="grp"; ec.id="entfeconv";
-    var CONVS=["case","prefix","suffix","bracket","glyph","tint","none"], cur2=(window.__uniConvention?__uniConvention():"none");
-    var ch='<div class="grplbl" title="how a FRONTEND home is told apart from a backend one — a mark on the label; the id underneath never changes">FRONTEND MARK</div><div class="pill" data-grp="entfeconv">';
-    CONVS.forEach(function(k){ var f=forms2&&forms2[k], off=!f, ex=f?(window.__uniRender?__uniRender(f.fe,"my feature"):k):k, ex2=f?(window.__uniRender?__uniRender(f.be,"my feature"):""):"";
-      var ti=off?(fe2&&fe2.reason?("no frontend on this feed — "+fe2.reason):"no naming block on this feed — regen with the current generators"):("frontend "+ex+" · backend "+ex2+(k==="glyph"?" · the screen glyph on DOM labels; hull sprites fall back to tint":"")+(k==="tint"?" · colour only — the twin tint and the fleet's Backend/Frontend masters carry the signal":"")+(k==="case"?" · frontend "+(fe2.case||{}).frontend+"Case · backend "+(fe2.case||{}).backend+"Case":""));
-      var CICO={"case":"case", prefix:"prefix", suffix:"suffix", bracket:"bracket", glyph:"glyph", tint:"tint", none:"none"};   /* icons on the buttons; the rendered mark ("frontend myFeature · backend MyFeature") rides the hover title (operator 2026-09-07) */
-      var face=(k==="tint"&&!off)?('<span style="color:'+((typeof ENT!=="undefined"&&ENT[Object.keys(ENT).filter(function(x){ return window.__uniIsFeEnt&&__uniIsFeEnt(x); })[0]])||"#c4b5fd")+'">'+ico("tint",13)+'</span>'):ico(CICO[k]||"none",13);
-      ch+='<button data-v="'+k+'"'+(k===cur2&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea3(k+" — "+ti)+'">'+face+'</button>'; });
-    ec.innerHTML=ch+'</div>'; body.appendChild(ec);
-    [].forEach.call(ec.querySelectorAll('.pill[data-grp="entfeconv"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetFeConv) __uniSetFeConv(btn.getAttribute("data-v")); }; }); }
+/* The three "temporary config" CHOOSERS — ENTITY MODEL · NAMES · FRONTEND MARK — were removed 2026-09-07
+   (operator settle). What each was, and why it went:
+     ENTITY MODEL  the station always shows `seeded` now; the delta APPLIER survives above as
+                   _applyEntityModel and runs once at boot. The four models are unchanged in the DATA —
+                   gabe-map entity_models, pulse S9/S18, the drafter and cc-init rank all still read them.
+     NAMES         it could never change a claim or a seeded label: only a derived/candidate row carries
+                   names{}, so under the settled model the strategy has nothing to relabel. It did
+                   nothing, by design. __uniStrategy() survives and reads the feed default.
+     FRONTEND MARK the `case` convention (frontend camelCase · backend PascalCase) is settled, so the
+                   chooser had one right answer. __uniConvention() survives and reads the feed default.
+   __uniRelabel went with them: a relabel only ever followed a chooser, and there is no chooser left. */
   /* the CAPSULES option was DROPPED (operator 2026-09-07 — "we will not move forward with that option"): no control turns UNICAP.on any more; the fold
      machinery below stays dormant (UNICAP.on is never written) until its own deletion pass. */
   /* ── SELECTED-LINE look SETTLED (operator config baked as the connection default; the Temporary-Config panel retired like the focus-ring one) ── */
@@ -5972,7 +5939,7 @@ var KINDCARD=(function(){
       w.append(srcRow("role","entity model", _mv==="claim"
         ? ("claim — the registry (the map today)"+(_mm&&_mm.views?(_others.length?(" · this feed also carries "+_others.join(" · ")):(" · the only model this feed carries — "+(((_mm.views.derived||{}).reason)||((_mm.views.seeded||{}).reason)||"no other view present"))):" · the only model this feed carries (no entity-models block — regen the center)"))
         : (_mv+" · "+(_mst.moved||0)+" moved · "+(_mst.abstained||0)+" abstained · "+(_mst.held||0)+" held · "+(_mst.clusters||0)+" new cluster(s)"+(_mvw&&_mvw.anchored!=null?(" · "+_mvw.anchored+"/"+_mvw.atoms+" atoms anchored"):"")+(_mvw&&_mvw.aspects!=null?(" · "+_mvw.aspects+" aspect(s)"):"")+(_mvw&&_mvw.layers!=null?(" · "+_mvw.layers+" layer(s)"):"")+(_mvw&&_mvw.purity!=null?(" · purity "+_mvw.purity):"")+(window.__uniFoldedN?(" · "+window.__uniFoldedN+" cluster(s) folded at this model"):"")),
-        "which ENTITY MODEL clusters the field. claim = the registry every tool joins on; seeded / derived / proposed are VIEWS over it — per-piece home deltas the station applies live. Nothing is re-homed on disk."));
+        "which ENTITY MODEL clusters the field. SETTLED 2026-09-07: the station always shows `seeded` — the claim registry with the pieces the evidence says clearly belong elsewhere moved, and shared plumbing held back. claim stays the JOIN KEY every tool uses; nothing is re-homed on disk, and gabe-map, pulse and the drafter still weigh all four models from the data. A feed with no seeded view falls back to the claim registry and this row says so."));
       /* the NAMES clause (naming-plan Phase 3): the strategy and mark in force, where each came from, coverage · collisions · truncations, a config error first */
       var _nb=(window.__uniNamingBlock?__uniNamingBlock():null);
       if(_nb){ var _k=__uniStrategy(), _c=__uniConvention(), _cv=_nb.coverage||{}, _fe=_nb.fe||{}, _wd=_fe.words||{};
@@ -6447,7 +6414,8 @@ buildLegend(); palLoop();   // legend renders now (placeholders); thumbnails pai
   ["iso","sub","entNodeR","entTubeR","subNodeR","subTubeR","entRes","subRes","every"].forEach(function(k){ var v=q.get("w"+k); if(v!=null) WRAPCFG[k]=+v; });
   var ep=q.get("enc"); if(ep&&PRESETS[ep]){ applyPreset(ep); buildExpl(); }
   var hb=q.get("heatBy"); if(hb){ ENC.heatBy=hb; } var cm=q.get("cmode"); if(cm){ ENC.color=cm; buildExpl(); } var sp=q.get("speed"); if(sp!=null){ ENC.speed=+sp; buildExpl(); }
-  window.__drive=q.get("drive"); window.__panel=q.get("panel"); window.__link=q.get("link"); window.__cam=q.get("cam"); window.__jrn=q.get("journey"); window.__ent=q.get("ent"); window.__model=q.get("model"); window.__naming=q.get("naming"); window.__feconv=q.get("feconv"); if(changed && document.getElementById("cfg")){ buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); if(window.__uniFleetSync) __uniFleetSync(); } })();
+  window.__drive=q.get("drive"); window.__panel=q.get("panel"); window.__link=q.get("link"); window.__cam=q.get("cam"); window.__jrn=q.get("journey"); window.__ent=q.get("ent");   /* ?model= / ?naming= / ?feconv= are no longer read: all three choosers were settled away 2026-09-07 (the model is always `seeded`; the naming strategy and the `case` mark come from the feed) */
+  if(changed && document.getElementById("cfg")){ buildCfg(); if(window.__uniAddLayoutTab) __uniAddLayoutTab(); if(window.__uniAddWireView) __uniAddWireView(); if(window.__uniAddFocusCfg) __uniAddFocusCfg(); if(window.__uniFleetSync) __uniFleetSync(); } })();
 buildExpl();   // build the encode panel now that DIMR/drow exist
 preloadBillboards(function(){ try{ recomputeEX(CFG.entLayout); (window.__uniAssignSplit?__uniAssignSplit():assignSub(CFG.coreByBE||"kind")); recomputeSubAnchors(); }catch(e){} build(); try{ if(window.__uniComputeSolo) __uniComputeSolo(); }catch(e){} try{ __uniSetupOrbit(); }catch(e){} setTimeout(function(){ try{ if(window.__uniSetKindState) __uniSetKindState("function","critical"); }catch(e){} if(window.__uniApplyCapsules) __uniApplyCapsules(); if(window.__uniSetTier){ try{ __uniSetTier(1); }catch(e){} } if(window.__uniScaleGuard){ try{ __uniScaleGuard(); }catch(e){} } if(window.__uniApplyDeepLinks){ try{ __uniApplyDeepLinks(); }catch(e){} } if(window.__uniCamFit) __uniCamFit(0); }, 400); window.__spikeKindsReady=true; loadShips(); });   // load the ship/sat GLBs → onShipsReady() repaints fleets
 </script></body></html>
