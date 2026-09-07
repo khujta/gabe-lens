@@ -121,6 +121,26 @@ a project writes words (display names keep the position on for 8 · 7 · 4 entit
 rule — honestly; cost +6.7 · +4.3 · +1.8 · +1.3 · +1.5 · +15.4 KB. Deferred with triggers: a `both_owner` composition (the
 audit string) when wanted; S19 for naming debt the first time a `naming.words` key survives a regen that dropped its cluster.
 
+### The naming pass as shipped (2026-09-06, suite `c4e2156`)
+
+Two read-only reviews (emitter 15 real · surfaces 19 real, all fixed): no operator path on the map (the doctor's lint fired
+once) · an identity case emits the bare token · every malformed config level named · the relabel keeps the reader's panel · one
+label funnel on the card · escaped innerHTML sinks · pills synced by the setters · a disabled position never lit · a default the
+feed cannot serve named, the built-in standing. Per estate (default domain · built-in; fe mark case where a frontend exists):
+
+| Estate | rows | table · class · action · both | path named · collisions | fe mark | naming words configured |
+|---|---|---|---|---|---|
+| gustify (`6af08c96`, pushed) | 25 | 25 each | 22/25 · 6 | case | none yet (8 display names keep `config` on) |
+| gastify (`6c285583`, pushed) | 12 | 12 each | 12/12 · 5 → the position self-disables (≥ 1/3) | case | none (7 display names) |
+| tier0 (local) | 2 | 2 each | 2/2 · 0 | case | none (4 display names) |
+| tier1 (local) | 0 | — (every cluster position disabled with one reason) | — | no frontend — pill disabled | none |
+| tier2 (local) | 1 | 1 each | 1/1 · 0 | no frontend | none |
+| tier3 / onyx (local) | 65 | 65 each | 63/65 · 24 | no frontend | none (no adoption record → `config` disabled) |
+
+Reading worth a look: the operator-ruled `case` default relabels every claim entity on the twins (`Cooking` · `pantry` becomes
+`Pantry`, frontend homes `cookingSessions`); the first project to write `naming.words` or `naming.entities` lights the `config`
+position for its clusters. The surfaces review's one deferred item: `both_owner` (the audit string) as a config value when wanted.
+
 ## The estates as shipped (2026-09-06, suite `a6cf665`)
 
 | Estate | seeded moved · held | derived features · anchored/atoms · abstained · purity | proposed | candidates | hubs |
