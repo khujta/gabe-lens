@@ -266,9 +266,13 @@ check('sub-aware' in page, "transports do not resolve visibility at NODE level (
 check('.fltog.flstog.on{ background:#0b7a63' in page,
       "cluster switches wear the entity color — the two levels must read differently")
 # fleet backend/frontend split (operator ask): two group masters, each iterating its own subset;
-# the split predicate is the capsule-proof display label (fe · …), not the fe· key prefix
-check('window.__uniIsFeEnt=function(e){ return window.__uniEntLabel' in page,
-      "the capsule-proof frontend predicate (__uniIsFeEnt via the display label) is gone")
+# the split predicate reads the REGISTRY (FE_HOME) then the KEY prefix — never a rendered label (naming pass 2026-09-06: a label
+# convention other than "fe · " must not re-group the frontend); the old label regex is the mutant
+_fp=page[page.find('window.__uniIsFeEnt=function(e){'):page.find('window.__uniIsFeEnt=function(e){')+260]
+check('FE_HOME[e]) || /^fe·/.test(String(e||""))' in _fp and '__uniEntLabel' not in _fp and '/^fe · /' not in _fp,
+      "the frontend predicate (__uniIsFeEnt) must read FE_HOME ∪ the fe· KEY prefix, never the display label")
+check('(window.__uniIsFeEnt&&__uniIsFeEnt(e)?"fe · ":"")+r.name+" · "+_hslug(e)' in page and '!/^fe·/.test(e))?(r.name' not in page,
+      "modelRow's nm() must read a twin's roster name (fe·d: ids are indexed) instead of refusing fe· ids")
 check('_masterRow("backend", "*backend"' in page and '_masterRow("frontend", "*frontend"' in page,
       "the fleet lost its two group masters (backend + frontend)")
 check('var beEnts=_ents.filter(function(e){ return !__uniIsFeEnt(e); });' in page
@@ -1693,6 +1697,7 @@ const { chromium } = require(process.argv[3]);
       var asp=CLUSTERS.find(function(c){ return c.level==='ent' && /^a:/.test(c.ekey||''); }); r.aspect=asp?{ekey:asp.ekey, dash:!!asp.dash}:null;
       var d=_ents.find(function(e){ return /^d:/.test(e); }); if(d){ __uniPanelEnt(d); r.entCard=/Entity model · derived/.test(document.getElementById('pbody').textContent); }
       r.proposed=__uniSetModel('proposed'); var slug=(M.rosters.proposed||[]).filter(function(x){ return x.verdict && _ents.indexOf(x.slug)>=0; })[0]; if(slug){ __uniPanelEnt(slug.slug); r.badge=((document.querySelector('#pbody .pchip.verdict')||{}).textContent)||null; }   // the chip itself — textContent concatenates words, so a \b regex never matches
+      try{ var _sp=function(){ return [_ents.filter(function(e){ return !__uniIsFeEnt(e); }).length, _ents.filter(function(e){ return __uniIsFeEnt(e); }).length]; }; var _s0=_sp(); var _lb=window.__uniEntLabel; window.__uniEntLabel=function(e){ return "X "+e; }; var _s1=_sp(); window.__uniEntLabel=_lb; r.splitInvariant=(_s0.join('/')===_s1.join('/')) && _s0[1]>0; r.split=_s0; }catch(e){ r.splitInvariant='err:'+e; }
       r.claim=__uniSetModel('claim'); r.roundTrip=(nodes.every(function(n){ return !(n.id in before) || n.ent===before[n.id]; }) && Object.keys(before).every(function(id){ return !NIDS[id] || NIDS[id].ent===before[id]; }) && _ents.length===__uniClaimEnts.length && _ents.every(function(e,i){ return e===__uniClaimEnts[i]; }) && nodes.every(function(n){ return !n.modelMark; }));
       r.noDash=!CLUSTERS.some(function(c){ return c.dash; });
       var keep=GABE_C4.models; delete GABE_C4.models; r.absent=(__uniSetModel('derived')===false) && window.__uniModel==='claim';
@@ -1710,7 +1715,7 @@ const { chromium } = require(process.argv[3]);
   console.log('  modelSw '+JSON.stringify(modelSw));
   const modelOk = !!(modelSw && !modelSw.err && modelSw.seeded===true && modelSw.sameN && modelSw.idsOk && modelSw.movedOk && modelSw.heldOk && modelSw.abstainN && modelSw.regOk && modelSw.abstainOk && modelSw.otherOk
     && modelSw.evClaim!==false && modelSw.claim0===true && modelSw.derivedOff===true && modelSw.aspectReg===true && modelSw.noEmptyHull===true && modelSw.aspectHullAfterLoad===true && modelSw.newClustersFeed===true
-    && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
+    && modelSw.splitInvariant===true && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
     && /claim seeded\*/.test(modelSw.pill||'') && modelSw.srcRow===true && modelSw.cardRow===true && modelSw.derived===true && modelSw.walkOk && modelSw.aspect && modelSw.aspect.dash===true
     && modelSw.entCard===true && modelSw.proposed===true && ['FEATURE','SPLIT','MERGE','ASPECT','LAYER'].indexOf(modelSw.badge)>=0 && modelSw.claim===true && modelSw.roundTrip===true && modelSw.noDash && modelSw.absent===true && modelSw.claimRow===true);
   await b.close();
