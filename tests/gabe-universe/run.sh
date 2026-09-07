@@ -1004,7 +1004,7 @@ check('_seen.reduce(function(a,gk)' in page, "search group headers can fragment 
 check('#jrn .jrnrow.on .jrnfe{ color:#fff; }' in page, "the selected journey row's fe chip lost its contrast override")
 
 # ── 10w. batch 50: fe· home identifier · FE community/usecase clusters · scaffold cut · controls trim ──
-check('window.__uniEntLabel=function(e){ if(e&&e.indexOf("fe·")===0) return "fe · "+e.slice(3);' in page,
+check('window.__uniEntLabel=function(e){ if(!e) return e; var nb=__uniNamingBlock(), conv=__uniConvention()' in page and '(fe?"fe · {name}":"{name}")' in page,
       "the fe-home display identifier is gone")
 check('__uniEntLabel(e):e' in page and '__uniEntLabel(ent):ent' in page and '__uniEntLabel(label):label' in page,
       "an entity-name surface (fleet / panels / hull sprite) lost the fe· prefix")
@@ -1127,7 +1127,7 @@ check('lerp(new T.Color("#ffffff"),0.38)' in page,
       "a paired fe entity lost its TINT of the backend twin's colour (the pairing must be visible as family)")
 check('E2.push([fh, FE_PAIR[fh], 8]);' in page and 'ord.splice(bi+1,0,fh);' in page,
       "pair seating is gone (force spring + ring adjacency)")
-check('return "fe · "+e.slice(3);' in page, "a fe· home's display name lost its opened dot")
+check('(fe?"fe · {name}":"{name}")' in page and 'forms[conv][fe?"fe":"be"]' in page, "the label formatter must fall back to today's opened-dot prefix without a naming block, and read the emitted form with one")
 # the R2–R4 lab was RETIRED by the entity-models pass (Phase 2, 2026-09-06): the machinery goes, not just the buttons — an unreachable
 # toggle that still gated the connector build was the failure mode. CAP stays alone as the capsule master; the ENTITY MODEL pill sits above it.
 check('window.UNIWIRE' not in page and '__uniRelHide' not in page and '__uniDrawBundles' not in page and '_UTILSET' not in page and '_SOLEP' not in page and '_wireSets' not in page,
@@ -1175,7 +1175,7 @@ check('" unclaimed file(s) in the map"' in page and 'hidden at this tier (drawn 
 check('fnsN:(kind==="element"?_num(p.fns):null)' in page and 'more (the census lists 12)' in page, "R2: the element card names the functions beyond the 12 its det lists")
 check('var pc=D.pieces[n.entClaim||n.ent];' in page and 'D.pieces[n.ent];' not in page,
       "B2: the levels group map must join on the CLAIM — a moved piece would lose its use-case / community / fk group and land in 'other'")
-_em=page[page.find('if(!document.getElementById("entmodel"))'):page.find('if(document.getElementById("wireview")) return;')]
+_em=page[page.find('if(!document.getElementById("entmodel"))'):page.find('if(!document.getElementById("entnaming"))')]
 check(bool(_em) and re.findall(r'\["(\w+)","\w+",', _em)==["claim","seeded","derived","proposed"] and '__uniSetModel(btn.getAttribute("data-v"))' in _em
       and "' disabled'" in _em and 'vw.reason' in _em,
       "B3: the ENTITY MODEL pill is not the four-position claim · seeded · derived · proposed with disabled-with-reason positions")
@@ -1205,6 +1205,29 @@ check('srcRow("role","entity model"' in page and 'cluster(s) folded at this mode
 _ls=page[page.find('function _modelSection()'):page.find('function _planetSection()')]
 check(bool(_ls) and '_connSection()+_planetSection()+_modelSection()' in page and len(re.findall(r'\["(claim|seeded|derived|proposed|aspect|layer|element)","', _ls))==7 and 'lrdef' in _ls and 'stroke-dasharray' in _ls,
       "B9: the legend ENTITY MODELS section lacks its seven rows (each with a definition, the aspect swatch dashed)")
+# ── 10ab. NAMING (naming-plan Phase 3, 2026-09-06): words from the strategy, the mark from the emitted form; a switch relabels, never re-clusters ──
+check(all(k in page for k in ('window.__uniNameOf=function(id)','window.__uniRender=function(form, name)','window.__uniCaseRun=function(run, how)','window.__uniStrategy=function()','window.__uniConvention=function()')),
+      "B3-naming: the formatter chain (__uniNameOf · __uniRender · __uniCaseRun · __uniStrategy · __uniConvention) is missing a link")
+check('{name|camel}' in page and '{name|pascal}' in page and '/^(.*?)( · | — )(.*)$/' in page, "B3-naming: the case tokens are not substituted on the leading word-run only")
+_en=page[page.find('if(!document.getElementById("entnaming"))'):page.find('if(!document.getElementById("entfeconv"))')]
+_ec=page[page.find('if(!document.getElementById("entfeconv"))'):page.find('if(document.getElementById("wireview")) return;')]
+check(bool(_en) and bool(_ec) and page.find('em.id="entmodel"') < page.find('en.id="entnaming"') < page.find('ec.id="entfeconv"') < page.find('g.id="wireview"'),
+      "B3-naming: #entnaming and #entfeconv must be built between #entmodel and #wireview")
+check('__uniSetNaming(btn.getAttribute("data-v"))' in _en and "' disabled'" in _en and 'dis[k]' in _en and '__uniSetFeConv(btn.getAttribute("data-v"))' in _ec and '["case","prefix","suffix","bracket","glyph","tint","none"]' in _ec and '__uniRender(f.fe,"my feature")' in _ec,
+      "B3-naming: the pills bind their setters, render disabled positions with reasons, and the mark buttons draw their ACTUAL mark")
+_rl=page[page.find('window.__uniRelabel=function()'):page.find('window.__uniSetNaming=function(k, opts)')]
+check(bool(_rl) and 'buildClusters()' in _rl and '__uniFleetRender()' in _rl and all(x not in _rl for x in ('recomputeEX','__uniAssignSplit','recomputeSubAnchors','__uniApplyCapsules','d3ReheatSimulation','Graph.graphData(','nodes=','n.ent=','JRN=null')),
+      "B3-naming: __uniRelabel must relabel (clusters · fleet · panel) and NEVER re-cluster (the absence list)")
+_sn=page[page.find('window.__uniSetNaming=function(k, opts)'):page.find('window.__uniAddWireView=function()')]
+check('return false; }' in _sn and 'localStorage.setItem("gabe:universe:naming", k)' in _sn and 'localStorage.setItem("gabe:universe:feconv", k)' in _sn and 'opts.noStore' in _sn,
+      "B3-naming: the setters refuse an unknown key (false + one console line) and persist unless noStore")
+_dl2=page[page.find('window.__uniApplyDeepLinks=function()'):page.find('window.UNICAP={')]
+check(0 < _dl2.find('__uniSetNaming(_wn,{noStore:true,noRender:true})') < _dl2.find('__uniSetModel(_want,{noStore:true})') < _dl2.find('__jrnDone') and 'localStorage.setItem' not in _dl2 and 'window.__naming=q.get("naming"); window.__feconv=q.get("feconv");' in page,
+      "B6-naming: ?naming=/?feconv= are assigned BEFORE the model switch, before ?journey=/?ent=, and never stored from the URL")
+check('srcRow("info","names"' in page and 'your choice · project default' in page and 'frontend mark: ' in page and '_nb.config_error?("⚠ "' in page, "B9-naming: the Sources names clause (strategy · source · coverage · mark · a config error first) is missing")
+check('rows.push(["naming","names: "+k' in page and 'rows.push(["mark","frontend mark: "+c' in page, "B9-naming: the legend NAMES + FRONTEND MARK rows are missing")
+check('_lt.slice(0,_nmax-1)+"…"' in page, "the hull sprite must truncate at name_max with an ellipsis (an action phrase runs 100+ chars)")
+check('orphan' not in page[page.find('/* ── NAMING (naming-plan.md Phase 3'):page.find('/* LINKS: intra-entity')].lower() and 'orphan' not in _en.lower() and 'orphan' not in _ec.lower(), "R10: a naming string says 'orphan'")
 check('orphan' not in page[page.find('/* ── ENTITY MODELS (Phase 2'):page.find('/* ── ONE badge-glyph source')].lower()
       and 'orphan' not in page[page.find('function modelRow(n)'):page.find('function feBuilder(n)')].lower() and 'orphan' not in _ls.lower(),
       "R10: an entity-model string says 'orphan'")
@@ -1697,6 +1720,17 @@ const { chromium } = require(process.argv[3]);
       var asp=CLUSTERS.find(function(c){ return c.level==='ent' && /^a:/.test(c.ekey||''); }); r.aspect=asp?{ekey:asp.ekey, dash:!!asp.dash}:null;
       var d=_ents.find(function(e){ return /^d:/.test(e); }); if(d){ __uniPanelEnt(d); r.entCard=/Entity model · derived/.test(document.getElementById('pbody').textContent); }
       r.proposed=__uniSetModel('proposed'); var slug=(M.rosters.proposed||[]).filter(function(x){ return x.verdict && _ents.indexOf(x.slug)>=0; })[0]; if(slug){ __uniPanelEnt(slug.slug); r.badge=((document.querySelector('#pbody .pchip.verdict')||{}).textContent)||null; }   // the chip itself — textContent concatenates words, so a \b regex never matches
+      try{ var NB=window.__uniNamingBlock&&__uniNamingBlock(); if(NB){ var L=function(){ return _ents.map(function(e){ return __uniEntLabel(e); }); }, E=function(){ return nodes.map(function(n){ return n.ent; }).join('|')+'#'+CLUSTERS.map(function(c){ return c.ekey+'/'+c.skey; }).join('|'); };
+        var l0=L(), e0=E(), st0=(WALK.steps||[]).join('|'); r.nmDefault=[__uniStrategy(), __uniConvention()];
+        var alt=(NB.positions||[]).filter(function(k){ return k!=='domain' && !(NB.disabled||{})[k] && (NB.coverage||{})[k]>0; })[0]||null; r.nmAlt=alt;
+        r.nmSwitch=alt?__uniSetNaming(alt,{noStore:true}):null; var l1=L(); r.nmRelabelOnly=(E()===e0) && (WALK.steps||[]).join('|')===st0; r.nmChanged=l1.some(function(x,i){ return x!==l0[i]; });
+        var sp=function(){ return _ents.filter(function(e){ return __uniIsFeEnt(e); }).length; }, s0=sp(), same=true, labelsByConv={};
+        Object.keys((NB.fe&&NB.fe.forms)||{}).forEach(function(c){ if(__uniSetFeConv(c,{noStore:true})){ same=same&&(sp()===s0)&&(E()===e0); labelsByConv[c]=__uniEntLabel(_ents.filter(function(e){ return __uniIsFeEnt(e); })[0]||''); } });
+        r.convSplitInvariant=same; r.convLabels=labelsByConv; r.convDistinct=Object.keys(labelsByConv).length>=5 && new Set(Object.values(labelsByConv)).size>=4;
+        r.nmBack=__uniSetNaming('domain',{noStore:true}) && __uniSetFeConv(NB.fe.convention||'case',{noStore:true}); window.__uniNaming=null; window.__uniFeConv=null; __uniRelabel(); r.nmRoundTrip=L().join('|')===l0.join('|');
+        r.nmBogus=(__uniSetNaming('verb')===false) && (__uniSetFeConv('emoji')===false) && __uniStrategy()===r.nmDefault[0];
+        var keepN=GABE_C4.models.naming; delete GABE_C4.models.naming; r.nmAbsent=(__uniSetNaming('table')===false) && __uniEntLabel(_ents.filter(function(e){ return __uniIsFeEnt(e); })[0]||'fe·x').indexOf('fe · ')===0; GABE_C4.models.naming=keepN;
+        try{ __uniPanelAll(); r.nmSrcRow=/names.{0,40}project default/.test(document.getElementById('pbody').textContent); }catch(e){ r.nmSrcRow='err:'+e; } } else r.nmSkip='no naming block on the example feed — regen'; }catch(e){ r.nmErr=String(e); }
       try{ var _sp=function(){ return [_ents.filter(function(e){ return !__uniIsFeEnt(e); }).length, _ents.filter(function(e){ return __uniIsFeEnt(e); }).length]; }; var _s0=_sp(); var _lb=window.__uniEntLabel; window.__uniEntLabel=function(e){ return "X "+e; }; var _s1=_sp(); window.__uniEntLabel=_lb; r.splitInvariant=(_s0.join('/')===_s1.join('/')) && _s0[1]>0; r.split=_s0; }catch(e){ r.splitInvariant='err:'+e; }
       r.claim=__uniSetModel('claim'); r.roundTrip=(nodes.every(function(n){ return !(n.id in before) || n.ent===before[n.id]; }) && Object.keys(before).every(function(id){ return !NIDS[id] || NIDS[id].ent===before[id]; }) && _ents.length===__uniClaimEnts.length && _ents.every(function(e,i){ return e===__uniClaimEnts[i]; }) && nodes.every(function(n){ return !n.modelMark; }));
       r.noDash=!CLUSTERS.some(function(c){ return c.dash; });
@@ -1715,7 +1749,7 @@ const { chromium } = require(process.argv[3]);
   console.log('  modelSw '+JSON.stringify(modelSw));
   const modelOk = !!(modelSw && !modelSw.err && modelSw.seeded===true && modelSw.sameN && modelSw.idsOk && modelSw.movedOk && modelSw.heldOk && modelSw.abstainN && modelSw.regOk && modelSw.abstainOk && modelSw.otherOk
     && modelSw.evClaim!==false && modelSw.claim0===true && modelSw.derivedOff===true && modelSw.aspectReg===true && modelSw.noEmptyHull===true && modelSw.aspectHullAfterLoad===true && modelSw.newClustersFeed===true
-    && modelSw.splitInvariant===true && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
+    && modelSw.splitInvariant===true && !modelSw.nmErr && !modelSw.nmSkip && modelSw.nmSwitch===true && modelSw.nmRelabelOnly===true && modelSw.nmChanged===true && modelSw.convSplitInvariant===true && modelSw.convDistinct===true && modelSw.nmBack===true && modelSw.nmRoundTrip===true && modelSw.nmBogus===true && modelSw.nmAbsent===true && modelSw.nmSrcRow===true && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
     && /claim seeded\*/.test(modelSw.pill||'') && modelSw.srcRow===true && modelSw.cardRow===true && modelSw.derived===true && modelSw.walkOk && modelSw.aspect && modelSw.aspect.dash===true
     && modelSw.entCard===true && modelSw.proposed===true && ['FEATURE','SPLIT','MERGE','ASPECT','LAYER'].indexOf(modelSw.badge)>=0 && modelSw.claim===true && modelSw.roundTrip===true && modelSw.noDash && modelSw.absent===true && modelSw.claimRow===true);
   await b.close();
