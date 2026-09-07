@@ -132,6 +132,10 @@ assert n(["GET /cooking/active"]) == "Look at cooking — active"               
 assert n(["POST /shopping/items/{source_id}/add-to-list"]) == "Add shopping items — add to list"
 assert n(["PATCH /settings/household", "PATCH /settings/preferences"]) == "Edit settings — household · preferences"
 assert n(["DELETE /pantry/items/{item_id}"]) == "Remove pantry items"
+# phrase==noun (ruling 2026-09-06): a domain word that IS the verb never reads "Manage manage" — the most frequent second segment is the noun
+assert n(["GET /manage/users", "DELETE /manage/users/{id}", "GET /manage/admin/x"]) == "Manage users — admin · x", n(["GET /manage/users", "DELETE /manage/users/{id}", "GET /manage/admin/x"])
+assert n(["GET /manage", "DELETE /manage"]) == "Manage", n(["GET /manage", "DELETE /manage"])                     # no second segment → the phrase stands alone, never doubled
+assert n(["GET /edit/items", "PATCH /edit/items/{id}"]) == "Edit items", n(["GET /edit/items", "PATCH /edit/items/{id}"])   # the shared plural second is the noun; the domain verb never repeats
 assert n(["GET /cooking/active", "POST /cooking/sessions/{id}/cancel", "PATCH /cooking/sessions/{id}/readiness", "DELETE /cooking/sessions/{id}/photos/{slot}"]) \
        == "Manage cooking — active · sessions · cancel · readiness · …"                # mixed verbs → Manage; actions capped at 4 + …
 ds = [{"name": "Look at cooking — active", "cluster": {"screen": "A"}}, {"name": "Look at cooking — active", "cluster": {"screen": "B"}}, {"name": "Look at pantry — history", "cluster": {"screen": "C"}}]

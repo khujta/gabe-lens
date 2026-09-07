@@ -96,8 +96,18 @@ def draft_name(steps: list[str]) -> tuple[str, str, list[str]]:
         phrase = "Edit"
     else:
         phrase = "Manage"
+    if noun.split()[0].lower() == phrase.lower():
+        # the domain word IS the verb (onyx's /manage/* — "Manage manage — …", 9 of 65 rows, ruling 2026-09-06): the noun becomes
+        # the most frequent second segment (ties alphabetical) and leaves the actions; with no second segment the phrase stands alone
+        sec2 = [s for s in seconds if s]
+        if sec2:
+            best = max(sorted(set(sec2)), key=sec2.count)
+            noun = _words(best)
+            actions = [a for a in actions if a != best]
+        else:
+            noun = ""
     acts = [_words(a) for a in actions[:4]] + (["…"] if len(actions) > 4 else [])
-    name = f"{phrase} {noun}" + (f" — {' · '.join(acts)}" if acts else "")
+    name = f"{phrase} {noun}".rstrip() + (f" — {' · '.join(acts)}" if acts else "")
     return name, noun, acts
 
 
