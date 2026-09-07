@@ -1267,6 +1267,10 @@ window.__uniRender=function(form, name){ name=String(name||""); var m=/^(.*?)( �
 window.__uniEntLabel=function(e){ if(!e) return e; var nb=__uniNamingBlock(), conv=__uniConvention(), fe=!!(window.__uniIsFeEnt&&__uniIsFeEnt(e));
   var forms=(nb&&nb.fe&&nb.fe.forms)||null, form=(forms&&forms[conv])?forms[conv][fe?"fe":"be"]:(fe?"fe · {name}":"{name}");
   return __uniRender(form, __uniNameOf(e)); };
+window.__uniEsc=function(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };   /* a label is project prose now (naming.entities) — every innerHTML sink escapes it */
+window.__uniEntLabelHTML=function(e){ var t=__uniEsc(__uniEntLabel(e)); var nb=__uniNamingBlock(), fe=!!(window.__uniIsFeEnt&&__uniIsFeEnt(e));   /* the DOM form of a label: escaped, and under the glyph convention a frontend home wears the screen glyph (hull sprites cannot — they fall back to tint) */
+  if(fe&&__uniConvention()==="glyph"&&nb&&nb.fe&&nb.fe.forms&&nb.fe.forms.glyph&&nb.fe.forms.glyph.mark==="screen"&&typeof svgInline==="function") return svgInline("web", (typeof KINDCOL!=="undefined"&&KINDCOL.web)||"#e8590c", 10)+" "+t;
+  return t; };
 if(_FE){
   (_FE.homes||[]).forEach(function(h){ if(h.kind==="entity") return;
     FE_HOME[h.id]=h.kind; if(h.pair) FE_PAIR[h.id]=h.pair;
@@ -3425,8 +3429,8 @@ window.__uniFleetRender=function(){ var body=document.getElementById("fleetbody"
   var beEnts=_ents.filter(function(e){ return !__uniIsFeEnt(e); });
   var feEnts=_ents.filter(function(e){ return __uniIsFeEnt(e); });
   var _entRow=function(e){ var gs=groups[e]||{}, gk=Object.keys(gs).sort(), open=!!_flOpen[e];
-    var r='<div class="flrow" data-fle="'+e+'"><span class="flent flx" data-flx="'+e+'" title="'+e+' — click to SELECT it (panel + camera); the count expands its clusters">'
-      +'<b class="flcnt flexp" style="--flc:'+(ENT[e]||"#888")+'" title="expand / collapse the '+gk.length+' cluster(s)">'+gk.length+'</b>'+(window.__uniEntLabel?__uniEntLabel(e):e)+'</span>'
+    var r='<div class="flrow" data-fle="'+e+'"><span class="flent flx" data-flx="'+e+'" title="'+(window.__uniEsc?__uniEsc((window.__uniEntLabel?__uniEntLabel(e):e)+" · "+e):e)+' — click to SELECT it (panel + camera); the count expands its clusters">'
+      +'<b class="flcnt flexp" style="--flc:'+(ENT[e]||"#888")+'" title="expand / collapse the '+gk.length+' cluster(s)">'+gk.length+'</b>'+(window.__uniEntLabelHTML?__uniEntLabelHTML(e):(window.__uniEntLabel?__uniEntLabel(e):e))+'</span>'
       +_FCOLS.map(function(c){ return '<button class="fltog" data-fent="'+e+'" data-fcol="'+c.k+'" title="'+c.ti+'"></button>'; }).join('')+'</div>';
     if(open) gk.forEach(function(s){
       r+='<div class="flrow flsub" data-fle="'+e+'" data-fls="'+s+'"><span class="flent flsubname" data-fse="'+e+'" data-fss="'+s+'" title="'+s+' · '+gs[s]+' member(s) — click to SELECT this cluster (panel + camera)"><b class="flcnt" style="--flc:'+(ENT[e]||"#888")+'">'+gs[s]+'</b>'+s+'</span>'
@@ -3915,7 +3919,7 @@ window.__uniApplyDeepLinks=function(){   /* ?model=<view> picks the entity model
   if(!mv){ try{ _stored=window.localStorage.getItem("gabe:universe:model"); }catch(e){} }
   if(!window.__modelDone){ window.__modelDone=true; var _want=mv||_stored;   /* a URL model NEVER writes localStorage (the ?journey= law); the stored one is already stored */
     if(_want&&_want!=="claim"&&window.__uniSetModel){ try{ if(__uniSetModel(_want,{noStore:true})) _switched=true; else console.info("gabe-universe: "+(mv?("?model="+mv):("the stored entity model "+_want))+" is not on this feed — showing claim"); }catch(e){} } }
-  if(window.__relabelOwed&&!_switched){ window.__relabelOwed=false; try{ __uniRelabel(); }catch(e){} }   /* the model switch relabelled already; otherwise one relabel closes it */
+  if(window.__relabelOwed){ window.__relabelOwed=false; if(!_switched){ try{ __uniRelabel(); }catch(e){} } }   /* the model switch relabelled already; otherwise one relabel closes it (the pills were synced by the setters) */
   if(jv && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
     if(j) __uniJrnStart(j.cid); else console.info("gabe-universe: ?journey="+jv+" names no journey (workflows tab lists them)"); }catch(e){} }
   if(ev && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
@@ -4145,14 +4149,16 @@ window.__uniAddFocusCfg=function(){ window.__uniHLSeed(); };   // SEEDER ONLY �
 /* a naming or mark switch RELABELS — cluster label sprites, the fleet, the open panel, the Sources row — and never re-clusters: no anchors,
    no capsules, no reheat, no node touched (the static pin is the absence list) */
 window.__uniRelabel=function(){ try{ buildClusters(); updateClusters(true); }catch(e){} try{ if(window.__uniFleetRender) __uniFleetRender(); }catch(e){}
-  try{ var pv=window.__uniPView; if(pv&&pv.lvl==="ent"&&window.__uniPanelEnt) __uniPanelEnt(pv.ent); else if(window.__uniPanelAll) __uniPanelAll(); }catch(e){}
-  try{ [].forEach.call(document.querySelectorAll('.pill[data-grp="entnaming"] button'), function(b){ b.classList.toggle("on", b.getAttribute("data-v")===__uniStrategy()); }); [].forEach.call(document.querySelectorAll('.pill[data-grp="entfeconv"] button'), function(b){ b.classList.toggle("on", b.getAttribute("data-v")===__uniConvention()); }); if(window.__uniSyncGrpSel) __uniSyncGrpSel(); }catch(e){} };
+  try{ var pv=window.__uniPView; if(pv&&document.body.classList.contains("panel-open")){   /* only an OPEN panel re-renders, at its own level — a relabel never throws the reader out of a cluster panel or an element card (review) */
+    if(pv.lvl==="ent"&&window.__uniPanelEnt) __uniPanelEnt(pv.ent); else if(pv.lvl==="clu"&&window.__uniPanelClu) __uniPanelClu(pv.ent,pv.sub); else if(pv.lvl==="node"&&pv.id&&NIDS[pv.id]) showPanel(NIDS[pv.id]); else if(pv.lvl==="all"&&window.__uniPanelAll) __uniPanelAll(); } }catch(e){}
+  try{ __uniSyncNamingPills(); }catch(e){} };
+window.__uniSyncNamingPills=function(){ [].forEach.call(document.querySelectorAll('.pill[data-grp="entnaming"] button'), function(b){ b.classList.toggle("on", !b.disabled&&b.getAttribute("data-v")===__uniStrategy()); }); [].forEach.call(document.querySelectorAll('.pill[data-grp="entfeconv"] button'), function(b){ b.classList.toggle("on", !b.disabled&&b.getAttribute("data-v")===__uniConvention()); }); if(window.__uniSyncGrpSel) __uniSyncGrpSel(); };
 window.__uniSetNaming=function(k, opts){ opts=opts||{}; k=String(k||""); var nb=__uniNamingBlock(); var valid=(nb&&nb.positions)||["domain"];
   if(valid.indexOf(k)<0||(nb&&nb.disabled&&nb.disabled[k])){ try{ console.info("gabe-universe: naming "+k+" is not on this feed ("+((nb&&nb.disabled&&nb.disabled[k])||("valid: "+valid.join(" · ")))+") — keeping "+__uniStrategy()); }catch(e){} return false; }
-  window.__uniNaming=k; if(!opts.noRender) __uniRelabel(); if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:naming", k); }catch(e){} } return true; };
+  window.__uniNaming=k; try{ __uniSyncNamingPills(); }catch(e){} if(!opts.noRender) __uniRelabel(); if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:naming", k); }catch(e){} } return true; };
 window.__uniSetFeConv=function(k, opts){ opts=opts||{}; k=String(k||""); var nb=__uniNamingBlock(); var fe=nb&&nb.fe; var valid=(fe&&fe.present!==false&&fe.forms)?Object.keys(fe.forms):[];
   if(valid.indexOf(k)<0){ try{ console.info("gabe-universe: frontend mark "+k+" is not on this feed ("+(fe&&fe.present===false?fe.reason:("valid: "+(valid.join(" · ")||"none — no naming block")))+") — keeping "+__uniConvention()); }catch(e){} return false; }
-  window.__uniFeConv=k; if(!opts.noRender) __uniRelabel(); if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:feconv", k); }catch(e){} } return true; };
+  window.__uniFeConv=k; try{ __uniSyncNamingPills(); }catch(e){} if(!opts.noRender) __uniRelabel(); if(!opts.noStore){ try{ window.localStorage.setItem("gabe:universe:feconv", k); }catch(e){} } return true; };
 window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbody")||document.getElementById("cfg"); if(!body) return;
   /* ── ENTITY MODEL (Phase 2, 2026-09-06): the four-position pill claim · seeded · derived · proposed, above the capsule master. A view the
      feed lacks renders DISABLED with the reason as its title; no models block → three disabled, claim lit. Persisted per reader
@@ -4177,7 +4183,7 @@ window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbo
     var nh='<div class="grplbl" title="which WORDS a cluster wears — a rendering over the same ids; the claim slug and every cluster id are unchanged">NAMES</div><div class="pill" data-grp="entnaming">';
     pos.forEach(function(k){ var off=!nb||!!dis[k]||(k!=="domain"&&k!=="config"&&(cov[k]||0)===0), why=!nb?"no naming block on this feed — regen with the current generators":(dis[k]||(k+" — no cluster carries this name on this feed"));
       var ti=off?why:(RULE[k]||k)+(cov[k]!=null?(" · "+cov[k]+"/"+(cov.rows||0)+" named"):"")+(k==="path"&&col.path?(" · "+col.path+" collide (suffixed)"):"")+((k==="action"||k==="both")&&lng[k]?(" · "+lng[k]+" over "+(((nb||{}).caps||{}).name_max||40)+" chars — the hull sprite truncates"):"")+(k==="config"&&nb&&nb.entities&&Object.keys(nb.entities).length?(" · "+Object.keys(nb.entities).length+" entity display name(s) on the claim model"):"");
-      nh+='<button data-v="'+k+'"'+(k===cur?' class="on"':'')+(off?' disabled':'')+' title="'+_ea2(ti)+'">'+k+'</button>'; });
+      nh+='<button data-v="'+k+'"'+(k===cur&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea2(ti)+'">'+k+'</button>'; });
     en.innerHTML=nh+'</div>'; body.appendChild(en);
     [].forEach.call(en.querySelectorAll('.pill[data-grp="entnaming"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetNaming) __uniSetNaming(btn.getAttribute("data-v")); }; }); }
   if(!document.getElementById("entfeconv")){ var nb2=(window.__uniNamingBlock?__uniNamingBlock():null), fe2=nb2&&nb2.fe, forms2=(fe2&&fe2.present!==false&&fe2.forms)||null, _ea3=function(x){ return String(x).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); };
@@ -4186,7 +4192,8 @@ window.__uniAddWireView=function(){ var body=document.querySelector("#cfg .cfgbo
     var ch='<div class="grplbl" title="how a FRONTEND home is told apart from a backend one — a mark on the label; the id underneath never changes">FRONTEND MARK</div><div class="pill" data-grp="entfeconv">';
     CONVS.forEach(function(k){ var f=forms2&&forms2[k], off=!f, ex=f?(window.__uniRender?__uniRender(f.fe,"my feature"):k):k, ex2=f?(window.__uniRender?__uniRender(f.be,"my feature"):""):"";
       var ti=off?(fe2&&fe2.reason?("no frontend on this feed — "+fe2.reason):"no naming block on this feed — regen with the current generators"):("frontend "+ex+" · backend "+ex2+(k==="glyph"?" · the screen glyph on DOM labels; hull sprites fall back to tint":"")+(k==="tint"?" · colour only — the twin tint and the fleet's Backend/Frontend masters carry the signal":"")+(k==="case"?" · frontend "+(fe2.case||{}).frontend+"Case · backend "+(fe2.case||{}).backend+"Case":""));
-      ch+='<button data-v="'+k+'"'+(k===cur2?' class="on"':'')+(off?' disabled':'')+' title="'+_ea3(ti)+'">'+_ea3(off?k:ex)+'</button>'; });
+      var face=off?_ea3(k):(k==="glyph"&&typeof svgInline==="function")?(svgInline("web",(typeof KINDCOL!=="undefined"&&KINDCOL.web)||"#e8590c",10)+" "+_ea3(ex)):(k==="tint")?('<span style="color:'+((typeof ENT!=="undefined"&&ENT[Object.keys(ENT).filter(function(x){ return window.__uniIsFeEnt&&__uniIsFeEnt(x); })[0]])||"#c4b5fd")+'">'+_ea3(ex)+'</span>'):(k==="none")?(_ea3(ex)+' <i style="opacity:.6">bare</i>'):_ea3(ex);   /* the button IS the example — glyph wears the screen glyph, tint the twin tint, none says bare */
+      ch+='<button data-v="'+k+'"'+(k===cur2&&!off?' class="on"':'')+(off?' disabled':'')+' title="'+_ea3(ti)+'">'+face+'</button>'; });
     ec.innerHTML=ch+'</div>'; body.appendChild(ec);
     [].forEach.call(ec.querySelectorAll('.pill[data-grp="entfeconv"] button'), function(btn){ btn.onclick=function(){ if(btn.disabled) return; if(window.__uniSetFeConv) __uniSetFeConv(btn.getAttribute("data-v")); }; }); }
   if(document.getElementById("wireview")) return;
@@ -4405,7 +4412,7 @@ if(!window.__uniSrchInit){ window.__uniSrchInit=1; (function(){
           ico:svgInline("function", KINDCOL["function"], 12),
           go:function(){ if(window.__uniGoto) __uniGoto(n.id); } }); });   // __uniGoto wakes ƒ ON + reveals + selects (one path)
     }
-    _ents.forEach(function(e){ var el=window.__uniEntLabel?__uniEntLabel(e):e;
+    _ents.forEach(function(e){ var el=(window.__uniEntLabel?__uniEntLabel(e):e)+" "+((window.__uniNameOf&&__uniNameOf(e))||"");   /* the rendered label AND the emitter's words — a camelCased label still matches a typed "cooking sessions" */
       var _a=_score(q, el, e), _b=_score(q, e), sc=(_a<0)?_b:(_b<0)?_a:Math.min(_a,_b);   // best of display and raw slug — the fe· prefix must not demote a "design…" prefix match
       if(sc>=0) out.push({g:"entities", sc:sc, label:el, sub:(nodes.filter(function(n){return n.ent===e;}).length)+" pieces",
         ico:'<i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+(ENT[e]||"#888")+'"></i>',
@@ -4741,7 +4748,7 @@ window.__uniLegRef=function(){
       ["element","element",(typeof svgInline==="function")?svgInline("element","#8a8f98",18):"","a backend file no entity claims — the blind spot, given a shape (muted, in the unclaimed area)"]];
     var h='<div class="lrsec"><div class="lrsh">ENTITY MODELS · which clustering the field shows</div>';
     var nb=(window.__uniNamingBlock?__uniNamingBlock():null);
-    if(nb){ var k=__uniStrategy(), c=__uniConvention(), ex=null; try{ var _r=((window.GABE_C4.models.rosters||{}).derived||[]).filter(function(x){ return x.kind==="feature"&&x.names&&x.names[k]; })[0]; if(_r) ex=_r.name+" → "+((k==="domain")?_r.name:_r.names[k]); }catch(e){}
+    if(nb){ var k=__uniStrategy(), c=__uniConvention(), ex=null; try{ var _r=((window.GABE_C4.models.rosters||{}).derived||[]).filter(function(x){ return x.kind==="feature"&&x.name&&(k==="domain"||(x.names&&x.names[k]&&x.names[k]!==x.name)); })[0]; if(_r) ex=_r.name+" → "+(window.__uniEntLabel?__uniEntLabel(_r.id):_r.names[k]); }catch(e){}
       var fef=(nb.fe&&nb.fe.forms&&nb.fe.forms[c])||null, mark=fef?(__uniRender(fef.fe,"my feature")+" · "+__uniRender(fef.be,"my feature")):"— (no frontend on this feed)";
       rows.push(["naming","names: "+k,'<span class="lrbadge">Aa</span>',"the words a cluster wears — "+k+(ex?(" (e.g. "+ex+")"):"")+"; a rendering over the same ids, chosen in the config panel or by ?naming="]);
       rows.push(["mark","frontend mark: "+c,'<span class="lrbadge">'+_esc(fef?__uniRender(fef.fe,"fe"):"—")+'</span>',"how a frontend home is told apart: "+mark+"; the id underneath never changes (?feconv=)"]); }
@@ -5645,7 +5652,7 @@ var KINDCARD=(function(){
     return kv("role","evidence","home "+_hslug(n.entClaim||n.ent)+" by "+by+" · "+(u?("users say "+u):"users abstain")+" · "+(d?("data says "+d):(e.data_note?"data abstains — "+e.data_note:"data abstains"))+" → "+word+" — evidence only, nothing re-homed"); }
   /* the ENTITY-MODEL row (Phase 2, 2026-09-06): under a non-claim model, where the view put this piece and why — the claim stays the join key */
   function modelRow(n){ var v=window.__uniModel||"claim"; if(v==="claim"||!n||!n.entClaim||!n.modelMark) return null;
-    var nm=function(e){ var r=(window.__uniModelRosterRow?__uniModelRosterRow(e):null); return (r&&r.name)?((window.__uniIsFeEnt&&__uniIsFeEnt(e)?"fe · ":"")+r.name+" · "+_hslug(e)):(window.__uniEntLabel?__uniEntLabel(e):_hslug(e)); };   /* a twin reads its roster name too (the roster indexes fe·d: ids) */
+    var nm=function(e){ var l=(window.__uniEntLabel?__uniEntLabel(e):_hslug(e)), r=(window.__uniModelRosterRow?__uniModelRosterRow(e):null); return (r&&r.name)?(l+" · "+_hslug(e)):l; };   /* the ONE label funnel (strategy + mark), the raw id beside a cluster's name */
     if(n.modelMark==="moved") return kv("link","model", v+": claim "+_hslug(n.entClaim)+" → "+nm(n.ent)+" — a view over the claim, nothing re-homed on disk");
     if(n.modelMark==="abstain") return kv("link","model", v+": no witness reaches this piece — it keeps its claim "+_hslug(n.entClaim));
     var hub=(window.__uniModelHub?__uniModelHub(n.id):null);
@@ -5716,8 +5723,9 @@ var KINDCARD=(function(){
   /* ══ PANEL HIERARCHY (batch 22): Everything → Entity → Cluster → Element, two-way nav.
      Every level shows its content + an Inside (below) and an Above section; Esc lands on Everything. ══ */
   function _phead(title, sub, glyph, col){ var c=col||"var(--accent)";
-    document.getElementById("phead").innerHTML="<div class='ptitle'><div class='pname'>"+title+"</div>"
-      +"<div class='ptype' style='color:"+c+"'>"+pico(glyph||"entity",null, col?col:undefined)+"<span>"+sub+"</span></div></div>"
+    var _hx=window.__uniEsc||function(x){ return String(x==null?"":x); };
+    document.getElementById("phead").innerHTML="<div class='ptitle'><div class='pname'>"+_hx(title)+"</div>"
+      +"<div class='ptype' style='color:"+c+"'>"+pico(glyph||"entity",null, col?col:undefined)+"<span>"+_hx(sub)+"</span></div></div>"
       ;   // the collapse chevron lives in the panel FOOTER now (the walk bar owns the top)
     document.getElementById("prailname").textContent=title; }
   P.drill='<polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/>';       // trailing DOWN-a-level marker
@@ -5883,7 +5891,7 @@ var KINDCARD=(function(){
       .forEach(function(n){ ins.append(elemRow(n, function(){ _selNode(n); })); });
     pb.append(ins);
     var ab=E("div",{class:"sec"}, sechd("nav","Above"));
-    ab.append(navRow(null,"entity · "+ent, null, (typeof ENT!=="undefined"&&ENT[ent])||"#888", function(){ panelEnt(ent); }, "up"));
+    ab.append(navRow(null,"entity · "+(window.__uniEntLabel?__uniEntLabel(ent):_hslug(ent)), null, (typeof ENT!=="undefined"&&ENT[ent])||"#888", function(){ panelEnt(ent); }, "up"));
     ab.append(navRow("entity","everything", null, null, function(){ panelAll(); }, "up"));
     pb.append(ab);
     openPanel(); }
@@ -6036,7 +6044,7 @@ function showLinkPanel(l){ try{ if(window.__uniCardPrune) __uniCardPrune(); }cat
       ;   // the collapse chevron lives in the panel FOOTER now (the walk bar owns the top)
   var pb=document.getElementById("pbody"); pb.innerHTML=""; KINDCARD.__link(l).forEach(function(nd){ if(nd) pb.append(nd); });
   document.getElementById("prailname").textContent=sl+" → "+tl; openPanel(); }
-function showPanel(n){ var K=_dispK(n); try{ if(window.__uniCardPrune) __uniCardPrune(); }catch(_cp){}
+function showPanel(n){ var K=_dispK(n); try{ if(window.__uniCardPrune) __uniCardPrune(); }catch(_cp){} window.__uniPView={lvl:"node", id:n&&n.id};   /* a relabel re-renders this card, never the panel underneath */
   // the node's OWN badge on the kind row: endpoint → HTTP method, function → role (accessor/caller/gate/pure).
   // The badge icon sits after the kind, its meaning drops onto a line below, the entity stays after the dot.
   var _bk = (n.kind==="endpoint" && n.m && n.m.method) ? {kind:"method", key:n.m.method}

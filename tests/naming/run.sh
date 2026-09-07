@@ -113,6 +113,9 @@ bZ = block(); bZ["rosters"]["derived"] = []; bZ["rosters"]["candidates"] = []; n
 ck(all(nmZ["disabled"].get(k, "").startswith("no derived cluster rows") for k in ("table", "class", "path", "action", "both")) and "config" not in nmZ["disabled"] and nmZ["coverage"]["rows"] == 0,
    f"rows 0: every cluster position disables with ONE shared reason; config stays ON while a claim entity has a display name ({nmZ['disabled']})")
 nmZ2 = N.apply(bZ, ATOMS, {}, None, None, FE)
+nmR = N.apply(block(), ATOMS, {}, {"strategy": "config"}, None, FE)
+ck(nmR["default"] == "domain" and nmR["requested"] == "config" and "naming.strategy 'config' cannot be served on this feed" in (nmR["config_error"] or ""),
+   f"a default the feed cannot serve (config with no words) is NAMED, `requested` kept, the built-in stands ({nmR['config_error']})")
 ck("config" in nmZ2["disabled"] and "no derived cluster rows and no naming.words" in nmZ2["disabled"]["config"], "rows 0 and no display names: config disables too, with its reason")
 ck("path" in nm5["disabled"] and "2 of 2 rows collide" in nm5["disabled"]["path"], f"path: every row colliding → the position disables itself with the count ({nm5['disabled']})")
 

@@ -271,8 +271,8 @@ check('.fltog.flstog.on{ background:#0b7a63' in page,
 _fp=page[page.find('window.__uniIsFeEnt=function(e){'):page.find('window.__uniIsFeEnt=function(e){')+260]
 check('FE_HOME[e]) || /^fe·/.test(String(e||""))' in _fp and '__uniEntLabel' not in _fp and '/^fe · /' not in _fp,
       "the frontend predicate (__uniIsFeEnt) must read FE_HOME ∪ the fe· KEY prefix, never the display label")
-check('(window.__uniIsFeEnt&&__uniIsFeEnt(e)?"fe · ":"")+r.name+" · "+_hslug(e)' in page and '!/^fe·/.test(e))?(r.name' not in page,
-      "modelRow's nm() must read a twin's roster name (fe·d: ids are indexed) instead of refusing fe· ids")
+check('(r&&r.name)?(l+" · "+_hslug(e)):l' in page and '!/^fe·/.test(e))?(r.name' not in page,
+      "modelRow's nm() must read a twin's name through the label funnel (fe·d: ids are indexed) instead of refusing fe· ids")
 check('_masterRow("backend", "*backend"' in page and '_masterRow("frontend", "*frontend"' in page,
       "the fleet lost its two group masters (backend + frontend)")
 check('var beEnts=_ents.filter(function(e){ return !__uniIsFeEnt(e); });' in page
@@ -1182,7 +1182,7 @@ check(bool(_em) and re.findall(r'\["(\w+)","\w+",', _em)==["claim","seeded","der
 check(page.find('em.id="entmodel"') < page.find('g.id="wireview"'), "B3: #entmodel must be built ABOVE #wireview")
 check('window.localStorage.setItem("gabe:universe:model", v)' in page and 'window.localStorage.getItem("gabe:universe:model")' in page,
       "B3: the model preference is not persisted / read back (gabe:universe:model)")
-_sm=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('window.__uniAddWireView=function()')]
+_sm=page[page.find('window.__uniSetModel=function(v, opts)'):page.find('/* a naming or mark switch RELABELS')]
 check(all(k in _sm for k in ('recomputeEX(CFG.entLayout)','__uniAssignSplit()','recomputeSubAnchors()','__uniApplyCapsules()','Graph.d3ReheatSimulation()','JRN=null','UNICAP.open={}','_FNNODES','_CAPST.nodes','n.ent=H[n.id]||c','n.modelMark=','__uniFleetRender()','applyVis("all")','__uniFreezeForSettle()')),
       "B5: __uniSetModel misses a step of the live re-cluster chain (pools · homes · registry · anchors · capsules · reheat · spans · fleet · panel · vis)")
 check('Graph.graphData(' not in _sm and 'n.id=' not in _sm and 'n.col=' not in _sm and 'nodes=[' not in _sm and 'links=' not in _sm and 'NIDS[' not in _sm,
@@ -1228,6 +1228,22 @@ check('srcRow("info","names"' in page and 'your choice · project default' in pa
 check('rows.push(["naming","names: "+k' in page and 'rows.push(["mark","frontend mark: "+c' in page, "B9-naming: the legend NAMES + FRONTEND MARK rows are missing")
 check('_lt.slice(0,_nmax-1)+"…"' in page, "the hull sprite must truncate at name_max with an ellipsis (an action phrase runs 100+ chars)")
 check('orphan' not in page[page.find('/* ── NAMING (naming-plan.md Phase 3'):page.find('/* LINKS: intra-entity')].lower() and 'orphan' not in _en.lower() and 'orphan' not in _ec.lower(), "R10: a naming string says 'orphan'")
+# ── the surfaces review (R2, 2026-09-06): the relabel keeps the reader's panel · one label funnel on the card · escaped sinks · synced pills ──
+check('if(pv&&document.body.classList.contains("panel-open")){' in _rl and 'pv.lvl==="clu"&&window.__uniPanelClu' in _rl and 'pv.lvl==="node"&&pv.id&&NIDS[pv.id]' in _rl and 'else if(pv.lvl==="all"&&window.__uniPanelAll) __uniPanelAll(); } }catch(e){}' in _rl,
+      "R2-naming: __uniRelabel re-renders only an OPEN panel at its own level (ent · clu · node · all) — never pops the census over a cluster panel or an element card")
+check('window.__uniPView={lvl:"node", id:n&&n.id};' in page, "R2-naming: an element card records its level")
+_nm=page[page.find('function modelRow(n)'):page.find('function modelSec(ent)')]
+check('"fe · "' not in _nm and 'r.name+" · "' not in _nm and '(r&&r.name)?(l+" · "+_hslug(e)):l' in _nm, "R2-naming: modelRow's nm() goes through __uniEntLabel (strategy + mark) with the raw id beside a cluster's name — no hard-coded prefix, no bare r.name")
+check('window.__uniSyncNamingPills=function()' in page and page.count('try{ __uniSyncNamingPills(); }catch(e){}')==3 and 'b.classList.toggle("on", !b.disabled&&' in page and 'if(window.__relabelOwed){ window.__relabelOwed=false; if(!_switched){' in page,
+      "R2-naming: the setters sync the pills themselves (a deep-linked or stored naming beside a model switch never leaves the pill on the wrong position); a disabled button is never lit")
+check("(k===cur&&!off?' class=\"on\"':'')" in page and "(k===cur2&&!off?' class=\"on\"':'')" in page, "R2-naming: a disabled position is never lit at build")
+check('window.__uniEsc=function(x)' in page and 'window.__uniEntLabelHTML=function(e)' in page and '__uniEntLabelHTML(e):(window.__uniEntLabel?__uniEntLabel(e):e))+\'</span>' in page and '"<div class=\'ptitle\'><div class=\'pname\'>"+_hx(title)+"</div>"' in page,
+      "R2-naming: the fleet row and the panel head escape the label (project prose reaches innerHTML) — the fleet through __uniEntLabelHTML (the glyph mark rides it)")
+check('__uniEsc((window.__uniEntLabel?__uniEntLabel(e):e)+" · "+e)' in page, "R2-naming: the fleet tooltip carries the FULL label beside the id (the sprite truncates, the fleet carries)")
+check('(k==="none")?(_ea3(ex)+\' <i style="opacity:.6">bare</i>\')' in page and 'k==="glyph"&&typeof svgInline==="function")?(svgInline("web"' in page and '(k==="tint")?(\'<span style="color:\'' in page, "R2-naming: glyph · tint · none buttons read differently")
+check('x.kind==="feature"&&x.name&&(k==="domain"||(x.names&&x.names[k]&&x.names[k]!==x.name))' in page and 'ex=_r.name+" → "+(window.__uniEntLabel?__uniEntLabel(_r.id):_r.names[k])' in page, "R2-naming: the legend example shows a row whose name CHANGES, drawn as the hull draws it")
+check('+" "+((window.__uniNameOf&&__uniNameOf(e))||"")' in page, "R2-naming: the search scorer keeps the emitter's words as a witness under every convention")
+check('"entity · "+(window.__uniEntLabel?__uniEntLabel(ent):_hslug(ent))' in page and '"entity · "+ent,' not in page, "R2-naming/R10: panelClu's Above row goes through the label funnel")
 check('orphan' not in page[page.find('/* ── ENTITY MODELS (Phase 2'):page.find('/* ── ONE badge-glyph source')].lower()
       and 'orphan' not in page[page.find('function modelRow(n)'):page.find('function feBuilder(n)')].lower() and 'orphan' not in _ls.lower(),
       "R10: an entity-model string says 'orphan'")
@@ -1729,6 +1745,17 @@ const { chromium } = require(process.argv[3]);
         r.convSplitInvariant=same; r.convLabels=labelsByConv; r.convDistinct=Object.keys(labelsByConv).length>=5 && new Set(Object.values(labelsByConv)).size>=4;
         r.nmBack=__uniSetNaming('domain',{noStore:true}) && __uniSetFeConv(NB.fe.convention||'case',{noStore:true}); window.__uniNaming=null; window.__uniFeConv=null; __uniRelabel(); r.nmRoundTrip=L().join('|')===l0.join('|');
         r.nmBogus=(__uniSetNaming('verb')===false) && (__uniSetFeConv('emoji')===false) && __uniStrategy()===r.nmDefault[0];
+        try{ window.__naming='table'; window.__namingDone=false; window.localStorage.setItem('gabe:universe:model','derived'); window.__modelDone=false; window.__model=null; __uniApplyDeepLinks();
+          var _lit=[].map.call(document.querySelectorAll('.pill[data-grp="entnaming"] button.on'), function(b){ return b.getAttribute('data-v'); });
+          r.dlPrecedence=(__uniStrategy()==='table' && window.__uniModel==='derived' && _lit.join(',')==='table' && window.localStorage.getItem('gabe:universe:naming')===null);
+          window.localStorage.removeItem('gabe:universe:model'); window.__naming=null; window.__uniNaming=null;
+          window.localStorage.setItem('gabe:universe:naming','verb'); window.__namingDone=false; __uniApplyDeepLinks(); r.dlStoredBogus=(__uniStrategy()===NB.default); window.localStorage.removeItem('gabe:universe:naming');
+          var _dk=(NB.positions||[]).filter(function(k){ return k!=='domain'&&!(NB.disabled||{})[k]&&(NB.coverage||{})[k]>0; })[1]||alt; NB.disabled=NB.disabled||{}; var _keepD=NB.disabled[_dk]; NB.disabled[_dk]='x (probe)'; var _em3=document.getElementById('entnaming'); if(_em3) _em3.remove(); __uniAddWireView();
+          var _btn=document.querySelector('.pill[data-grp="entnaming"] button[data-v="'+_dk+'"]'); r.dlDisabled=(__uniSetNaming(_dk)===false && !!_btn && _btn.disabled && !_btn.classList.contains('on')); if(_keepD===undefined) delete NB.disabled[_dk]; else NB.disabled[_dk]=_keepD; var _em4=document.getElementById('entnaming'); if(_em4) _em4.remove(); __uniAddWireView();
+          var _slug=__uniClaimEnts.filter(function(e){ return !__uniIsFeEnt(e) && e!=='__unclaimed__'; })[0]; NB.entities=NB.entities||{}; var _keepE=NB.entities[_slug]; NB.entities[_slug]={display:'X <y> & z'}; __uniSetNaming('config',{noStore:true}); __uniPanelEnt(_slug);
+          r.escHead=(document.querySelector('#phead .pname').textContent==='X <y> & z' && document.querySelector('#phead .pname').innerHTML.indexOf('&lt;y&gt;')>=0); if(_keepE===undefined) delete NB.entities[_slug]; else NB.entities[_slug]=_keepE; __uniSetNaming('domain',{noStore:true}); window.__uniNaming=null;
+          var _cl=nodes.find(function(n){ return n.sub && n.sub!=='other' && !n.__cap; }); if(_cl){ __uniPanelClu(_cl.ent,_cl.sub); __uniSetNaming(alt,{noStore:true}); r.relabelKeepsPanel=(window.__uniPView&&window.__uniPView.lvl==='clu'&&window.__uniPView.sub===_cl.sub); __uniSetNaming('domain',{noStore:true}); window.__uniNaming=null; }
+        }catch(e){ r.dlErr=String(e); }
         var keepN=GABE_C4.models.naming; delete GABE_C4.models.naming; r.nmAbsent=(__uniSetNaming('table')===false) && __uniEntLabel(_ents.filter(function(e){ return __uniIsFeEnt(e); })[0]||'fe·x').indexOf('fe · ')===0; GABE_C4.models.naming=keepN;
         try{ __uniPanelAll(); var _pt3=document.getElementById('pbody').textContent; r.nmSrcRow=/\(project default/.test(_pt3) && /frontend mark: case \(camel\/pascal\)/.test(_pt3); }catch(e){ r.nmSrcRow='err:'+e; } } else r.nmSkip='no naming block on the example feed — regen'; }catch(e){ r.nmErr=String(e); }
       try{ var _sp=function(){ return [_ents.filter(function(e){ return !__uniIsFeEnt(e); }).length, _ents.filter(function(e){ return __uniIsFeEnt(e); }).length]; }; var _s0=_sp(); var _lb=window.__uniEntLabel; window.__uniEntLabel=function(e){ return "X "+e; }; var _s1=_sp(); window.__uniEntLabel=_lb; r.splitInvariant=(_s0.join('/')===_s1.join('/')) && _s0[1]>0; r.split=_s0; }catch(e){ r.splitInvariant='err:'+e; }
@@ -1749,7 +1776,7 @@ const { chromium } = require(process.argv[3]);
   console.log('  modelSw '+JSON.stringify(modelSw));
   const modelOk = !!(modelSw && !modelSw.err && modelSw.seeded===true && modelSw.sameN && modelSw.idsOk && modelSw.movedOk && modelSw.heldOk && modelSw.abstainN && modelSw.regOk && modelSw.abstainOk && modelSw.otherOk
     && modelSw.evClaim!==false && modelSw.claim0===true && modelSw.derivedOff===true && modelSw.aspectReg===true && modelSw.noEmptyHull===true && modelSw.aspectHullAfterLoad===true && modelSw.newClustersFeed===true
-    && modelSw.splitInvariant===true && !modelSw.nmErr && !modelSw.nmSkip && modelSw.nmSwitch===true && modelSw.nmRelabelOnly===true && modelSw.nmChanged===true && modelSw.convSplitInvariant===true && modelSw.convDistinct===true && modelSw.nmBack===true && modelSw.nmRoundTrip===true && modelSw.nmBogus===true && modelSw.nmAbsent===true && modelSw.nmSrcRow===true && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
+    && modelSw.splitInvariant===true && !modelSw.nmErr && !modelSw.nmSkip && modelSw.nmSwitch===true && modelSw.nmRelabelOnly===true && modelSw.nmChanged===true && modelSw.convSplitInvariant===true && modelSw.convDistinct===true && modelSw.nmBack===true && modelSw.nmRoundTrip===true && modelSw.nmBogus===true && modelSw.nmAbsent===true && modelSw.nmSrcRow===true && !modelSw.dlErr && modelSw.dlPrecedence===true && modelSw.dlStoredBogus===true && modelSw.dlDisabled===true && modelSw.escHead===true && modelSw.relabelKeepsPanel===true && modelSw.absentRow===true && /claim\* seeded- derived- proposed-/.test(modelSw.pillAbsent||'') && modelSw.storedFallback===true && modelSw.deepLink===true && (modelSw.elementCard===true || modelSw.elementCard==='no element node on the feed')
     && /claim seeded\*/.test(modelSw.pill||'') && modelSw.srcRow===true && modelSw.cardRow===true && modelSw.derived===true && modelSw.walkOk && modelSw.aspect && modelSw.aspect.dash===true
     && modelSw.entCard===true && modelSw.proposed===true && ['FEATURE','SPLIT','MERGE','ASPECT','LAYER'].indexOf(modelSw.badge)>=0 && modelSw.claim===true && modelSw.roundTrip===true && modelSw.noDash && modelSw.absent===true && modelSw.claimRow===true);
   await b.close();

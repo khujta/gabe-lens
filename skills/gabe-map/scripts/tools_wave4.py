@@ -66,6 +66,14 @@ def _named(block: dict, row: dict) -> dict:
     return {"name": row.get("name"), "name_from": "domain" if row.get("name") else None, "names": names}
 
 
+def _claim_name(block: dict, slug: str) -> str:
+    """A claim entity's words under the project default: its naming.entities / adoption display when the default is `config`, else the slug."""
+    nb = _naming(block)
+    if nb.get("default") == "config":
+        return (((nb.get("entities") or {}).get(slug) or {}).get("display")) or slug
+    return slug
+
+
 def _label(block: dict, ident: str, name: str) -> str:
     """The name through the config's frontend/backend convention — `[api] cooking` · `cookingSessions` — never used as a key."""
     nb = _naming(block)
@@ -293,7 +301,7 @@ def t_entity_models(args: dict, roots) -> dict:
                             "unused_words": _naming(block).get("unused_words"), "unknown_entities": _naming(block).get("unknown_entities"),
                             "note": "names are DISPLAY — text surfaces speak the project default (center.config.json#naming); the station honours a reader's pill; every answer keeps the raw id beside the name"}
                            if _naming(block) else {"state": "not_emitted", "reason": "no naming block on this map — regen with the current generators; names fall back to the emitted row.name"}),
-                "candidates": [r.get("name") for r in ((block.get("rosters") or {}).get("candidates") or [])][:mq.CAP],
+                "candidates": [{"id": r.get("id"), "name": _named(block, r)["name"], "name_from": _named(block, r)["name_from"]} for r in ((block.get("rosters") or {}).get("candidates") or [])][:mq.CAP],
                 "caps": (block.get("stats") or {}).get("caps"), "truncated": (block.get("stats") or {}).get("truncated") or [],
                 "next": "model=<view> for a roster · entity=<slug|d:…> for members · piece=<file#fn|'METHOD /path'|fe:…> for the cross-model row"})
     return out

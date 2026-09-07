@@ -178,7 +178,8 @@ def center(root: str, head: str):
                                       {"id": "l:other", "name": "other", "kind": "layer", "slug": "other", "files": 2, "tables": 1, "drawn": False, "why": "no endpoint — 1 table(s) held for other entities' endpoints"}],
                           "proposed": [{"slug": "thing", "verdict": "FEATURE", "why": "majority of things and sole-owns 2 URL domain(s)", "evidence": {"feature": "d:things"}},
                                        {"slug": "other", "verdict": "LAYER", "why": "no endpoint — 1 table(s) held for other entities' endpoints", "evidence": {"files": 2, "tables": 1}}],
-                          "candidates": []},
+                          "candidates": [{"id": "d:things", "name": "things", "kind": "feature", "named_by": "domain", "anchor_table": "things", "endpoints": 1, "suggested_slug": "things", "spans_entities": [],
+                                          "names": {"table": "things", "class": "thing", "path": "things", "action": "Look at things", "both": "things · /things"}, "members": ["endpoint:GET /things/{item_id}"], "members_more": 0}]},
               "naming": {"default": "class", "source": "center.config.json#naming", "positions": ["domain", "table", "class", "path", "action", "config", "both"],
                          "coverage": {"domain": 1, "table": 1, "class": 1, "path": 1, "action": 1, "config": 0, "both": 1, "rows": 1}, "collisions": {"path": 0}, "long": {"action": 0, "both": 0},
                          "disabled": {"config": "no naming.words / naming.entities in center.config.json and no adoption display_name — nothing to name from"}, "entities": {},
@@ -671,7 +672,7 @@ def run(T):
     ok(d and d["found"] and d["homes"]["derived"] == "thing" and d["mark"]["derived"] == "abstain" and "keeps its claim" in d["why"]["derived"],
        "W4 ABSTAIN: an abstained atom keeps its claim and the row SAYS so", d and {k: d.get(k) for k in ("homes", "mark", "why")})
     d, _, _, _ = call_json(c, "entity_models", {"entity": "d:things", "model": "derived"})
-    ok(d and d["found"] and d["what"]["kind"] == "feature" and d["what"]["named_by"] == "domain" and [m["id"] for m in d["members"]] == ["apps/api/api/things.py#get_thing", "endpoint:GET /things/{item_id}"]
+    ok(d and d["found"] and d["what"]["kind"] in ("feature", "candidate feature") and d["what"]["named_by"] == "domain" and [m["id"] for m in d["members"]] == ["apps/api/api/things.py#get_thing", "endpoint:GET /things/{item_id}"]
        and all(m["mark"] == "moved" and m["claim"] == "thing" for m in d["members"]) and d["moved_in"] == 2,
        "W4 FIRE: a cluster's members under derived — the endpoint (c4 half) and its handler (levels half), each marked moved with its claim", d and {k: d.get(k) for k in ("what", "members")})
     d, _, _, _ = call_json(c, "entity_models", {"entity": "thing"})
@@ -706,6 +707,28 @@ def run(T):
     ok(d and d["found"] is False and "grep -rn remains the floor" in d["reason"], "N-SILENT: a rendered LABEL passed where a slug is expected → found:false + the grep floor, never a match", d and d.get("reason"))
     d, _, _, _ = call_json(c, "entity_context", {"slug": "thing"})
     ok(d and d["c4"]["fe_home"]["label"] == "[ui] thing" and d["c4"]["fe_home"]["id"] == "fe·thing", "N-FIRE: entity_context's fe_home wears the config's frontend mark with the id beside it", d and d["c4"].get("fe_home"))
+    d, _, _, _ = call_json(c, "entity_models", {})
+    ok(d and d["candidates"] == [{"id": "d:things", "name": "thing", "name_from": "class"}], "N-FIRE: the census candidates carry the id + the project-default name (R2)", d and d.get("candidates"))
+    def naming_config(a, c):
+        c["models"]["naming"]["default"] = "config"; c["models"]["naming"]["entities"] = {"thing": {"display": "The Thing", "source": "naming.entities"}}
+        return a, c, False
+    variant(root, naming_config)
+    d, _, _, _ = call_json(c, "entity_context", {"slug": "thing"})
+    ok(d and d["c4"]["fe_home"]["label"] == "[ui] The Thing", "N-FIRE: under the config default the fe_home label carries the entity's DISPLAY words (R2)", d and d["c4"].get("fe_home"))
+    restore(root)
+    def naming_absent(a, c):
+        c["models"].pop("naming", None)
+        for r in c["models"]["rosters"]["derived"] + c["models"]["rosters"]["candidates"]:
+            r.pop("names", None)
+        return a, c, False
+    variant(root, naming_absent)
+    d, _, _, _ = call_json(c, "entity_models", {})
+    ok(d and d["naming"]["state"] == "not_emitted" and "regen" in d["naming"]["reason"], "N-SILENT: models present, naming absent (every estate before this pass) → the census says not_emitted", d and d.get("naming"))
+    d, _, _, _ = call_json(c, "entity_models", {"model": "derived"})
+    ok(d and d["clusters"][0]["name"] == "things" and d["clusters"][0]["name_from"] == "domain" and d["clusters"][0]["names"] == {} and d["clusters"][0]["label"] == "things", "N-SILENT: without names{} a row keeps its domain name, name_from domain, a bare label", d and d["clusters"][0])
+    d, _, _, _ = call_json(c, "entity_context", {"slug": "thing"})
+    ok(d and d["c4"]["fe_home"]["label"] == "fe · thing", "N-SILENT: without a naming block the fe_home label is today's prefix", d and d["c4"].get("fe_home"))
+    restore(root)
     # ── the OLDER-MAP variant: absence semantics (P2), honest-empty for the new kinds ──
     variant(root, older_map)
     d, is_err, _, _ = call_json(c, "entity_models", {})

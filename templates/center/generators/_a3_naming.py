@@ -339,12 +339,16 @@ def apply(mod: dict, atoms: list[dict], labels_by_slug: dict, cfg, url_domain_ma
         disabled["action"] = dn_reason or "no cluster carries an HTTP endpoint label"
     if n_rows and collided >= PATH_DISABLE_SHARE * n_rows:
         disabled["path"] = "%d of %d rows collide on their path name — the position is off on this feed" % (collided, n_rows)
+    requested = strategy
+    if strategy and strategy in disabled:                                    # the config asks for a position this feed cannot serve — say it, keep the built-in
+        errors.append("naming.strategy %r cannot be served on this feed — %s; using %s" % (strategy, disabled[strategy], DEFAULT_STRATEGY))
+        strategy = None
     fe_present = bool((fe_stats or {}).get("present"))
     fe_block = {"present": fe_present, "reason": None if fe_present else ((fe_stats or {}).get("reason") or "no frontend arm on this map"),
                 "convention": convention or DEFAULT_CONVENTION, "words": words, "case": case, "forms": forms(words, case),
                 "homes": (len((fe_stats or {}).get("by_home") or {}) if fe_present else None), "twins": sum(1 for r in feats if r.get("twin"))}
     unused = sorted([k for k in dom_words if k not in used_dom] + [k for k in tab_words if k not in used_tab])
-    return {"present": True, "default": strategy or DEFAULT_STRATEGY, "source": ("center.config.json#naming (ignored — see config_error)" if ignored else ("center.config.json#naming" if had_cfg else "built-in")),
+    return {"present": True, "default": strategy or DEFAULT_STRATEGY, "requested": requested, "source": ("center.config.json#naming (ignored — see config_error)" if ignored else ("center.config.json#naming" if had_cfg else "built-in")),
             "positions": list(STRATEGIES), "coverage": {**{k: (n_rows if k == "domain" else cov.get(k, 0)) for k in STRATEGIES}, "rows": n_rows},
             "collisions": {"path": collided}, "long": {"action": long_action, "both": long_both}, "disabled": disabled,
             "entities": entities, "fe": fe_block, "action_source": {"path": dn_path, "reason": dn_reason},

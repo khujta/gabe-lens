@@ -248,7 +248,7 @@ def t_entity_context(args: dict, roots) -> dict:
                 import tools_wave4 as _w4n
                 _blk, _st, _ = center.entity_models()
                 if _st == "present":
-                    fe_home["label"] = _w4n._label(_blk, "fe·%s" % slug, slug)      # the project's frontend mark over the slug's words — display only, the id stays
+                    fe_home["label"] = _w4n._label(_blk, "fe·%s" % slug, _w4n._claim_name(_blk, slug))      # the project's frontend mark over the slug's words (its display words under the config default) — display only, the id stays
             except Exception:  # noqa: BLE001
                 pass
         out["c4"]["fe_home"] = fe_home if fe_home else {"reason": "no fe·%s home in GABE_C4.fe" % slug}

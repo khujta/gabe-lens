@@ -168,6 +168,10 @@ assert r["naming"]["strategy"]=="domain" and r["naming"]["source"]=="none" and "
 assert c["orph"]["name_from"]=="domain" and c["orph"]["names"]=={} and c["orph"]["action"]=="Add orph" and c["orph"]["slug_options"]=={"table":"t7"}, c["orph"]
 PY
 o=$(python3 "$D" "$r" --naming verb 2>&1); echo "$o" | grep -q "invalid choice" && ok || bad "NAMING: an unknown --naming is refused by argparse ($o)"
+r=$(mkcenter nmu); c4 > "$r/docs/site/center/c4-graph.json"; python3 "$D" "$r" --json --naming table > "$T/nmu.json"; o=$(python3 "$D" "$r" --naming table)
+python3 - "$T/nmu.json" <<'PY' && echo "$o" | grep -q "your --naming table is not on this map (no naming block)" && ok || bad "NAMING: an unserved --naming on a naming-less map stays VISIBLE (requested kept, the note says why) ($o)"
+import json,sys; r=json.load(open(sys.argv[1])); assert r["naming"]["strategy"]=="domain" and r["naming"]["requested"]=="table" and "--naming table is not on this map" in r["naming"]["note"], r["naming"]
+PY
 
 echo "draft-entities battery: $pass passed, $fail failed"
 [ "$fail" -eq 0 ] || exit 1

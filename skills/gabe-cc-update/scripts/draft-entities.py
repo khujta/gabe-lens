@@ -81,8 +81,11 @@ def project(models: dict, head: str, model: str, min_endpoints: int, sib, naming
     views = models.get("views") or {}
     rosters = models.get("rosters") or {}
     nb = models.get("naming") if isinstance(models.get("naming"), dict) and (models.get("naming") or {}).get("positions") else {}
-    strategy = naming if naming in (nb.get("positions") or ()) else (nb.get("default") if nb else None) or "domain"
-    naming_note = (("naming: %s (%s)" % (strategy, "your --naming" if naming == strategy and naming else ("project default — " + str(nb.get("source")) if nb else "no naming block on this map — regen with the current generators; names fall back to the emitted row.name"))))
+    served = bool(naming) and naming in (nb.get("positions") or ())
+    strategy = naming if served else (nb.get("default") if nb else None) or "domain"
+    naming_note = ("naming: %s (your --naming)" % strategy) if served else \
+                  ("naming: %s — your --naming %s is not on this map (%s); regen with the current generators" % (strategy, naming, "no naming block" if not nb else "not a position of this feed")) if naming else \
+                  ("naming: %s (project default — %s)" % (strategy, nb.get("source")) if nb else "naming: domain (no naming block on this map — regen with the current generators; names fall back to the emitted row.name)")
     derived_v, proposed_v, seeded_v = (views.get("derived") or {}), (views.get("proposed") or {}), (views.get("seeded") or {})
     declared, candidates = [], []
     if model == "proposed":
@@ -117,7 +120,7 @@ def project(models: dict, head: str, model: str, min_endpoints: int, sib, naming
     abstained = sorted((models.get("abstain") or {}).get("derived") or [])
     return {
         "head": head, "model": model, "source": "docs/site/center/c4-graph.json#models (a projection — nothing re-derived)",
-        "naming": {"strategy": strategy, "source": ("your --naming" if naming == strategy and naming else (nb.get("source") if nb else "none")), "note": naming_note,
+        "naming": {"strategy": strategy, "source": ("your --naming" if served else (nb.get("source") if nb else "none")), "note": naming_note, **({"requested": naming} if naming and not served else {}),
                    **({"config_error": nb.get("config_error")} if nb and nb.get("config_error") else {}), **({"unused_words": nb.get("unused_words")} if nb and nb.get("unused_words") else {})},
         "rule": models.get("rule"),
         "declared": declared,
