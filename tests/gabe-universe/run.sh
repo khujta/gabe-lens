@@ -1207,6 +1207,16 @@ check('window.UNIWIRE' not in page and '__uniRelHide' not in page and '__uniDraw
       "R2–R4 machinery survived (UNIWIRE / __uniRelHide / __uniDrawBundles / _UTILSET / _SOLEP) — a retired toggle still gates the connector build")
 check('data-v="r2"' not in page and '["r2","R2"' not in page and '["r3","R3"' not in page and '["r4","R4"' not in page and 'UNIWIRE[d[0]]' not in page,
       "an R2/R3/R4 button is still built")
+# THE LEFT SIDEBAR STARTS MINIMIZED (operator 2026-09-08) and the Fleet panel follows it. Two laws, one row
+# each. The second is the one that bit: _dragPanel writes an inline `left` on MOUSEDOWN, and it excluded only
+# .cfgmin — so pressing pause or a preset PINNED the panel, after which no nav collapse could ever move it.
+check('<body class="nav-min">' in page and 'if(window.localStorage.getItem("gabe:universe:nav")==="open") document.body.classList.remove("nav-min");' in page,
+      "sidebar FIRE: the nav must start MINIMIZED on the TAG (so the graph never paints wide and jumps) with a stored 'open' removing it before first paint")
+check('window.localStorage.setItem("gabe:universe:nav", min?"min":"open");' in page and 'var _f=document.getElementById("fleet"); if(_f){ _f.style.left=""; _f.style.right=""; }' in page,
+      "sidebar FIRE: the toggle must remember the choice AND clear a pinned inline left, or a panel that was ever clicked stays put while the nav slides away")
+check('head.addEventListener("mousedown",function(e){ if(e.target.closest("button")) return;' in page
+      and 'if(e.target.closest(".cfgmin")) return; var r=panel.getBoundingClientRect();' not in page,
+      "sidebar REGRESSION: the panel drag treats a BUTTON press as a drag start again — it pins an inline left on mousedown, which is what stopped the Fleet following the sidebar")
 check('window.__uniAddWireView=function()' in page and 'id="wireview"' not in page.replace("'",'"') and '>CAPSULES</div>' not in page and '"wv-"+d[0]' not in page
       and '__uniAddWireView();' in page,
       "the CAPSULES option must be GONE (dropped 2026-09-07) and __uniAddWireView must still run at boot / preset re-tabs for its settled tail")

@@ -953,7 +953,10 @@
   #uni-jrnref .jdinfo:hover{ color:var(--accent); opacity:1; }
   @media (max-width:1080px){ #uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:26px 22px minmax(88px,1.1fr) 120px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); } #uni-jrnref .jdopc{ grid-column:1 / 3; grid-row:2; } #uni-jrnref .jdextra{ grid-column:4 / -1; } }
   @media (max-width:820px){ #uni-jrnref .jdcols, #uni-jrnref .jdstep{ grid-template-columns:24px 20px minmax(72px,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); } #uni-jrnref .jdenc{ display:none; } #uni-jrnref .jdextra{ grid-column:3 / -1; } }
-</style></head><body>
+</style></head><body class="nav-min">
+<script>/* the left sidebar starts MINIMIZED (operator 2026-09-08) — set on the TAG so the graph never paints
+  wide and then jumps. A reader who opens it is remembered; nothing else writes this key. */
+(function(){ try{ if(window.localStorage.getItem("gabe:universe:nav")==="open") document.body.classList.remove("nav-min"); }catch(e){} })();</script>
 <nav class="side">
   <div class="brand">
     <span class="logo"><img src="assets/gabe-icon.png" width="26" height="26" alt="" style="image-rendering:pixelated"></span>
@@ -1684,7 +1687,12 @@ window.__uniCfgToggle=function(){ var c=document.getElementById("cfg"); if(!c) r
   var hidden=(c.style.display==="none"); c.style.display=hidden?"":"none";
   if(hidden) c.classList.remove("min");   // the gear always reveals the FULL panel (its own minimize is a separate state — un-minimize on show keeps the two in sync)
   var g=document.getElementById("navgear"); if(g) g.classList.toggle("on", hidden); };
-window.__uniNavToggle=function(){ document.body.classList.toggle("nav-min");
+window.__uniNavToggle=function(){ var min=document.body.classList.toggle("nav-min");
+  try{ window.localStorage.setItem("gabe:universe:nav", min?"min":"open"); }catch(e){}
+  /* a panel that carries an INLINE left (the drag helper writes one on mousedown) can never follow the nav,
+     so the collapse looked like it did nothing. Clearing it hands the panel back to the CSS, which anchors
+     it to --navw. Nothing durable is lost: a dragged position was never persisted. */
+  var _f=document.getElementById("fleet"); if(_f){ _f.style.left=""; _f.style.right=""; }
   setTimeout(function(){ try{ if(typeof resizeGraph==="function") resizeGraph(); }catch(e){} }, 220); };   // graph refills the reclaimed width after the slide
 function connectorWire(grp, a, b, kind, R, hf, ea, eb, hov, sel, band){ var cfg=CONN[kind]||CONN.calls;
   hf=(hf==null)?1:hf; if(!hf && !sel) return;   // depth-highlight factor: 0 = outside a FOCUS set (skip) · >1 = in the lit set (brighter, additive) — a SELECTED wire always draws
@@ -3314,7 +3322,7 @@ window.__uniFleetRegroup=function(){ var live={}; nodes.forEach(function(n){ liv
   if(window.__uniFleetRender) try{ __uniFleetRender(); }catch(e){} };
 /* a second draggable panel — dragCfg is id-hardwired to #cfg, so the fleet gets its own helper */
 function _dragPanel(panel, head){ var dg={on:false,ox:0,oy:0};
-  head.addEventListener("mousedown",function(e){ if(e.target.closest(".cfgmin")) return; var r=panel.getBoundingClientRect();
+  head.addEventListener("mousedown",function(e){ if(e.target.closest("button")) return; var r=panel.getBoundingClientRect();   /* ANY button, not just .cfgmin: this handler pins an inline `left` on MOUSEDOWN, so pressing pause or a preset used to freeze the panel's position — and a pinned panel can never follow the sidebar collapse (operator 2026-09-08) */
     panel.style.right="auto"; panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; dg.on=true; dg.ox=e.clientX-r.left; dg.oy=e.clientY-r.top; e.preventDefault(); });
   window.addEventListener("mousemove",function(e){ if(!dg.on) return;
     panel.style.left=Math.max(4,Math.min(window.innerWidth-40,e.clientX-dg.ox))+"px"; panel.style.top=Math.max(4,Math.min(window.innerHeight-30,e.clientY-dg.oy))+"px"; });
