@@ -142,10 +142,22 @@
     var CW = opts.cw || 256, CH = 32, COLS = Math.max(1, Math.floor(4096 / CW)), ROWS = Math.ceil(pick.length / COLS), cv = document.createElement('canvas'); cv.width = CW * COLS; cv.height = CH * ROWS; var c = cv.getContext('2d');   /* 4096 px wide; rows × 32 px tall ≤ 8192 (the texture ceiling) — the cap (max) keeps it under; above it the rest go unlabelled and the page says so */
     c.font = '600 20px Menlo,Consolas,ui-monospace,monospace'; c.textBaseline = 'middle'; c.fillStyle = opts.color || '#cdd6ea';
     var maxCh = Math.floor((CW - 8) / 12.5);   /* ~12.5 px per char at 20 px Menlo: 20 chars in a 256 cell, 40 in a 512 cell */
-    pick.forEach(function (ni, k) { var x = (k % COLS) * CW, y = ((k / COLS) | 0) * CH, t = String(labelOf(nodes[ni]) || ''); if (t.length > maxCh) t = t.slice(0, maxCh - 1) + '…'; c.save(); c.beginPath(); c.rect(x, y, CW, CH); c.clip(); c.fillText(t, x + 4, y + CH / 2); c.restore(); });   /* a longer label is cut and marked, never bled into its neighbour */
+    var wpx = new Float32Array(pick.length);
+    pick.forEach(function (ni, k) { var x = (k % COLS) * CW, y = ((k / COLS) | 0) * CH, t = String(labelOf(nodes[ni]) || ''); if (t.length > maxCh) t = t.slice(0, maxCh - 1) + '…'; c.save(); c.beginPath(); c.rect(x, y, CW, CH); c.clip(); c.fillText(t, x + 4, y + CH / 2); c.restore();
+      wpx[k] = Math.min(CW, Math.ceil(c.measureText(t).width) + 8); });   /* a longer label is cut and marked, never bled into its neighbour; the MEASURED width is what the quad will show */
     var tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace;
     var uvs = new Float32Array(pick.length * 4), sizes = new Float32Array(pick.length * 2);
-    pick.forEach(function (ni, k) { uvs[k * 4] = (k % COLS) / COLS; uvs[k * 4 + 1] = 1 - (((k / COLS) | 0) + 1) / ROWS; uvs[k * 4 + 2] = 1 / COLS; uvs[k * 4 + 3] = 1 / ROWS; sizes[k * 2] = opts.w || 46; sizes[k * 2 + 1] = opts.h || 6; });
+    /* Per-label uv width and quad width, both from the MEASURED text (fix 2026-09-07, operator: "characters
+       are getting expanded, some made taller"). Showing the whole 512×32 cell on a fixed 68×8.5 quad squeezed
+       every label 2× horizontally (a 16:1 image in an 8:1 frame), sized every label the same however long its
+       text, and — because the text is drawn at the cell's LEFT while the quad is centred on its node — pushed
+       every label leftward off its own node. Cropping the uv to the text's own pixels and deriving the width
+       from the same number fixes all three at once: exact aspect, one glyph height everywhere, centred.
+       `opts.h` is the CELL height in world units, so the glyph height is h * 20/32 for every label. */
+    pick.forEach(function (ni, k) { var h = opts.h || 6;
+      uvs[k * 4] = ((k % COLS) * CW) / cv.width; uvs[k * 4 + 1] = 1 - ((((k / COLS) | 0) + 1) * CH) / cv.height;
+      uvs[k * 4 + 2] = wpx[k] / cv.width; uvs[k * 4 + 3] = CH / cv.height;
+      sizes[k * 2] = h * (wpx[k] / CH); sizes[k * 2 + 1] = h; });
     var L = quadLayer(tex, pick.length, uvs, sizes, opts.opacity); L.mesh.name = 'labels'; L.pick = pick; L.slotOf = {}; pick.forEach(function (ni, k) { L.slotOf[ni] = k; });
     return L;
   };

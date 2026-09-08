@@ -22,6 +22,7 @@ python3 - "$SHELL_SRC" <<'PY'
 import sys, re, pathlib
 shell = pathlib.Path(sys.argv[1])
 page  = (shell / "gabe-universe.html").read_text(encoding="utf-8")
+kit   = (shell / "assets" / "three-kit.js").read_text(encoding="utf-8")   # the instanced render kit the station draws with (default path since 2026-09-07)
 
 pass_ = 0; fail = 0
 def t_order(pg):
@@ -1152,9 +1153,20 @@ check('TK.starLayer' in page and 'function __uniStarBuild(){' in page and 'funct
 check('CFG.stars=false' not in page,
       "star-field REGRESSION: the instanced path switches the star field OFF again — it is cluster-level and rides its own layer (1 draw call, not ~958 sprites)")
 # the render toggle beside the FLEET title
-check('id="flsrender"' in page and 'window.__uniToggleRender=function(){' in page and '__uniToggleRender(); }; })();' in page
-      and '#flside .flsrender.on{' in page,
-      "render-toggle FIRE: the render-path button beside the FLEET title, its handler or its lit state is gone")
+check('id="flrender"' in page and 'window.__uniToggleRender=function(){' in page and '__uniToggleRender(); }; })();' in page
+      and '#fleet .flrender.on{' in page and page.find('id="flrender"') > page.find('<span class="cfgtitle">'),
+      "render-toggle FIRE: the render-path button beside the Fleet TITLE (in #fleethead, after .cfgtitle — where the operator asked for it, not in the #flside slide-out), its handler or its lit state is gone")
+check('id="flsrender"' not in page,
+      "render-toggle REGRESSION: the button is back in the #flside slide-out — that is not the Fleet panel the operator marked")
+# the LABEL atlas draws each label at its OWN measured width (operator 2026-09-07: "characters are getting
+# expanded, some made taller"). Showing a whole 512x32 cell on a fixed 68x8.5 quad squeezed every label 2:1,
+# sized them all alike however long the text, and pushed each one left off its node (the text sits at the
+# cell's left edge while the quad is centred). The fix is one number: the uv width IS the text width.
+check('wpx[k] = Math.min(CW, Math.ceil(c.measureText(t).width) + 8);' in kit
+      and 'uvs[k * 4 + 2] = wpx[k] / cv.width;' in kit and 'sizes[k * 2] = h * (wpx[k] / CH);' in kit,
+      "label-aspect FIRE: the label atlas is back to a fixed quad width — every label squeezed to the cell's 16:1 in an 8:1 frame")
+check("sizes[k * 2] = opts.w || 46;" not in kit,
+      "label-aspect REGRESSION: the fixed-width label quad (opts.w) is back — it distorts every label that is not exactly cell-width")
 
 # journey matrix: operation frozen + transitive call-chain reach (indirect cells) (operator 2026-09-03)
 check('TRANSITIVE data reach' in page and '.cell.ind{' in page and 'jdopc{ position:sticky; left:368px' in page and '_HOP={calls:1' in page,
@@ -1882,7 +1894,7 @@ const { chromium } = require(process.argv[3]);
       var row=''; try{ __uniPanelAll(); row=(document.getElementById('pbody')||{}).textContent||''; }catch(e){ row='err:'+e; }   /* the Sources rows live in the ALL panel — __uniPanelAll (the modelSw idiom at line ~1760), never a bare panelAll() */
       var _stars=(typeof CLUSTERS!=='undefined')?CLUSTERS.reduce(function(a,c){ return a+((c.stars||[]).length); },0):0;
       var _starSprites=(typeof CLUSTERS!=='undefined')?CLUSTERS.reduce(function(a,c){ return a+((c.stars||[]).filter(function(x){ return !!x.s; }).length); },0):0;
-      var _rb=document.getElementById('flsrender');
+      var _rb=document.getElementById('flrender');
       return {mode:window.__uniRenderMode, fmt:(typeof window.__uniRender), inst:!!I, layers:I?I.objs.length:0,
       stars:_stars, starSprites:_starSprites, starLayer:!!(typeof _STARL!=='undefined'&&_STARL&&_STARL.mesh), movers:(typeof MOVERS!=='undefined'&&MOVERS)?MOVERS.length:-1,
       toggle:!!_rb, toggleOn:!!(_rb&&_rb.classList.contains('on')), calls:Graph.renderer().info.render.calls, nodes:nodes.length, vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length, drawnIcons:(function(){ if(!I) return 0; var a=I.icons.mesh.instanceMatrix.array, c=0; for(var k=0;k<I.icons.mesh.count;k++) if(a[k*16]!==0||a[k*16+1]!==0||a[k*16+2]!==0) c++; return c; })(), card:card, proxies:proxies, srcRow:/render/.test(row)&&/instanced/.test(row)}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));

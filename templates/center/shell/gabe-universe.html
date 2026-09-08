@@ -458,9 +458,9 @@
   #flside .flsx{ color:var(--muted); background:none; border:none; cursor:pointer;
     font:400 17px/1 var(--font-ui); padding:0 3px; }
   #flside .flsx:hover{ color:var(--ink); }
-  #flside .flsrender{ margin-left:auto; display:inline-flex; align-items:center; justify-content:center; width:19px; height:19px; border-radius:5px; }   /* the render-path toggle sits right of the FLEET title, before the copy/close pair */
-  #flside .flsrender.on{ color:var(--accent, #4f9dff); background:color-mix(in srgb, var(--accent, #4f9dff) 18%, transparent); }
-  #flside .flsrender:not(.on){ color:var(--muted); }
+  #fleet .flrender{ margin-left:6px; display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; padding:0; border:none; border-radius:5px; cursor:pointer; background:none; color:var(--muted); }   /* the render-path toggle sits beside the Fleet title (operator 2026-09-07) */
+  #fleet .flrender:hover{ color:var(--ink); }
+  #fleet .flrender.on{ color:var(--accent, #4f9dff); background:color-mix(in srgb, var(--accent, #4f9dff) 20%, transparent); }
   #flside .flsbody{ padding:8px 10px 10px; overflow-y:auto; overflow-x:hidden; min-height:0; }
   #flside .flsbody .cfgrow{ flex-wrap:wrap; }
   #flside .flsbody .grplbl{ letter-spacing:.06em; }
@@ -3395,6 +3395,8 @@ window.__uniBuildFleet=function(){ if(document.getElementById("fleet")) return;
   var _simTitle=(typeof window.GABE_SIM==="undefined") ? "no sim feed on this page (sim.data.js absent)"
     : (window.GABE_SIM===null ? "no change in flight (sim feed at rest)" : "a change IS in flight — the preset derivation lands in a later batch");
   p.innerHTML='<div class="cfghead" id="fleethead"><span class="cfgtitle">'+(typeof ico==="function"?ico("shape",13):"")+'Fleet</span>'
+    +'<button class="flrender'+(INST?' on':'')+'" id="flrender" title="'+(INST?"RENDER: instanced — one draw call per layer. Click for the objects path: one three.js object per node, ~30× the draw calls, but it carries the per-node fleets and the route transports.":"RENDER: objects — one three.js object per node and per wire. Click for the instanced path: the same picture in a fraction of the draw calls.")+'">'
+      +'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>'
     +'<span class="flprehead">'
     +'<button class="flpre" data-fpre="all" title="ALL — show everything (cluster overrides reset too)">'+(typeof ico==="function"?ico("show",13):"")+'</button>'
     +'<button class="flpre" data-fpre="none" title="NONE — hide every entity">'+(typeof ico==="function"?ico("hide",13):"")+'</button>'
@@ -3408,18 +3410,16 @@ window.__uniBuildFleet=function(){ if(document.getElementById("fleet")) return;
       _ents.forEach(function(e){ ent[e]=Object.assign({},_VISDEF); }); __uniApplyVisPreset({ent:ent}); }
     else if(k==="none"){ _ents.forEach(function(e){ ent[e]={show:0}; }); __uniApplyVisPreset({ent:ent}); } }; });
   document.getElementById("fleetmin").onclick=function(){ p.classList.toggle("min"); this.textContent=p.classList.contains("min")?"+":"–"; };
+  (function(){ var _rb=document.getElementById("flrender"); if(!_rb) return;
+    _rb.onclick=function(ev){ ev.stopPropagation(); __uniToggleRender(); }; })();   /* the render path is the one control that RELOADS — the whole scene is rebuilt either way */
   var side=document.getElementById("flside");                    // the drawer is its OWN container — an add-on beside the fleet, not an extension
   if(!side){ side=document.createElement("div"); side.id="flside";
     side.innerHTML='<div class="flshead"><span class="flstitle" id="flstitle"></span>'
-      +'<button class="flsx flsrender" id="flsrender" title="'+(INST?"INSTANCED — one draw call per layer. Click for the objects path (one three.js object per node): slower, but it carries the per-node fleets.":"OBJECTS — one three.js object per node and per wire. Click for the instanced path: the same picture in a fraction of the draw calls.")+'">'
-        +'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>'
       +'<button class="flsx" id="flscopy" style="display:none" title="copy these settings as JSON — paste them back to adopt an exact configuration">⧉</button>'
       +'<button class="flsx" id="flsclose" title="close — slides back behind the fleet">×</button></div>'
       +'<div class="flsbody" id="flsbody"></div>';
     document.body.appendChild(side);
     document.getElementById("flsclose").onclick=function(){ __uniFlOpen(null); };
-    (function(){ var _rb=document.getElementById("flsrender"); if(!_rb) return; _rb.classList.toggle("on", !!INST);
-      _rb.onclick=function(ev){ ev.stopPropagation(); __uniToggleRender(); }; })();   /* the render path is the one control that reloads — the scene is rebuilt either way */
     document.getElementById("flscopy").onclick=function(){ var b=this;
       try{ var hx=function(v){ return "#"+("000000"+(v>>>0).toString(16)).slice(-6); };
         var out={ pane:"connections", lineStyle:CFG.lineStyle, curveAmt:(window.__uniCurveAmt!=null?window.__uniCurveAmt:1),
