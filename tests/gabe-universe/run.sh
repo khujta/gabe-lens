@@ -22,7 +22,6 @@ python3 - "$SHELL_SRC" <<'PY'
 import sys, re, pathlib
 shell = pathlib.Path(sys.argv[1])
 page  = (shell / "gabe-universe.html").read_text(encoding="utf-8")
-kit   = (shell / "assets" / "three-kit.js").read_text(encoding="utf-8")   # the instanced render kit the station draws with (default path since 2026-09-07)
 
 pass_ = 0; fail = 0
 def t_order(pg):
@@ -245,8 +244,8 @@ check('{t:"ln",c:0x5893ad' not in page, "REGRESSION: legend Connectors back to h
 check('case "ln": var lw=it.k?(CONN[it.k]||CONN[' in page, "legend ln sample not derived from CONN at render time (a REL row falls to its connector KIND's style)")
 check("'[data-itog=\"transports\"]'" in page, "the transports toggle is not DOM-moved into the Routes pane")
 # review r2 (mutation-proven interleaves, all headless-verified):
-check('mo.onclick=function(){ window.__uniSettleCancel();' in page,
-      "motionBtn does not cancel the pending settle auto-resume (a pause DURING the settle gets stomped)")
+check('_mo.onclick=function(ev){ ev.stopPropagation(); if(window.__uniSettleCancel) __uniSettleCancel();' in page,
+      "motionBtn does not cancel the pending settle auto-resume (a pause DURING the settle gets stomped) — the wiring moved into __uniBuildFleet with the button, 2026-09-07")
 check('if(window.__uniDragging) return;' in page and '__uniDragging=true;' in page,
       "the settle resume does not defer while a camera drag is held")
 check('if(window.__uniSettleDone) window.__uniSettleDone(); }' in page and 'function _endDrag' in page,
@@ -1145,29 +1144,12 @@ check('function _jrnRouteAnchor(ids, eps){' in page and 'var routeSeg=function(n
       "journey anchor FIRE: the path-aware rule (a route whose first URL segment matches the journey's first endpoint leads) or its endpoint feed is gone")
 check('function _jrnRouteAnchor(ids){' not in page, "journey anchor REGRESSION: the anchor takes no endpoint paths — the walk opens on the first route in frontier order again")
 
-# the INSTANCED render path (graph-renderer lab 2026-09-07): the kit rides beside the bundle, ?render=instanced draws one call per layer behind an
-# invisible proxy per node, the settle is by TICKS (the 15 s wall-clock cap froze the layout mid-way on a slow GPU), the Sources row says which path draws
-check('<script src="./assets/three-kit.js"></script>' in page and 'function _instMode(){' in page and 'var INST=_instMode();' in page and 'function __uniInstBuild(){' in page and 'if(INST){ if(!_INST_PROXY_GEO){' in page
-      and 'function __uniInstSync(){' in page and 'function _instWireVisible(l){' in page and 'srcRow("info","render"' in page and 'window.__uniSetRender=function(m){' in page,
-      "instanced FIRE: the kit script, the INST knob, the layer builder/sync, the proxy node, the wire law or the Sources row is gone")
-check('window.__uniRenderMode=INST?"instanced":"objects";' in page, "instanced FIRE: the render-mode global is gone")
-check('window.__uniRender=INST' not in page, "instanced REGRESSION: the render mode reclaims __uniRender — that name is the naming FORMATTER (form,name); the collision leaves Graph null and the whole page dead")
+# THE SETTLE LAW (graph-renderer lab 2026-09-07): the wrapper's cooldownTime default is 15 s of WALL CLOCK, so a slow
+# GPU stopped the layout at ~17 ticks and it LOOKED settled. It settles by TICKS now. This outlived the instanced render
+# path measured alongside it and removed 2026-09-08 — the settle fix was never about that path.
 check('.cooldownTicks(240).cooldownTime(1e9).onEngineTick(updateClusters)' in page, "settle law FIRE: the wrapper settles by ticks (cooldownTime lifted)")
 check('.cooldownTicks(240).onEngineTick(updateClusters)' not in page, "settle law REGRESSION: the 15 s wall-clock cap is back — a slow GPU freezes the layout at ~17 ticks")
-check('(INST?links.filter(function(l){ return window.__uniSelLink===l||window.__uniHovLink===l; }):links).forEach(' in page and 'if(INST&&window.__uniInst) try{ __uniInstSync(); }catch(e){} if(_STARL) _STARL.flush(); if(window.__uniHLTick) __uniHLTick();' in page,
-      "instanced FIRE: under INST only the selected/hovered wire takes the tube path and every cluster update syncs the layers + the star field")
-# INSTANCED IS THE DEFAULT (operator 2026-09-07, measured on their own GPU) — ?render=objects is the way back,
-# and the two per-object GLB swarms that instancing cannot carry are named where they are switched off.
-check('return true; }   /* DEFAULT ON (operator 2026-09-07' in page and "get(\"render\"); if(q) return q!==\"objects\";" in page,
-      "instanced DEFAULT FIRE: the render path no longer defaults ON — a first visit falls back to the objects path")
-check('if(_instMode()){ CFG.warOn=false; CFG.transports=false; }' in page and '6,300 meshes, measured 2026-09-07' in page,
-      "instanced FIRE: the two per-object GLB swarms (per-node fleets · per-route transports) must stay off under INST — transports alone took the page from 202 to 6,524 draw calls, worse than the objects path")
 # the STAR FIELD rides the instanced path as its OWN layer: one draw call for the whole sky, not ~958 sprites
-check('TK.starLayer' in page and 'function __uniStarBuild(){' in page and 'function __uniStarDispose(){' in page
-      and 'c.stars.push({s:null, i:_si, ix:_STARN++, hx:_STARN++})' in page and 'else if(_STARL){ _STARL.set(so.ix,_sx,_sy,_sz); _STARL.set(so.hx,_sx,_sy,_sz); }' in page,
-      "star-field FIRE: the instanced star layer (two slots per star — the dot and its additive-tinted halo) is gone, so instancing would cost the star field")
-check('CFG.stars=false' not in page,
-      "star-field REGRESSION: the instanced path switches the star field OFF again — it is cluster-level and rides its own layer (1 draw call, not ~958 sprites)")
 # the render toggle beside the FLEET title
 # THE FLEET HEADER, settled (operator 2026-09-07): the two GLOBAL toggles sit LEFT beside the title, the
 # show/hide presets keep the right, and the copy-settings button is gone with the only function that fed it.
@@ -1186,29 +1168,10 @@ check('mb.textContent="▶"' not in page and 'mb.textContent="⏸"' not in page 
 # A RENDER SWITCH KEEPS YOUR PLACE (operator: "I was looking in a journey, and I put Render, and everything
 # got deselected"). The switch reloads because the scene is rebuilt either way — that is an implementation
 # detail, and losing the reader's place is not an acceptable price for it.
-check('hl:(H&&H.on)?{ mode:H.mode, depth:H.depth, rest:H.rest' in page and 'pin:(window.__uniPin?Object.keys(window.__uniPin)' in page
-      and page.find('HL.origin=_org; HL.exact=!!H.exact;') > page.find('if(WALK.steps && WALK.steps.length){ WALK.i='),
-      "resume FIRE: the FOCUS must travel too (HL's seven non-derived fields + __uniPin) and must be restored AFTER the walk — __uniJrnStart and _walkGo both write HL, so restoring it first is simply overwritten")
-check('window.__uniResumeSave=function(){' in page and 'window.__uniResumeApply=function(){' in page
-      and 'try{ __uniResumeSave(); }catch(e){} try{ window.localStorage.setItem("gabe:universe:render"' in page
-      and 'sessionStorage' in page,
-      "resume FIRE: a render switch must stash the walk + the open card (per TAB, in sessionStorage) and replay them — otherwise flipping the render path silently drops the reader's journey")
-check('if(jv && !_resumed && !window.__jrnDone)' in page and 'if(ev && !_resumed && !window.__entDone)' in page,
-      "resume FIRE: a RESUME must beat the URL deep links — it is the reader's own place, one render switch old")
-check('id="flrender"' in page and 'window.__uniToggleRender=function(){' in page and '__uniToggleRender(); }; })();' in page
-      and '#fleet .flrender.on{' in page and page.find('id="flrender"') > page.find('<span class="cfgtitle">'),
-      "render-toggle FIRE: the render-path button beside the Fleet TITLE (in #fleethead, after .cfgtitle — where the operator asked for it, not in the #flside slide-out), its handler or its lit state is gone")
-check('id="flsrender"' not in page,
-      "render-toggle REGRESSION: the button is back in the #flside slide-out — that is not the Fleet panel the operator marked")
 # the LABEL atlas draws each label at its OWN measured width (operator 2026-09-07: "characters are getting
 # expanded, some made taller"). Showing a whole 512x32 cell on a fixed 68x8.5 quad squeezed every label 2:1,
 # sized them all alike however long the text, and pushed each one left off its node (the text sits at the
 # cell's left edge while the quad is centred). The fix is one number: the uv width IS the text width.
-check('wpx[k] = Math.min(CW, Math.ceil(c.measureText(t).width) + 8);' in kit
-      and 'uvs[k * 4 + 2] = wpx[k] / cv.width;' in kit and 'sizes[k * 2] = h * (wpx[k] / CH);' in kit,
-      "label-aspect FIRE: the label atlas is back to a fixed quad width — every label squeezed to the cell's 16:1 in an 8:1 frame")
-check("sizes[k * 2] = opts.w || 46;" not in kit,
-      "label-aspect REGRESSION: the fixed-width label quad (opts.w) is back — it distorts every label that is not exactly cell-width")
 
 # journey matrix: operation frozen + transitive call-chain reach (indirect cells) (operator 2026-09-03)
 check('TRANSITIVE data reach' in page and '.cell.ind{' in page and 'jdopc{ position:sticky; left:368px' in page and '_HOP={calls:1' in page,
@@ -1562,8 +1525,6 @@ const { chromium } = require(process.argv[3]);
   const fcb = await p.evaluate(() => {
     const inB = new Set(window.__uniBadges || []);
     const s = (fc) => { const n = nodes.find(x => x.kind==='component' && x.feClass===fc && x.__threeObj); if(!n) return null;
-      if (window.INST) { const k=_instIconKey(n), sl=_instSlots(n)||[];
-        return { screen:k==='screen', comp:k==='component', badge:!!sl[0] }; }
       let tex=null, bdg=false; n.__threeObj.children.forEach(ch => { if(ch.type==='Sprite'){ if(ch.material&&ch.material.map&&tex===null) tex=ch.material.map; if(inB.has(ch)) bdg=true; } });
       return { screen:tex===billTex.screen, comp:tex===billTex.component, badge:bdg }; };
     const v=s('view'), cn=s('connector'), ct=s('container'), pv=s('private'), lf=s('leaf');
@@ -1603,22 +1564,11 @@ const { chromium } = require(process.argv[3]);
   // legend pass · Steps 5–6: the stream endpoint wears a SECOND badge slot; a plain endpoint does not; the provider card has a Class section; the reference chips are real / honest dashes; every badge disc clears 30° of its host body
   const legend56 = await p.evaluate(() => { try{
       var st=nodes.find(function(x){ return x.kind==='endpoint' && x.stream && x.__threeObj; }); var pl=nodes.find(function(x){ return x.kind==='endpoint' && !x.stream && x.__threeObj; });
-      // slot B (delivery:stream) sits APART from slot A (the method). The law is the same on both render paths,
-      // but the carrier differs — Sprites with a __slot on the objects path, badge INSTANCES with a slot index
-      // on the instanced one — so the probe reads whichever is live instead of pinning the test to a renderer.
-      var s1, apart, plain1;
-      if (window.INST) {
-        var slotsOf=function(n){ return (_instSlots(n)||[]).filter(Boolean).length ? _instSlots(n) : [null,null]; };
-        var sB=function(n){ return (slotsOf(n)[1]?1:0); };
-        s1=new Array(st?sB(st):0); plain1=pl?sB(pl):null;
-        var sA=st?!!slotsOf(st)[0]:false;
-        apart = (st ? (sB(st)===1 && sA) : false);   /* both slots filled ⇒ the layer places them at different offsets (slot*sz*0.72) */
-      } else {
-        var slot1=function(n){ return n.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot===1; }); };
-        s1=st?slot1(st):[]; var others=st?st.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot!==1; }):[];
-        var xs=others.map(function(ch){ return Math.round(ch.position.x*100)/100; }); apart=s1.length===1 && xs.indexOf(Math.round(s1[0].position.x*100)/100)<0;
-        plain1=pl?slot1(pl).length:null;
-      }
+      // slot B (delivery:stream) sits APART from slot A (the method), read from the __slot Sprites.
+      var slot1=function(n){ return n.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot===1; }); };
+      var s1=st?slot1(st):[], others=st?st.__threeObj.children.filter(function(ch){ return ch.type==='Sprite' && ch.__slot!==1; }):[];
+      var xs=others.map(function(ch){ return Math.round(ch.position.x*100)/100; }), apart=s1.length===1 && xs.indexOf(Math.round(s1[0].position.x*100)/100)<0;
+      var plain1=pl?slot1(pl).length:null;
       var gm=NIDS['provider:gemini']; var cls=null; if(gm){ SEL={kind:'node',data:gm}; showPanel(gm); var t=document.getElementById('pbody').textContent; cls=/Class/.test(t)&&/llm/.test(t); }
       var ref={}, refBlank=[]; try{ __uniLegRef(); [].slice.call(document.querySelectorAll('#uni-legref .lrrow')).forEach(function(r){ var k=((r.querySelector('.lrtx b')||{}).textContent||'').trim(); if(['llm','embed','vector','agent','infra','http','observability','payments','stream'].indexOf(k)>=0){ ref[k]=(r.querySelector('.lrnone')||r.querySelector('.lrno'))?'dash':(r.querySelector('.lrex')?'real':'none'); if(!((r.querySelector('.lrdef')||{}).textContent||'').trim()) refBlank.push(k); } }); __uniLegRef(); }catch(e){}
       var hue=function(h){ var r=parseInt(h.slice(1,3),16)/255,g=parseInt(h.slice(3,5),16)/255,b=parseInt(h.slice(5,7),16)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,H=0; if(d){ if(mx===r) H=((g-b)/d)%6; else if(mx===g) H=(b-r)/d+2; else H=(r-g)/d+4; H*=60; if(H<0) H+=360; } return H; };
@@ -1923,50 +1873,6 @@ const { chromium } = require(process.argv[3]);
       && modelSw.escHead===true                                     // project prose still reaches innerHTML escaped
       && modelSw.deepLink===true                                    // ?ent= survives the loss of ?model=
       && modelSw.absent===true && modelSw.absentRow===true);        // no seeded view → claim, said out loud
-  // the INSTANCED render path (2026-09-07): the shipped page's draw calls are the baseline; the same page under ?render=instanced draws one call per
-  // layer (< 600 with hulls · stubs · cluster labels), a node click still opens the card through the invisible proxy, and nothing throws.
-  // the OBJECTS path is now the opt-out, so its baseline is measured explicitly; the instanced page is then
-  // loaded with NO query at all, which is what proves the default.
-  await p.goto('file://'+path.resolve(process.argv[2])+'?render=objects'); await p.waitForFunction('window.__spikeKindsReady===true', {timeout:120000}); await p.waitForTimeout(4000);
-  const objCalls = await p.evaluate(() => { try{ return Graph.renderer().info.render.calls; }catch(e){ return -1; } }).catch(()=>-1);
-  const objMode = await p.evaluate(() => window.__uniRenderMode).catch(()=>null);
-  await p.goto('file://'+path.resolve(process.argv[2])); await p.waitForFunction('window.__spikeKindsReady===true', {timeout:120000}); await p.waitForTimeout(4000);
-  const inst = await p.evaluate(() => { try{ var I=window.__uniInst; var n=nodes.find(function(x){ return x.kind==='endpoint' && x.__threeObj; }); var card=false; if(n){ var f=Graph.onNodeClick(); f(n); card=!!document.querySelector('#pbody .sec'); }
-      var proxies=nodes.filter(function(x){ return x.__threeObj && x.__threeObj.children.length===1 && x.__threeObj.children[0].material && x.__threeObj.children[0].material.visible===false; }).length;
-      var row=''; try{ __uniPanelAll(); row=(document.getElementById('pbody')||{}).textContent||''; }catch(e){ row='err:'+e; }   /* the Sources rows live in the ALL panel — __uniPanelAll (the modelSw idiom at line ~1760), never a bare panelAll() */
-      var _stars=(typeof CLUSTERS!=='undefined')?CLUSTERS.reduce(function(a,c){ return a+((c.stars||[]).length); },0):0;
-      var _starSprites=(typeof CLUSTERS!=='undefined')?CLUSTERS.reduce(function(a,c){ return a+((c.stars||[]).filter(function(x){ return !!x.s; }).length); },0):0;
-      var _rb=document.getElementById('flrender');
-      return {mode:window.__uniRenderMode, fmt:(typeof window.__uniRender), inst:!!I, layers:I?I.objs.length:0,
-      stars:_stars, starSprites:_starSprites, starLayer:!!(typeof _STARL!=='undefined'&&_STARL&&_STARL.mesh), movers:(typeof MOVERS!=='undefined'&&MOVERS)?MOVERS.length:-1,
-      toggle:!!_rb, toggleOn:!!(_rb&&_rb.classList.contains('on')), calls:Graph.renderer().info.render.calls, nodes:nodes.length, vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length, drawnIcons:(function(){ if(!I) return 0; var a=I.icons.mesh.instanceMatrix.array, c=0; for(var k=0;k<I.icons.mesh.count;k++) if(a[k*16]!==0||a[k*16+1]!==0||a[k*16+2]!==0) c++; return c; })(), card:card, proxies:proxies, srcRow:/render/.test(row)&&/instanced/.test(row)}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
-  // END TO END: walk a journey, step into it, open a card — then flip the render path and demand it all back.
-  const resume = await p.evaluate(() => { try{ const js=_jrnCollect(); if(!js.length) return {skip:'no journeys'};
-      __uniJrnStart(js[0].cid); WALK.i=Math.min(5,(WALK.steps||[]).length-1); _walkGo(0);
-      __uniHLMode();   // glow -> FOCUS: the operator's own sequence (journey, step, focus, switch)
-      const n=NIDS[WALK.steps[WALK.i]]; if(n){ SEL={kind:'node',data:n}; showPanel(n); }
-      return {jname:js[0].name, i:WALK.i, steps:(WALK.steps||[]).length, pid:(window.__uniPView||{}).id,
-              hlMode:HL.mode, hlOn:HL.on, hlDepth:HL.depth, hlRest:HL.rest, hlOrigin:(HL.origin||[]).length, hlJr:HL.jr,
-              pins:Object.keys(window.__uniPin||{}).length,
-              vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
-  if(!resume.skip && !resume.err){
-    await p.evaluate(() => __uniToggleRender());
-    await p.waitForFunction('window.__spikeKindsReady===true', {timeout:120000}); await p.waitForTimeout(9000);
-    const back = await p.evaluate(() => ({ mode:window.__uniRenderMode, wmode:WALK.mode, i:WALK.i, steps:(WALK.steps||[]).length,
-        jname:((window.HL&&HL.jrObj)?HL.jrObj.name:null), pid:(window.__uniPView||{}).id,
-        hlMode:HL.mode, hlOn:HL.on, hlDepth:HL.depth, hlRest:HL.rest, hlOrigin:(HL.origin||[]).length, hlJr:HL.jr,
-        pins:Object.keys(window.__uniPin||{}).length,
-        vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length,
-        cleared:(function(){ try{ return window.sessionStorage.getItem('gabe:universe:resume')===null; }catch(e){ return false; } })() })).catch(e=>({err:String(e)}));
-    resume.back = back;
-    // the FOCUS is the half a reader actually feels, so `vis` is asserted too: the mode flag surviving while
-    // the culling did not would look identical in every other field (operator 2026-09-07).
-    resume.ok = !!(back && !back.err && back.mode==='objects' && back.wmode==='journey' && back.jname===resume.jname
-                   && back.i===resume.i && back.steps===resume.steps && back.pid===resume.pid && back.cleared
-                   && back.hlOn===resume.hlOn && back.hlMode===resume.hlMode && back.hlDepth===resume.hlDepth
-                   && back.hlRest===resume.hlRest && back.hlOrigin===resume.hlOrigin && back.hlJr===resume.hlJr
-                   && back.pins===resume.pins && back.vis===resume.vis);
-  } else resume.ok = !!resume.skip;   // ONLY a feed with no journeys may skip — an ERROR must FAIL, or this row is non-evidence (it already passed once by erroring after the browser closed)
   await b.close();
   // the frontend fold, when the feed carries it: pieces drawn · every web node absorbed · bridge wires survive ·
   // types held back (toggle present) — a feed WITHOUT fe must leave all of that at zero (honest-empty)
@@ -2024,16 +1930,9 @@ const { chromium } = require(process.argv[3]);
   const legend56Ok = !!(legend56 && !legend56.err && legend56.slot1===1 && legend56.apart===true && legend56.plainSlot1===0 && legend56.providerClass===true && legend56.ref && legend56.ref.llm==='real' && legend56.ref.payments==='dash' && legend56.ref.stream==='real' && legend56.refN===9 && legend56.refBlank && legend56.refBlank.length===0 && legend56.contrastBad && legend56.contrastBad.length===0);
   const dispOk = !!(dispSel && !dispSel.err && dispSel.drawn===true && dispSel.chip===true && dispSel.ref==='real');
   const scaleOk = !!(scaleDL && !scaleDL.err && scaleDL.hit===true && scaleDL.capOn===false && scaleDL.tier===0 && scaleDL.row===true && scaleDL.jrn && scaleDL.steps>0 && scaleDL.ent==='ent');
-  console.log('  render path: objects '+objCalls+' calls ('+objMode+') → DEFAULT '+JSON.stringify(inst));
-  console.log('  resume across a render switch: '+JSON.stringify(resume));
-  // the DEFAULT (no query) must be instanced; the objects path must still be reachable and still cost >5x;
-  // the star field must survive instancing as a LAYER (stars present, zero Sprites); the two GLB swarms stay off.
-  const instOk = !!(inst && !inst.err && inst.mode==='instanced' && objMode==='objects' && inst.fmt==='function' && inst.inst && inst.layers>=5 && inst.calls>0 && inst.calls<600 && objCalls>inst.calls*5
-      && inst.stars>0 && inst.starSprites===0 && inst.starLayer && inst.movers===0 && inst.toggle && inst.toggleOn
-      && resume.ok === true && inst.vis>0 && inst.drawnIcons===inst.vis && inst.card && inst.proxies>=inst.vis && inst.srcRow);   /* every VISIBLE node carries an icon instance (a bare >0 accepted a picture missing 90% of its glyphs) and a pick proxy — force-graph KEEPS __threeObj for a hidden node, so proxies >= vis, never equal */
-  const ok = instOk && r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && dispOk && legend56Ok && homingOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk && modelOk;
+  const ok = r.nodes>0 && !r.err && errs.length===0 && r.cardOpen && r.stPass && feOk && wireSelOk && scaleOk && dispOk && legend56Ok && homingOk && fewOk && wfOk && iconsOk && hdrOk && jrnOk && levelsOk && commitsOk && ui3Ok && fcbOk && focusOk && keyOk && legRefOk && jrnDetailOk && storeOk && modelOk;
   if(ok) console.log(`  render: PASS — ${r.nodes} live nodes, 0 errors, card renders (st-pass=${r.stPass}, faces=${r.face}); frontend ${f.present?`${f.feNodes} pieces · ${f.absorbed} screens absorbed · ${f.typesHeld} types held · FE-write heat off-by-default, bands blue→magenta`:'absent (honest-empty)'}`);
-  else { console.error('  render FAIL:', JSON.stringify(r), 'instOk='+instOk, 'feOk='+feOk, 'wireSelOk='+wireSelOk, 'scaleOk='+scaleOk, 'dispOk='+dispOk, 'legend56Ok='+legend56Ok, 'homingOk='+homingOk, 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'modelOk='+modelOk+' '+JSON.stringify(modelSw), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
+  else { console.error('  render FAIL:', JSON.stringify(r), 'feOk='+feOk, 'wireSelOk='+wireSelOk, 'scaleOk='+scaleOk, 'dispOk='+dispOk, 'legend56Ok='+legend56Ok, 'homingOk='+homingOk, 'fewOk='+fewOk, 'wfOk='+wfOk, 'iconsOk='+iconsOk, 'hdrOk='+hdrOk, 'jrnOk='+jrnOk, 'levelsOk='+levelsOk, 'commitsOk='+commitsOk, 'ui3Ok='+ui3Ok, 'fcbOk='+fcbOk+' '+JSON.stringify(fcb), 'focusOk='+focusOk+' click='+JSON.stringify(clickFocus)+' tier='+JSON.stringify(afterTier), 'keyOk='+keyOk+' '+JSON.stringify(keyReg), 'legRefOk='+legRefOk+' '+JSON.stringify(legRef).slice(0,600), 'jrnDetailOk='+jrnDetailOk+' '+JSON.stringify(jrnDetail), 'storeOk='+storeOk+' '+JSON.stringify(storeCheck), 'modelOk='+modelOk+' '+JSON.stringify(modelSw), 'errs='+errs.slice(0,4).join(' | ')); process.exit(1); }
 })();
 JS
   RENDER=$?

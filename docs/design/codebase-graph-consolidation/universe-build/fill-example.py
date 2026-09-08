@@ -30,7 +30,6 @@ for k, v in FILL.items():
 t = t.replace('src="assets/gabe-icon.png"', 'src="../../assets/gabe-icon.png"')
 t = t.replace('src="./assets/3d-bundle.js"', 'src="../../assets/3d-bundle.js"')
 t = t.replace('src="./assets/chip-assets.js"', 'src="../../assets/chip-assets.js"')
-t = t.replace('src="./assets/three-kit.js"', 'src="../../assets/three-kit.js"')   # the instanced render kit (?render=instanced)
 assert "{{" not in t, "unfilled token survived"
 io.open(DST, "w", encoding="utf-8").write(t)
 print("wrote", DST, ":", len(t), "bytes")

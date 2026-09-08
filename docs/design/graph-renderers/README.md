@@ -131,6 +131,39 @@ and the 33× is what the frame feels; this rig cannot show that, which is why th
 visibility change. That retires the whole triangle debt without touching the picture. Until then the two rows above are the honest pair — read
 the draw-call and heap columns, not `frame ms`.
 
+> ## REMOVED — 2026-09-08 (operator ruling). Read this before the sections below.
+>
+> The instanced render path was built into the station, measured on the real page, made the default, and then
+> **taken out again**: *"drop the functionality of render, we didn't really gain much from it."* The station
+> draws one three.js object per node once more, and the per-node fleets and route transports are back with it.
+>
+> **The measurement that settled it** (example estate, swiftshader, no GPU — objects vs instanced):
+>
+> | | tier 1 · 390 drawn | | tier 3 · 1,397 drawn | |
+> |---|---:|---:|---:|---:|
+> | | objects | instanced | objects | instanced |
+> | draw calls | 9,199 | **204** | 39,384 | **243** |
+> | heap MB | 152 | **43** | **456** | **47** |
+> | triangles | 935k | 1,558k | 4,031k | **3,026k** |
+> | frame ms | 500 | 555 | 1,483 | **1,026** |
+>
+> The numbers are real and the verdict still went against it, which is the part worth keeping. At the tier the
+> operator actually works in, 9,199 calls is comfortable on a real GPU, so a 45× reduction bought nothing they
+> could feel — while the toggle, the two render paths, the resume machinery that existed only to survive the
+> switch, and the two probes that had to read whichever carrier was live were all cost they *could* feel. The
+> win lives at tier 3 and at onyx scale; the price was paid at tier 1, every session. **A speedup nobody
+> experiences is not a feature, and the confusion it carries is not free.**
+>
+> What SURVIVED, because none of it depended on the render path: the `cooldownTime` settle law (a slow GPU
+> stopped the layout at ~17 ticks and it looked settled), the Fleet header layout, the trail's move to the
+> top-right panel, and the badge-tick camera gate. `three-kit.js` is gone from the shell; the lab keeps its own
+> copy, since the lab is the record.
+>
+> **What it would cost to bring back:** the whole arm is one commit range (`7f0b00f` … `096c771`) and the lab
+> pages still draw it. The trigger that would justify it: a repo where tier 3 is the working tier, or an estate
+> at onyx scale (≈3.9k nodes) where 39k draw calls per frame is the thing standing between the operator and
+> the picture.
+
 **PROMOTED TO THE DEFAULT — 2026-09-07**, on the operator's own GPU ("it really accelerates the renderization"), which is the read swiftshader
 could not give. `?render=objects` — or the stored `objects` — is the way back, and a lightning-bolt toggle beside the FLEET title flips it.
 Two things had to be settled first, and both are measurements, not opinions:
