@@ -551,7 +551,24 @@ check('if(!was && sv[col] && UNIVIS.ent[ent] && !UNIVIS.ent[ent][col]) UNIVIS.en
       "a cluster toggle no longer re-enables its entity for THAT column (must match the entity-column behaviour)")
 check('id="mbOpRng"' in page and 'BADGE OPACITY (operator)' in page and 'if(CFG.mbOp==null) CFG.mbOp=0.95;' in page and 'id="badgecfg"' not in page,
       "the GLOBAL badge-opacity slider must live in the Planets pane (not #cfg); the #cfg badge panel must be gone")
-check("Temporary Config</span>" in page, "the top-right config panel must be renamed 'Temporary Config'")
+# THE TRAIL TAKES THE TOP-RIGHT SLOT (operator 2026-09-07). Every control had already migrated to the FLEET,
+# leaving that panel a husk holding a note — so it becomes the place you read where you are in a journey. The
+# walk bar is MOVED, not rebuilt (same id, same renderer, same chips), and the husk's two GLOBAL controls —
+# pause-animations and copy-config — rehome to the Fleet header rather than dying with the panel.
+check("Trail</span>" in page and "Temporary Config</span>" not in page and 'note.textContent="Every control lives in the FLEET now' not in page,
+      "trail-panel FIRE: the top-right panel is no longer the TRAIL — the retired Temporary Config husk or its note is back")
+check('var _wb=document.getElementById("walkbar"); if(!_wb){ _wb=document.createElement("div"); _wb.id="walkbar"; }' in page
+      and "body.innerHTML=''; body.appendChild(_wb);" in page,
+      "trail-panel FIRE: the walk bar is not re-fetched and re-appended into the panel body — this pass clears with innerHTML and CAN run twice (the .cfgtabbar guard never trips), so a one-shot move would destroy the trail")
+check('body:not(.panel-open) #walkbar{ display:none !important; }' not in page,
+      "trail-panel REGRESSION: the trail still hides with the RIGHT panel — it does not live there any more")
+check("wb.innerHTML='<div class=\"widle\">nothing walking yet" in page,
+      "trail-panel FIRE: an idle trail must SAY it is idle — the panel is permanent now, so vanishing leaves a blank mystery")
+check('#cfg .cfgbody{ max-height:56vh; overflow-y:auto;' in page,
+      "trail-panel FIRE: the chips wrap into rows, so a long journey grows the panel off the screen — exactly the later steps a reader is trying to reach. It must cap and scroll")
+check("id=\"motionBtn\" title=\"pause / resume animations\"" in page and 'id="cfgcopy" title="copy the whole configuration as JSON' in page
+      and page.find('id="motionBtn"') > page.find('id="fleethead"') and page.find('id="cfgcopy"') > page.find('id="fleethead"'),
+      "trail-panel FIRE: the two GLOBAL controls the husk carried (pause animations · copy config) must live in the FLEET head — built there, not inserted later, since __uniAddLayoutTab runs BEFORE the fleet panel exists")
 check('window.__uniAddFocusCfg=function(){ window.__uniHLSeed()' in page and 'window.__uniHLDefaults={' in page and 'id="focuscfg"' not in page and 'focrng' not in page and 'srow("speed","focSpeed"' not in page,
       "the focus/highlight CONFIG PANEL must be retired to a seeder (no #focuscfg, no sliders/pills)")
 check('grpWith("Highlight")' in page and '_hlBtn("focRing"' in page and '_hlBtn("focGlow"' in page and '_hlBtn("othGlow"' in page and '_hlBtn("othRing"' in page and 'entPane.push(hlGrp)' in page,

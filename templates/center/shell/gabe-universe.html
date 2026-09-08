@@ -364,8 +364,14 @@
   #fleet .flvbtn svg{ width:11px; height:11px; }
   #fleet .flvbtn.on{ color:#fff; background:var(--accent); border-color:var(--accent); }
   /* the WALK bar — top of the right panel: journey ‹ i/N › or the 7-step trail chips */
-  #walkbar{ padding:8px 12px; border-bottom:1px solid var(--line); background:var(--chip-bg); }
-  body:not(.panel-open) #walkbar{ display:none !important; }   /* never in the collapsed rail — JS drives display while open */
+  #walkbar{ padding:0; }   /* the trail lives in the TOP-RIGHT panel's body now (operator 2026-09-07) — the border and ground are the .cfg shell's, and it no longer follows the right panel's open state */
+  #walkbar .widle{ font:400 10.5px/1.5 var(--font-ui); color:var(--muted); }
+  /* the chips WRAP into rows, so a long journey grows the panel downward off the screen — and the later
+     steps are exactly the ones a reader is trying to reach. Cap it and let it scroll. */
+  #cfg .cfgbody{ max-height:56vh; overflow-y:auto; overscroll-behavior:contain; }
+  #cfg .cfgbody::-webkit-scrollbar{ width:7px; }
+  #cfg .cfgbody::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+  #cfg .cfgbody::-webkit-scrollbar-track{ background:transparent; }
   #walkbar .wjhd{ display:flex; align-items:center; gap:6px; margin-bottom:4px; }
   #walkbar .wjname{ font:700 11px/1.4 var(--font-ui); color:var(--ink); text-transform:none;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
@@ -3144,7 +3150,8 @@ function _walkRender(){ var wb=document.getElementById("walkbar"), pill=document
   /* the TRAIL bar shows for a TRAIL and for a selected JOURNEY (operator: a journey becomes the current
      trail — navigable by the same chips + Alt+A/D, with a CLEAR button next to its title). */
   if(wb){ var _wActive=(WALK.mode==="trail"||WALK.mode==="journey") && WALK.steps.length;
-    if(!_wActive){ wb.style.display="none"; try{ _stepNote(); }catch(e){} }   // a cleared walk takes the step note down with it
+    if(!_wActive){ wb.style.display=""; wb.innerHTML='<div class="widle">nothing walking yet — click an element, or open a journey from the workflows tab</div>';
+      try{ _stepNote(); }catch(e){} }   // the panel is PERMANENT now, so an empty trail says what it is instead of vanishing; a cleared walk still takes the step note down
     else { var chips=WALK.steps.map(function(id,i){ var n=NIDS[id]; if(!n) return "";
         return '<button class="wchip'+(i===WALK.i?" on":"")+'" data-wi="'+i+'" title="'+n.label+' · '+n.ent+'" style="color:'+(n.col||"#9ab")+'">'+(i+1)+'</button>'; }).join("");
       var _wtitle=(WALK.mode==="journey" && HL.jrObj)?(HL.jrObj.name||HL.jrObj.cid):"trail";   // a journey trail wears the journey's name
@@ -3397,6 +3404,8 @@ window.__uniBuildFleet=function(){ if(document.getElementById("fleet")) return;
   p.innerHTML='<div class="cfghead" id="fleethead"><span class="cfgtitle">'+(typeof ico==="function"?ico("shape",13):"")+'Fleet</span>'
     +'<button class="flrender'+(INST?' on':'')+'" id="flrender" title="'+(INST?"RENDER: instanced — one draw call per layer. Click for the objects path: one three.js object per node, ~30× the draw calls, but it carries the per-node fleets and the route transports.":"RENDER: objects — one three.js object per node and per wire. Click for the instanced path: the same picture in a fraction of the draw calls.")+'">'
       +'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>'
+    +'<button class="flrender" id="motionBtn" title="pause / resume animations">'+((typeof ANIM!=="undefined"&&ANIM.all)?"⏸":"▶")+'</button>'
+    +'<button class="flrender" id="cfgcopy" title="copy the whole configuration as JSON — paste it back to adopt an exact setup">⧉</button>'   /* both rehomed from the retired Temporary Config head (2026-09-07): GLOBAL controls, not trail ones. Built HERE rather than inserted by __uniAddLayoutTab, which runs BEFORE the fleet panel exists — that ordering is why the first attempt left the motion button behind in the old head. */
     +'<span class="flprehead">'
     +'<button class="flpre" data-fpre="all" title="ALL — show everything (cluster overrides reset too)">'+(typeof ico==="function"?ico("show",13):"")+'</button>'
     +'<button class="flpre" data-fpre="none" title="NONE — hide every entity">'+(typeof ico==="function"?ico("hide",13):"")+'</button>'
@@ -3609,11 +3618,9 @@ var _flOpen={};   // which entity rows are expanded to their clusters
 window.__uniAddLayoutTab=function(){ var cfg=document.getElementById("cfg"); if(!cfg) return;
   var body=cfg.querySelector(".cfgbody"); if(!body || cfg.querySelector(".cfgtabbar")) return;
   // MOTION play/pause button in the config header (top section) — flips ANIM.all
-  var head=cfg.querySelector(".cfghead");
-  if(head && !head.querySelector("#motionBtn")){ var mo=document.createElement("button"); mo.className="cfgmin"; mo.id="motionBtn";
-    mo.title="pause / resume animations"; mo.style.marginRight="4px"; mo.textContent=ANIM.all?"⏸":"▶";
-    mo.onclick=function(){ window.__uniSettleCancel(); ANIM.all=!ANIM.all; mo.textContent=ANIM.all?"⏸":"▶"; mo.classList.toggle("on",!ANIM.all); };   // manual toggle cancels any pending settle auto-resume
-    var manch=head.querySelector("#cfgcopy")||head.querySelector("#cfgmin"); if(manch) head.insertBefore(mo, manch); else head.appendChild(mo); }
+  var mo=document.getElementById("motionBtn");   /* built into the FLEET head (2026-09-07) — this pass only WIRES it */
+  if(mo && !mo.onclick){ mo.textContent=ANIM.all?"⏸":"▶";
+    mo.onclick=function(){ window.__uniSettleCancel(); ANIM.all=!ANIM.all; mo.textContent=ANIM.all?"⏸":"▶"; mo.classList.toggle("on",!ANIM.all); }; }   // manual toggle cancels any pending settle auto-resume
   var mk=function(cls){ var d=document.createElement("div"); d.className=cls; return d; };
   var grpWith=function(label, child){ var g=mk("grp"); g.innerHTML='<div class="grplbl">'+label+'</div>'; if(child) g.appendChild(child); return g; };
   var pillHTML=function(grp, opts, cur){ var s='<div class="pill" data-grp="'+grp+'">';
@@ -3872,10 +3879,15 @@ window.__uniAddLayoutTab=function(){ var cfg=document.getElementById("cfg"); if(
   // re-tab
   if(G.transp && G.transp.parentNode) G.transp.parentNode.removeChild(G.transp);   // drop the now-empty shell
   body.innerHTML='';
-  var bar=mk("cfgtabbar");
-  var note=document.createElement("div"); note.className="cfgnote";
-  note.textContent="Every control lives in the FLEET now — click a column icon (cube · clusters · planets · connections · transports) for its panel.";
-  body.appendChild(note);                                      // rt stays a detached workbench; its groups leave for the fleet stash below
+  /* THE TRAIL TAKES THIS SLOT (operator 2026-09-07). Every control had already migrated to the FLEET,
+     leaving this panel a husk holding a note — so the top-right becomes the place you read where you are in
+     a journey. The walk bar is MOVED here, not rebuilt: it keeps its id, its renderer and its chips, so
+     _walkRender needs no change beyond its resting state. It is re-fetched and re-appended on every pass
+     because this body is cleared with innerHTML — and the `.cfgtabbar` guard above never trips (that element
+     is created and never appended), so this function can and does run more than once. */
+  var _wb=document.getElementById("walkbar"); if(!_wb){ _wb=document.createElement("div"); _wb.id="walkbar"; }
+  body.innerHTML=''; body.appendChild(_wb);                    // rt stays a detached workbench; its groups leave for the fleet stash below
+  try{ if(window._walkRender) _walkRender(); }catch(e){}
   // wire the NEW controls only (the moved spike pills keep their wireCfg listeners)
   var _bindRoots=[rt]; entPane.concat(cluPane).concat(planetsPane).forEach(function(g){ if(g) _bindRoots.push(g); });
   _bindRoots.forEach(function(pane){ pane.querySelectorAll(".pill[data-grp]").forEach(function(p){ var grp=p.getAttribute("data-grp");
@@ -5329,7 +5341,7 @@ function encSnapshot(){ return { INTC:INTC }; }   // the left-panel transport ca
 function flashBtn(b){ if(!b) return; var t=b.textContent; b.textContent="✓"; setTimeout(function(){ b.textContent=t; },900); }
 function buildCfg(){ var trip=[{v:"faint",t:"faint"},{v:"ghost",t:"ghost"},{v:"film",t:"film"}];
   document.getElementById("cfg").innerHTML=
-    '<div class="cfghead" id="cfghead"><span class="cfgtitle">'+ico("cog",13)+'Temporary Config</span><button class="cfgmin" id="cfgcopy" title="copy config JSON to clipboard" style="margin-right:4px">⧉</button><button class="cfgmin" id="cfgmin" title="minimize">–</button></div>'
+    '<div class="cfghead" id="cfghead"><span class="cfgtitle"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>Trail</span><button class="cfgmin" id="cfgmin" title="minimize">–</button></div>'
    +'<div class="cfgbody">'
      +'<div class="grp"><div class="grplbl">'+ico("shape")+'Container <span style="font-weight:400;text-transform:none;margin-left:2px">· both levels</span></div>'
        +'<div class="cfgrow"><span class="rlbl" style="width:26px">'+ico("shape")+'</span>'+pill("shape",[{v:"polygon",ico:"polygon",t:"polygon"},{v:"wrap",ico:"wrap",t:"wrap"}],CFG.shape)+'</div></div>'
