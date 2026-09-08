@@ -464,7 +464,9 @@
   #flside .flsx{ color:var(--muted); background:none; border:none; cursor:pointer;
     font:400 17px/1 var(--font-ui); padding:0 3px; }
   #flside .flsx:hover{ color:var(--ink); }
-  #fleet .flrender{ margin-left:6px; display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; padding:0; border:none; border-radius:5px; cursor:pointer; background:none; color:var(--muted); }   /* the render-path toggle sits beside the Fleet title (operator 2026-09-07) */
+  #fleet .cfgtitle{ flex:0 0 auto; }   /* the title stops expanding so the two GLOBAL buttons sit LEFT, beside it; .flprehead's margin-left:auto still pushes the show/hide presets to the right (operator 2026-09-07) */
+  #fleet .flrender{ margin-left:2px; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; padding:0; border:none; border-radius:5px; cursor:pointer; background:none; color:var(--muted); }   /* the render + motion toggles sit beside the Fleet title (operator 2026-09-07); 20px matches .flpre/.cfgmin so all four buttons share one baseline */
+  #fleet .flrender svg{ display:block; }
   #fleet .flrender:hover{ color:var(--ink); }
   #fleet .flrender.on{ color:var(--accent, #4f9dff); background:color-mix(in srgb, var(--accent, #4f9dff) 20%, transparent); }
   #flside .flsbody{ padding:8px 10px 10px; overflow-y:auto; overflow-x:hidden; min-height:0; }
@@ -1468,7 +1470,38 @@ var CFG={ shape:"polygon", entLayout:"force", coreBy:"layer", coreByBE:null, cor
 function _instMode(){ try{ var q=new URLSearchParams(location.search).get("render"); if(q) return q!=="objects"; var st=window.localStorage.getItem("gabe:universe:render"); if(st) return st!=="objects"; }catch(e){} return true; }   /* DEFAULT ON (operator 2026-09-07, measured on their own GPU). ?render=objects — or the stored "objects" — is the way back. */
 var INST=_instMode();
 window.__uniRenderMode=INST?"instanced":"objects";   /* NOT __uniRender — that name is the naming FORMATTER (form,name) at the top of this file; the collision left Graph null and the page dead */
-window.__uniSetRender=function(m){ m=(m==="objects")?"objects":"instanced"; try{ window.localStorage.setItem("gabe:universe:render", m); }catch(e){} try{ var u=new URL(location.href); u.searchParams.delete("render"); location.href=u.toString(); }catch(e2){ location.reload(); } };   /* a mode switch RELOADS: the whole scene is rebuilt either way */
+/* ── RESUME ACROSS A RENDER SWITCH (operator 2026-09-07: "I was looking in a journey, and I put Render, and
+   everything got deselected"). Swapping the render path rebuilds the whole scene, so it reloads — but a
+   reload is an implementation detail the reader never asked for, and losing their place is not. The walk and
+   the open card are stashed in sessionStorage (per TAB, so a second tab is unaffected) and replayed once
+   after the new scene settles. Every restore is guarded: a step whose node the new tier does not carry is
+   dropped, and a stale record simply does nothing. ── */
+window.__uniResumeSave=function(){ try{
+    var W=(typeof WALK!=="undefined")?WALK:null;
+    var rec={ tier:(window.__uniTier!=null?window.__uniTier:null),
+      walk:(W&&W.mode&&W.steps&&W.steps.length)?{ mode:W.mode, steps:W.steps.slice(0,600), i:W.i,
+              jcid:((window.HL&&HL.jrObj&&HL.jrObj.cid)||null) }:null,
+      pview:(window.__uniPView||null) };
+    window.sessionStorage.setItem("gabe:universe:resume", JSON.stringify(rec)); }catch(e){} };
+window.__uniResumeApply=function(){ var raw=null;
+  try{ raw=window.sessionStorage.getItem("gabe:universe:resume"); window.sessionStorage.removeItem("gabe:universe:resume"); }catch(e){}
+  if(!raw) return false; var rec=null; try{ rec=JSON.parse(raw); }catch(e){ return false; } if(!rec) return false;
+  try{ if(rec.tier!=null && window.__uniSetTier) __uniSetTier(rec.tier); }catch(e){}
+  var W=rec.walk;
+  if(W){ try{
+      if(W.mode==="journey" && W.jcid && window.__uniJrnStart) __uniJrnStart(W.jcid);
+      else if(W.steps && W.steps.length){ WALK.mode=W.mode||"trail"; WALK.steps=W.steps.filter(function(id){ return !!NIDS[id]; }); }
+      if(WALK.steps && WALK.steps.length){ WALK.i=Math.max(0, Math.min(W.i||0, WALK.steps.length-1)); _walkGo(0); }
+    }catch(e){} }
+  var P=rec.pview;
+  if(P){ try{
+      if(P.lvl==="node" && P.id && NIDS[P.id]) showPanel(NIDS[P.id]);
+      else if(P.lvl==="ent" && window.__uniPanelEnt) __uniPanelEnt(P.ent);
+      else if(P.lvl==="clu" && window.__uniPanelClu) __uniPanelClu(P.ent, P.sub);
+      else if(P.lvl==="all" && window.__uniPanelAll) __uniPanelAll();
+    }catch(e){} }
+  return true; };
+window.__uniSetRender=function(m){ m=(m==="objects")?"objects":"instanced"; try{ __uniResumeSave(); }catch(e){} try{ window.localStorage.setItem("gabe:universe:render", m); }catch(e){} try{ var u=new URL(location.href); u.searchParams.delete("render"); location.href=u.toString(); }catch(e2){ location.reload(); } };   /* a mode switch RELOADS: the whole scene is rebuilt either way — the resume record above is what makes that invisible */
 window.__uniToggleRender=function(){ __uniSetRender(INST?"objects":"instanced"); };
 var RADMIN=0.6, RADMAX=1.6;
 var NR=9;   // a node's visual radius (icon + bubble) — the clearance the boundary must clear
@@ -2230,11 +2263,11 @@ var CONN0=null;                                           // boot snapshot of CO
    settle landing MID-DRAG defers to pointerup (freeze-on-drag keeps the drag smooth to its end). */
 var _settleFroze=false; window.__uniDragging=false;
 function __uniFreezeForSettle(){ if(!ANIM.all) return; _settleFroze=true; ANIM.all=false;
-  var mb=document.getElementById("motionBtn"); if(mb){ mb.textContent="▶"; mb.classList.add("on"); } }
+  var mb=document.getElementById("motionBtn"); if(mb){ mb.innerHTML=_MOICO.play; mb.classList.add("on"); } }
 window.__uniSettleCancel=function(){ _settleFroze=false; };   // manual motion toggle owns the state from here on
 window.__uniSettleDone=function(){ if(!_settleFroze) return; if(window.__uniDragging) return;
   _settleFroze=false; ANIM.all=true;
-  var mb=document.getElementById("motionBtn"); if(mb){ mb.textContent="⏸"; mb.classList.remove("on"); } };
+  var mb=document.getElementById("motionBtn"); if(mb){ mb.innerHTML=_MOICO.pause; mb.classList.remove("on"); } };
 /* topbar toggle: pause animations while the camera is being dragged (resume on release) */
 window.__uniToggleFreezeDrag=function(btn){ ANIM.freezeOnDrag=!ANIM.freezeOnDrag; if(btn) btn.classList.toggle("on", ANIM.freezeOnDrag); };
 
@@ -2542,7 +2575,7 @@ function __uniSetupOrbit(){ var g=document.getElementById("g"); if(!g || g.__orb
     }catch(e){} }, 16);
   function _endDrag(){                                           // the ONE release path — pointerup and the mid-chord owner-loss both land here
     if(drag){ var ctrls=Graph.controls(); drag=null; window.__uniDragging=false; if(ctrls){ ctrls.enabled=true; try{ ctrls.update(); }catch(e){} } }
-    if(_dragWasPlaying){ _dragWasPlaying=false; ANIM.all=true; var mb=document.getElementById("motionBtn"); if(mb){ mb.textContent="⏸"; mb.classList.remove("on"); } }
+    if(_dragWasPlaying){ _dragWasPlaying=false; ANIM.all=true; var mb=document.getElementById("motionBtn"); if(mb){ mb.innerHTML=_MOICO.pause; mb.classList.remove("on"); } }
     if(window.__uniSettleDone) window.__uniSettleDone(); }       // release a resume the settle deferred mid-drag (no-op otherwise)
   window.addEventListener("pointerup", function(ev){
     if(drag && ev.buttons!==0) return;                           // buttons remain → the drag survives; the LAST release always ends it
@@ -3394,6 +3427,7 @@ var _FCOLS=[
   { k:"zAtk",   ti:"attack fleet",        scope:"zones",    icon:"swords", g:function(){ return !!(CFG.warOn&&CFG.zAtk); } },
   { k:"zCfl",   ti:"conflict effects",    scope:"zones",    icon:"burst",  g:function(){ return !!(CFG.warOn&&CFG.zCfl); } },
   { k:"zSat",   ti:"satellites",          scope:"zones",    icon:"target", g:function(){ return !!(CFG.warOn&&CFG.zSat); } } ];
+var _MOICO={ pause:'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>', play:'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7 3 20 12 7 21"/></svg>' };   /* the motion toggle draws like every other header button — 12px, stroked, on the same baseline */
 window.__uniBuildFleet=function(){ if(document.getElementById("fleet")) return;
   if(typeof ICO!=="undefined"){                                             // presets speak icons now — extend the config's own set
     ICO.hide='<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>';
@@ -3404,8 +3438,7 @@ window.__uniBuildFleet=function(){ if(document.getElementById("fleet")) return;
   p.innerHTML='<div class="cfghead" id="fleethead"><span class="cfgtitle">'+(typeof ico==="function"?ico("shape",13):"")+'Fleet</span>'
     +'<button class="flrender'+(INST?' on':'')+'" id="flrender" title="'+(INST?"RENDER: instanced — one draw call per layer. Click for the objects path: one three.js object per node, ~30× the draw calls, but it carries the per-node fleets and the route transports.":"RENDER: objects — one three.js object per node and per wire. Click for the instanced path: the same picture in a fraction of the draw calls.")+'">'
       +'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>'
-    +'<button class="flrender" id="motionBtn" title="pause / resume animations">'+((typeof ANIM!=="undefined"&&ANIM.all)?"⏸":"▶")+'</button>'
-    +'<button class="flrender" id="cfgcopy" title="copy the whole configuration as JSON — paste it back to adopt an exact setup">⧉</button>'   /* both rehomed from the retired Temporary Config head (2026-09-07): GLOBAL controls, not trail ones. Built HERE rather than inserted by __uniAddLayoutTab, which runs BEFORE the fleet panel exists — that ordering is why the first attempt left the motion button behind in the old head. */
+    +'<button class="flrender" id="motionBtn" title="pause / resume animations">'+((typeof ANIM!=="undefined"&&ANIM.all)?_MOICO.pause:_MOICO.play)+'</button>'   /* an SVG, not a ⏸/▶ GLYPH: a text character carries its own metrics and sat off the line its neighbours share (operator 2026-09-07). Built HERE rather than inserted by __uniAddLayoutTab, which runs BEFORE the fleet panel exists. */
     +'<span class="flprehead">'
     +'<button class="flpre" data-fpre="all" title="ALL — show everything (cluster overrides reset too)">'+(typeof ico==="function"?ico("show",13):"")+'</button>'
     +'<button class="flpre" data-fpre="none" title="NONE — hide every entity">'+(typeof ico==="function"?ico("hide",13):"")+'</button>'
@@ -3619,8 +3652,8 @@ window.__uniAddLayoutTab=function(){ var cfg=document.getElementById("cfg"); if(
   var body=cfg.querySelector(".cfgbody"); if(!body || cfg.querySelector(".cfgtabbar")) return;
   // MOTION play/pause button in the config header (top section) — flips ANIM.all
   var mo=document.getElementById("motionBtn");   /* built into the FLEET head (2026-09-07) — this pass only WIRES it */
-  if(mo && !mo.onclick){ mo.textContent=ANIM.all?"⏸":"▶";
-    mo.onclick=function(){ window.__uniSettleCancel(); ANIM.all=!ANIM.all; mo.textContent=ANIM.all?"⏸":"▶"; mo.classList.toggle("on",!ANIM.all); }; }   // manual toggle cancels any pending settle auto-resume
+  if(mo && !mo.onclick){ mo.innerHTML=ANIM.all?_MOICO.pause:_MOICO.play;
+    mo.onclick=function(){ window.__uniSettleCancel(); ANIM.all=!ANIM.all; mo.innerHTML=ANIM.all?_MOICO.pause:_MOICO.play; mo.classList.toggle("on",!ANIM.all); }; }   // manual toggle cancels any pending settle auto-resume
   var mk=function(cls){ var d=document.createElement("div"); d.className=cls; return d; };
   var grpWith=function(label, child){ var g=mk("grp"); g.innerHTML='<div class="grplbl">'+label+'</div>'; if(child) g.appendChild(child); return g; };
   var pillHTML=function(grp, opts, cur){ var s='<div class="pill" data-grp="'+grp+'">';
@@ -4016,9 +4049,10 @@ window.__uniApplyDeepLinks=function(){   /* the ENTITY MODEL is applied FIRST (s
      names{}), which is why it appeared to do nothing: it did nothing, by design. */
   if(!window.__modelDone){ window.__modelDone=true; var _want=_UNIMODEL;
     if(_want&&_want!=="claim"){ try{ if(_applyEntityModel(_want,{noStore:true})) _switched=true; else console.info("gabe-universe: the settled entity model \""+_want+"\" is not on this feed — showing the claim registry (regen the centre to weigh the other three)"); }catch(e){} } }
-  if(jv && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
+  var _resumed=false; if(!window.__resumeDone){ window.__resumeDone=true; try{ _resumed=__uniResumeApply(); }catch(e){} }   /* a RESUME beats the URL: it is the reader's own place, one render switch old */
+  if(jv && !_resumed && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
     if(j) __uniJrnStart(j.cid); else console.info("gabe-universe: ?journey="+jv+" names no journey (workflows tab lists them)"); }catch(e){} }
-  if(ev && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
+  if(ev && !_resumed && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
 window.UNICAP={ on:false, threshold:80, open:{} };   // DEFAULT OFF and NEVER WRITTEN since 2026-09-07 (the CAPSULES option was dropped — operator): simplification is the tier control; the fold machinery is dormant
 var _CAPST=null;   // {nodes:[...], links:[...], caps:[capIds], byPiece:{pieceId:capId}}
 window.__uniApplyCapsules=function(){ try{
@@ -5336,7 +5370,8 @@ function copyText(txt){ var ok=false;
   if(!ok && navigator.clipboard){ try{ navigator.clipboard.writeText(txt); ok=true; }catch(e){} }
   return ok; }
 function hexNums(o){ return JSON.parse(JSON.stringify(o), function(k,v){ return (typeof v==="number" && (k==="color"||k==="col")) ? "#"+("000000"+(v>>>0).toString(16)).slice(-6) : v; }); }   // render colour ints as hex strings so a pasted config is readable
-function configSnapshot(){ return { CFG:CFG, STARC:hexNums(STARC), SATC:SATC, DEPC:DEPC, INTC:INTC, CONN:hexNums(CONN) }; }   // the right-panel tunables
+/* configSnapshot() went with the copy-settings button it was the only caller of (operator 2026-09-07 — the
+   Connections pane's own ⧉ in the fleet slide-out is a different, per-pane export and is untouched). */
 function encSnapshot(){ return { INTC:INTC }; }   // the left-panel transport calibration (satellites settled + baked)
 function flashBtn(b){ if(!b) return; var t=b.textContent; b.textContent="✓"; setTimeout(function(){ b.textContent=t; },900); }
 function buildCfg(){ var trip=[{v:"faint",t:"faint"},{v:"ghost",t:"ghost"},{v:"film",t:"film"}];
@@ -5376,7 +5411,6 @@ function wireCfg(){
   var rmn=document.getElementById("radMinus"); if(rmn) rmn.onclick=function(){ stepRad(-1); };   // − tighter · + looser (replaces tight/loose labels)
   var rpl=document.getElementById("radPlus"); if(rpl) rpl.onclick=function(){ stepRad(1); };
   document.getElementById("cfgmin").onclick=function(){ var c=document.getElementById("cfg"); c.classList.toggle("min"); this.textContent=c.classList.contains("min")?"+":"–"; };
-  var cc=document.getElementById("cfgcopy"); if(cc) cc.onclick=function(e){ e.stopPropagation(); copyText(JSON.stringify(configSnapshot(),null,2)); flashBtn(this); };
   dragCfg(); }
 var _drag={on:false,ox:0,oy:0};
 function dragCfg(){ var c=document.getElementById("cfg"), h=document.getElementById("cfghead");
