@@ -368,6 +368,7 @@
   #walkbar .widle{ font:400 10.5px/1.5 var(--font-ui); color:var(--muted); }
   /* the chips WRAP into rows, so a long journey grows the panel downward off the screen — and the later
      steps are exactly the ones a reader is trying to reach. Cap it and let it scroll. */
+  #cfg{ z-index:45; }   /* above #ctrlp (z-44): at 56vh a long trail reaches the controls panel, and the trail is the thing being read (review 2026-09-08) */
   #cfg .cfgbody{ max-height:56vh; overflow-y:auto; overscroll-behavior:contain; }
   #cfg .cfgbody::-webkit-scrollbar{ width:7px; }
   #cfg .cfgbody::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
@@ -1262,7 +1263,7 @@ var _FE=(_C4.fe&&_C4.fe.pieces&&_C4.fe.pieces.length)?_C4.fe:null, FE_HOME={}, F
 /* ── NAMING (naming-plan.md Phase 3, 2026-09-06): a name is a RENDERING over an unchanged id. The emitter computed every candidate
    name once (`c4.models.rosters.*[].names{}`) and the convention FORMS with the project's words (`c4.models.naming.fe.forms`);
    the station substitutes `{name}` · `{name|camel}` · `{name|pascal}` — the case mark applies to the leading word-run (up to the
-   first " · " or " — "). Precedence: URL ?naming=/?feconv= > localStorage > the feed's default (config or built-in). Without a
+   first " · " or " — "). The choosers and their ?naming=/?feconv= links were removed 2026-09-07, so there is no precedence left: both read the FEED's default (center.config.json#naming, else built-in). Without a
    naming block (an older feed) the label is exactly today's: "fe · <key>" for a frontend home, the key otherwise. ── */
 window.__uniNaming=null; window.__uniFeConv=null;   // the reader's choices (null → the feed's default)
 window.__uniNamingBlock=function(){ var m=(window.GABE_C4&&GABE_C4.models)||null; var nb=m&&m.naming; return (nb&&nb.present!==false&&nb.positions)?nb:null; };
@@ -1779,7 +1780,6 @@ function roleBadge(role){ var cv=document.createElement('canvas'); cv.width=cv.h
 function countBadge(nn){ var cv=document.createElement('canvas'); cv.width=cv.height=128; var c=cv.getContext('2d'); if(window.__badgeGlyph) window.__badgeGlyph(c,'count',nn); else { c.fillStyle='#0e9aa7'; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill(); } var _o=(typeof CFG!=='undefined'&&CFG.mbOp!=null)?CFG.mbOp:0.95, _z=(typeof CFG!=='undefined'&&CFG.mbSize!=null)?CFG.mbSize:3.5, _x=(typeof CFG!=='undefined'&&CFG.mbX!=null)?CFG.mbX:2, _y=(typeof CFG!=='undefined'&&CFG.mbY!=null)?CFG.mbY:-2.5; var s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv), transparent:true, opacity:_o, depthWrite:false, depthTest:false })); s.scale.set(_z,_z,1); s.position.set(_x,_y,4); s.raycast=function(){}; if(window.__uniBadges) window.__uniBadges.push(s); return s; }
 function feclassBadge(fc, kind){ var cv=document.createElement('canvas'); cv.width=cv.height=128; var c=cv.getContext('2d'); if(window.__badgeGlyph) window.__badgeGlyph(c,kind||'feclass',fc); else { c.fillStyle='#8a8f98'; c.beginPath(); c.arc(64,64,58,0,6.2832); c.fill(); } var _o=(typeof CFG!=='undefined'&&CFG.mbOp!=null)?CFG.mbOp:0.95, _z=(typeof CFG!=='undefined'&&CFG.mbSize!=null)?CFG.mbSize:3.5, _x=(typeof CFG!=='undefined'&&CFG.mbX!=null)?CFG.mbX:2, _y=(typeof CFG!=='undefined'&&CFG.mbY!=null)?CFG.mbY:-2.5; var s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv), transparent:true, opacity:_o, depthWrite:false, depthTest:false })); s.scale.set(_z,_z,1); s.position.set(_x,_y,4); s.raycast=function(){}; if(window.__uniBadges) window.__uniBadges.push(s); return s; }
 function buildNode(n){
-  var grp=new T.Group(); var col=iconCol(n), br=massR(n);
   var grp=new T.Group(); var col=iconCol(n), br=massR(n);
   var ic, is=ENC.iconSize;
   var _ik=(n.kind==="component"&&n.feClass==="view"&&billTex["screen"])?"screen":n.kind;   /* VIEW wears the SCREEN glyph (operator) */ if(billTex[_ik]){ ic=billboardMesh(_ik,col); ic.scale.set(is,is,1); }   // ICON = a CONSTANT display size (operator-set), same for every element
@@ -3951,7 +3951,6 @@ window.__uniScaleGuard=function(){ var n=(typeof nodes!=="undefined"&&nodes)?nod
   try{ console.info("gabe-universe: "+n+" nodes > budget "+b+" — booted at tier 0 (Skeleton); raise window.__uniBudget to draw more"); }catch(e){} return true; };
 window.__uniApplyDeepLinks=function(){   /* the ENTITY MODEL is applied FIRST (so ?ent= resolves against its clusters) · ?journey=<name|cid> opens ONE walk · ?ent=<slug> opens that entity's panel — the ramp-up's "one trace per session" (review 2026-09-06) */
   var jv=window.__jrn, ev=window.__ent;
-  var _switched=false;
   /* SETTLED 2026-09-07 (operator): no ?model=, no stored key, no pill. The station always shows `seeded`.
      The NAMES strategy and the FRONTEND MARK lost their choosers in the same ruling — __uniStrategy() and
      __uniConvention() now read the FEED's own defaults every time, which is the naming strategy the emitter
@@ -3959,7 +3958,7 @@ window.__uniApplyDeepLinks=function(){   /* the ENTITY MODEL is applied FIRST (s
      could never change a claim or a seeded label in the first place (only a derived/candidate row carries
      names{}), which is why it appeared to do nothing: it did nothing, by design. */
   if(!window.__modelDone){ window.__modelDone=true; var _want=_UNIMODEL;
-    if(_want&&_want!=="claim"){ try{ if(_applyEntityModel(_want,{noStore:true})) _switched=true; else console.info("gabe-universe: the settled entity model \""+_want+"\" is not on this feed — showing the claim registry (regen the centre to weigh the other three)"); }catch(e){} } }
+    if(_want&&_want!=="claim"){ try{ if(!_applyEntityModel(_want,{noStore:true})) console.info("gabe-universe: the settled entity model \""+_want+"\" is not on this feed — showing the claim registry (regen the centre to weigh the other three)"); }catch(e){} } }
   if(jv && !window.__jrnDone){ window.__jrnDone=true; try{ var lv=String(jv).toLowerCase(); var j=_jrnCollect().filter(function(x){ return x.cid===jv || String(x.name||"").toLowerCase()===lv; })[0];
     if(j) __uniJrnStart(j.cid); else console.info("gabe-universe: ?journey="+jv+" names no journey (workflows tab lists them)"); }catch(e){} }
   if(ev && !window.__entDone){ window.__entDone=true; try{ if(window.__uniPanelEnt) __uniPanelEnt(ev); }catch(e){} } };
@@ -4173,12 +4172,13 @@ window.__uniBadges=[];
    is paused. Playing, it runs every frame as before (node positions move under the badges while the sim
    ticks); paused and still, the per-frame matrix work and its buffer upload stop — which on the instanced
    path is the only per-frame cost there was, and is why the button did nothing visible there. */
-var _mbCamKey=null;
+var _mbCamKey=null, _mbBadgeN=-1;
 (function _mbTick(){ requestAnimationFrame(_mbTick);
   var _c0=(typeof Graph!=="undefined"&&Graph)?Graph.camera():null;
   if(_c0){ var _e0=_c0.matrixWorld.elements, _k=_e0[0]+","+_e0[1]+","+_e0[2]+","+_e0[12]+","+_e0[13]+","+_e0[14];
     var _moved=(_k!==_mbCamKey); _mbCamKey=_k;
-    if(!_moved && typeof ANIM!=="undefined" && !ANIM.all) return; }
+    var _n=(window.__uniBadges||[]).length, _grew=(_n!==_mbBadgeN); _mbBadgeN=_n;   /* a rebuild while paused mints badges at their raw local default; skipping the loop would leave them there until the camera moved (review 2026-09-08) */
+    if(!_moved && !_grew && typeof ANIM!=="undefined" && !ANIM.all) return; }
   var arr=window.__uniBadges; if(!arr||!arr.length||typeof Graph==="undefined"||!Graph) return;
   var cam=Graph.camera(); if(!cam) return; var e=cam.matrixWorld.elements;   // cols: [0..2]=right · [4..6]=up · [8..10]=toward-viewer
   var ox=(typeof CFG!=="undefined"&&CFG.mbX!=null)?CFG.mbX:2, oy=(typeof CFG!=="undefined"&&CFG.mbY!=null)?CFG.mbY:-2.5,
@@ -4762,8 +4762,8 @@ window.__uniLegRef=function(){
     var nb=(window.__uniNamingBlock?__uniNamingBlock():null);
     if(nb){ var k=__uniStrategy(), c=__uniConvention(), ex=null; try{ var _r=((window.GABE_C4.models.rosters||{}).derived||[]).filter(function(x){ return x.kind==="feature"&&x.name&&(k==="domain"||(x.names&&x.names[k]&&x.names[k]!==x.name)); })[0]; if(_r) ex=_r.name+" → "+(window.__uniEntLabel?__uniEntLabel(_r.id):_r.names[k]); }catch(e){}
       var fef=(nb.fe&&nb.fe.forms&&nb.fe.forms[c])||null, mark=fef?(__uniRender(fef.fe,"my feature")+" · "+__uniRender(fef.be,"my feature")):"— (no frontend on this feed)";
-      rows.push(["naming","names: "+k,'<span class="lrbadge">Aa</span>',"the words a cluster wears — "+k+(ex?(" (e.g. "+ex+")"):"")+"; a rendering over the same ids, chosen in the config panel or by ?naming="]);
-      rows.push(["mark","frontend mark: "+c,'<span class="lrbadge">'+_esc(fef?__uniRender(fef.fe,"fe"):"—")+'</span>',"how a frontend home is told apart: "+mark+"; the id underneath never changes (?feconv=)"]); }
+      rows.push(["naming","names: "+k,'<span class="lrbadge">Aa</span>',"the words a cluster wears — "+k+(ex?(" (e.g. "+ex+")"):"")+"; a rendering over the same ids, set by this project's center.config.json#naming"]);
+      rows.push(["mark","frontend mark: "+c,'<span class="lrbadge">'+_esc(fef?__uniRender(fef.fe,"fe"):"—")+'</span>',"how a frontend home is told apart: "+mark+"; the id underneath never changes"]); }
     rows.forEach(function(r){ var vw=views[r[0]], absent=!!(vw&&vw.present===false);
       h+='<div class="lrrow lrb'+(absent?' lrdim':'')+'"><span class="lrico">'+r[2]+'</span><div class="lrtx"><b>'+_esc(r[1])+'</b><i>'+_esc(absent?("not on this feed — "+(vw.reason||"")):((window.__uniModel||"claim")===r[0]?"showing now":""))+'</i></div><div class="lrdef">'+_esc(r[3])+'</div>'+_tierCell(null,"any")+'</div>'; });
     return h+'</div>'; }
@@ -4847,7 +4847,7 @@ window.__uniJrnDetail=function(){
   function _stepData(n){ var op="", opk="", note="", inG=[], stG=[], outG=[], fields=null;
     if(n.kind==="endpoint"){ var m=(n.m&&n.m.method)||"";
       inG=_mergeG(_grp(n.id,"in",{bridge:"fetched by",fecall:"fetched by"}), _grp(n.id,"out",{consumes:"takes"}));   /* `consumes` is the REQUEST SHAPE — emitted by _a3_graph since the schema arm, routed nowhere before this beat */
-      outG=_mergeG(_grp(n.id,"out",{handler:"handled by"}), _grp(n.id,"out",{returns:"returns",serializes:"serializes"}));   /* …the HANDLER it routes to, and the response shape as the mirror of `consumes` */
+      outG=_grp(n.id,"out",{handler:"handled by"});   /* the HANDLER it routes to. There is NO response-shape wire to pair with `consumes`: `returns` is emitted by no generator, and `serializes` runs schema→model, never endpoint→schema — the response is an endpoint FIELD (`resp`), exactly like the dead key removed from the schema branch. Naming them here only looked like coverage. */
       if(m==="GET"){ op="reads"; opk="read"; stG=_grpRW(n.id,"out",{reads_from:"reads",touches:"reads"},"r"); }
       else if(m==="POST"||m==="PUT"||m==="PATCH"){ op="writes"; opk="write"; stG=_grpRW(n.id,"out",{writes_to:"writes",touches:"writes"},"w"); }
       else if(m==="DELETE"){ op="deletes"; opk="write"; stG=_grpRW(n.id,"out",{writes_to:"writes",touches:"writes"},"w"); }
@@ -4873,7 +4873,7 @@ window.__uniJrnDetail=function(){
     else if(n.kind==="schema"){ op="a body shape"; opk="schema"; fields=(n.det&&n.det.cols)||null;
       inG=_grp(n.id,"in",{takes:"taken by",consumes:"taken by"});
       stG=_grpRW(n.id,"out",{serializes:"serializes"},"w");
-      outG=_grp(n.id,"in",{returns:"returned by",serializes:"serialized by"}); }   /* the dead `resp` key is GONE — resp is an endpoint FIELD (_a3_graph writes it on the node), never a wire */
+      outG=_grp(n.id,"in",{serializes:"serialized by"}); }   /* `resp` AND `returns` are both gone: resp is an endpoint FIELD (_a3_graph writes it on the node) and `returns` is emitted by no generator — a key that cannot match is not coverage (review 2026-09-08) */
     else if(n.kind==="store"){ op=(n.client&&n.det&&n.det.via)?("client state · "+n.det.via):"client state"; opk="store"; fields=(n.det&&n.det.cols)||null;
       if(n.client&&n.det&&n.det.ops) note=({r:"the app READS this key",w:"the app WRITES this key",rw:"the app reads AND writes this key"})[n.det.ops]||"";
       outG=_mergeG(_grp(n.id,"in",{reads:"read by"}), _grp(n.id,"in",{uses:"used by"})); }   /* D5: the store is the frontend's table — its fields ARE the STORE cell. The dead "uses-store" key is GONE: FE_REL rewrites that rel to `reads` before a link is built */
@@ -4972,7 +4972,12 @@ window.__uniJrnDetail=function(){
     h+='<div class="cpsep"></div>'+_cpHdr(colNode)+_cpFields(colNode)+'<div class="cpclick">click → open '+_esc(colNode.label)+' in the graph</div>';
     _jdPop(anchor, h); }
   // FROM/TO cell popover — the FULL grouped content (every relation + every name, uncut) (operator 2026-09-03)
-  function _jdFlowPop(anchor, groups, title, side){ if(!groups||!groups.length){ _jdPop(anchor, '<div class="cphd"><b>'+_esc(title)+'</b></div><div class="cpempty">nothing '+(side==="from"?"comes in":"goes out")+' at this step</div>'); return; }
+  function _jdFlowPop(anchor, groups, title, side){ if(!groups||!groups.length){
+    /* the columns became IN · STORE · OUT (2026-09-07) and this line kept branching on the retired "from",
+       so every empty IN and STORE cell read "nothing goes out at this step" — only OUT was right, by accident.
+       STORE is not a DIRECTION, so it needs its own phrase rather than the other half of a two-way swap. */
+    var _mt=(side==="in")?"nothing reaches this step":(side==="store")?"this step holds no data":"nothing goes out from this step";
+    _jdPop(anchor, '<div class="cphd"><b>'+_esc(title)+'</b></div><div class="cpempty">'+_mt+'</div>'); return; }
     _jdPop(anchor, '<div class="cphd"><b>'+_esc(title)+'</b></div><div class="cpf">'+groups.map(function(g){
       return '<div class="cpgrp"><div class="cpgrl">'+_esc(g.rel)+'</div>'+g.names.map(function(n){ return '<div class="cpfn2">'+_esc(n)+'</div>'; }).join("")+'</div>'; }).join("")+'</div>'); }
   // header INFO popovers — what each column means (operator 2026-09-03)
@@ -5266,7 +5271,6 @@ function copyText(txt){ var ok=false;
   try{ var ta=document.createElement("textarea"); ta.value=txt; ta.style.cssText="position:fixed;top:0;left:0;opacity:0"; document.body.appendChild(ta); ta.focus(); ta.select(); ok=document.execCommand("copy"); document.body.removeChild(ta); }catch(e){}
   if(!ok && navigator.clipboard){ try{ navigator.clipboard.writeText(txt); ok=true; }catch(e){} }
   return ok; }
-function hexNums(o){ return JSON.parse(JSON.stringify(o), function(k,v){ return (typeof v==="number" && (k==="color"||k==="col")) ? "#"+("000000"+(v>>>0).toString(16)).slice(-6) : v; }); }   // render colour ints as hex strings so a pasted config is readable
 /* configSnapshot() went with the copy-settings button it was the only caller of (operator 2026-09-07 — the
    Connections pane's own ⧉ in the fleet slide-out is a different, per-pane export and is untouched). */
 function encSnapshot(){ return { INTC:INTC }; }   // the left-panel transport calibration (satellites settled + baked)
@@ -5885,7 +5889,7 @@ var KINDCARD=(function(){
       var _nb=(window.__uniNamingBlock?__uniNamingBlock():null);
       if(_nb){ var _k=__uniStrategy(), _c=__uniConvention(), _cv=_nb.coverage||{}, _fe=_nb.fe||{}, _wd=_fe.words||{};
         w.append(srcRow("info","names", (_nb.config_error?("⚠ "+_nb.config_error+" · "):"")+_k+" ("+(window.__uniNaming?"your choice · project default: "+_nb["default"]:("project default"+(_nb.source==="built-in"?" (built-in)":"")))+") · "+(_cv[_k]!=null?_cv[_k]:_cv.rows||0)+"/"+(_cv.rows||0)+" named"+(((_nb.collisions||{}).path&&_k==="path")?(" · "+_nb.collisions.path+" collide"):"")+(((_nb.long||{})[_k])?(" · "+_nb.long[_k]+" truncated at "+(((_nb.caps||{}).name_max)||40)):"")+" · frontend mark: "+(_fe.present===false?("none — "+(_fe.reason||"no frontend")):(_c+(_c==="case"?(" ("+((_fe.case||{}).frontend)+"/"+((_fe.case||{}).backend)+")"):(_c==="suffix"||_c==="bracket")?(" ("+_wd.frontend+"/"+_wd.backend+")"):"")+(window.__uniFeConv?" · your choice":"")+(_fe.homes!=null?(" · "+_fe.homes+" homes"):"")+(_fe.twins!=null?(" · "+_fe.twins+" twins"):"")))+" · source: "+_nb.source+(_nb.unused_words&&_nb.unused_words.length?(" · "+_nb.unused_words.length+" unused word(s): "+_nb.unused_words.slice(0,3).join(", ")):"")+(_nb.unknown_entities&&_nb.unknown_entities.length?(" · unknown entities: "+_nb.unknown_entities.slice(0,3).join(", ")):""),
-          "the WORDS a cluster wears and the mark that tells a frontend home from a backend one — both a rendering over the same ids (the claim slug and every cluster id are unchanged). Pick them in the config panel (NAMES · FRONTEND MARK) or with ?naming= and ?feconv=; the project's default lives in center.config.json#naming.")); }
+          "the WORDS a cluster wears and the mark that tells a frontend home from a backend one — both a rendering over the same ids (the claim slug and every cluster id are unchanged). SETTLED 2026-09-07: there is no chooser — both come from the project's own center.config.json#naming.")); }
       if(st.elements&&st.elements.present){ var _elOn=(window.__uniKindState&&__uniKindState.element)||"all";
         w.append(srcRow("info","elements", st.elements.files+" unclaimed file(s) in the map"+(st.elements.truncated?" (capped at the element budget)":"")+" · "+st.elements.fns+" function(s) named"+(st.elements.unparseable?(" · "+st.elements.unparseable+" unparseable"):"")+(_elOn==="off"?" · hidden at this tier (drawn from Trace)":" · drawn"),
           "backend .py files no entity's code.* claims — the element census names them and the map draws them muted in the unclaimed area from tier Trace, so the blind spot has a shape; TypeScript files no piece claims are not minted (deferred — the design record names the trigger)")); }

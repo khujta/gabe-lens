@@ -578,6 +578,27 @@ check(not any(q.get("client") for q in _feC["pieces"] if q["id"] in ("fe:store:w
 _HK = [q for q in _feC["pieces"] if q["file"] == "src/hooks/useAuth.ts" and not q.get("client")]
 check(len(_HK) == 1 and _HK[0]["kind"] == "hook" and _HK[0]["name"] == "useAuth",
       f"client-store GUARD: the hook file's principal piece is still the HOOK — a key never enters file_pieces ({[(q['kind'], q['name']) for q in _HK]})")
+# The extractor's file_refs is the WHOLE-FILE walk, so a key inside an export body appears there too. Without
+# a claim set the module-scope pass re-files it on the file's PRINCIPAL — and where the principal is not the
+# namer (a route beside a component) that piece gains a uses-store wire to state it never touches, and a place
+# on the state spine with it. Review 2026-09-08, confirmed by reproduction.
+_XD = {"byFile": {"src/features/x/Screen.tsx": {"bindings": {},
+    "exports": [{"name": "Route", "kind": "call:createFileRoute", "hasJsx": False, "calls": ["createFileRoute"], "arg0": "/x"},
+                {"name": "Panel", "kind": "function", "hasJsx": True, "jsx": ["Row"],
+                 "storage": [["localStorage", "setItem", "panel_open"]]}],
+    "file_refs": {"calls": [], "jsx": [], "hasJsx": True, "storage": [["localStorage", "setItem", "panel_open"]]}}}}
+_feD = _a3_fe.build_fe(_XD, None, [])
+_CD = sorted(_feD["pieces"][e[0]]["id"] for e in _feD["edges"] if _feD["pieces"][e[1]].get("client"))
+check(_CD == ["fe:src/features/x/Screen.tsx#Panel"],
+      f"client-store GUARD: a key is wired ONLY to the export that names it — the module-scope pass must not re-file it on the file's principal ({_CD})")
+# …and a key that appears ONLY at module scope must still mint and wire to the principal
+_XM = {"byFile": {"src/api/c.ts": {"bindings": {}, "exports": [{"name": "apiFetch", "kind": "function", "hasJsx": False}],
+    "file_refs": {"calls": [], "jsx": [], "hasJsx": False, "storage": [["localStorage", "getItem", "tok"]]}}}}
+_feM = _a3_fe.build_fe(_XM, None, [])
+_CM = [(_feM["pieces"][e[0]]["id"], _feM["pieces"][e[1]]["name"]) for e in _feM["edges"] if _feM["pieces"][e[1]].get("client")]
+check(_CM == [("fe:src/api/c.ts", "tok")],
+      f"client-store FIRE: a key that appears ONLY at module scope still mints and rides the principal — the claim set must not swallow it ({_CM})")
+
 # SILENT: the same corpus with every key stripped is byte-identical to a tree that never knew the arm.
 _XCs = {"byFile": {k: dict(v, exports=[{kk: vv for kk, vv in ex.items() if kk not in ("storage", "queryKeys")} for ex in v["exports"]]) for k, v in _XC["byFile"].items()}}
 _feCs = _a3_fe.build_fe(_XCs, None, [])

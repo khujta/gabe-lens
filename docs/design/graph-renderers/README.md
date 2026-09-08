@@ -112,7 +112,7 @@ not in this set), so it is not the lab's 0.60 measured over all 1,351 — a like
 its boot tier the station's own zForce + EX band + `recomputeSubAnchors` keeps the drawn entities together, so on this estate the render path,
 not the layout engine, is the beat that changes what the operator sees; D7 (the bake) moves down the list.
 
-**The move this licenses — SHIPPED 2026-09-07** (`?render=instanced`, default off; the gabe-universe battery carries it as `instOk`): the hollow render path INSIDE the real station — `nodeThreeObject` returns an
+**The move this licensed — SHIPPED 2026-09-07, REMOVED 2026-09-08** (see the banner above; kept in the past tense because this paragraph is the RECORD of what was built, not a description of the station): the hollow render path INSIDE the real station — `nodeThreeObject` returns an
 empty `Object3D`, `linkThreeObject` likewise, and the instanced layers of `three-kit.js` (forms · badge atlas · label atlas · wires per kind ·
 particles) draw into `Graph.scene()` from the wrapper's own node positions each frame; hulls, journeys, depth highlight and the legend keep
 their code because they never went through the wrapper's per-node objects. Behind a knob (`?render=instanced`, default off until the
@@ -164,7 +164,7 @@ the draw-call and heap columns, not `frame ms`.
 > at onyx scale (≈3.9k nodes) where 39k draw calls per frame is the thing standing between the operator and
 > the picture.
 
-**PROMOTED TO THE DEFAULT — 2026-09-07**, on the operator's own GPU ("it really accelerates the renderization"), which is the read swiftshader
+**PROMOTED TO THE DEFAULT — 2026-09-07, then REMOVED 2026-09-08 (banner above)**, on the operator's own GPU ("it really accelerates the renderization"), which is the read swiftshader
 could not give. `?render=objects` — or the stored `objects` — is the way back, and a lightning-bolt toggle beside the FLEET title flips it.
 Two things had to be settled first, and both are measurements, not opinions:
 

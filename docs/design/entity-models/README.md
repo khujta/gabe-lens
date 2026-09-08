@@ -163,7 +163,7 @@ noun IS the domain word; the human renames on acceptance.
 `tests/entity-models` (the emitter, 69, every rule with a named mutation lever) · `tests/arch-graph` (byte-identity when
 stripped; element nodes) · `tests/levels` (the function half) · `tests/center` (the wiring; a raising build leaves both
 files with the honest absence; the twin driver lands a new required generator) · `tests/gabe-universe` (584 static + the
-headless switch proof: identity · feed counts · registry · abstain · the claim join · a walk survives · dashed aspect · verdict
+headless SETTLED proof (the switch it once proved was removed 2026-09-07: the station is fixed on `seeded`, and the battery now demands the DELTAS — counts matching the feed and pieces whose home really differs from their claim): identity · feed counts · registry · abstain · the claim join · a walk survives · dashed aspect · verdict
 badge · the claim round trip · honest-empty; mutation-proven) · `tests/codebase-graph` (claim-only pin) · `tests/gabe-map`
 (187, the 18th tool) · `tests/pulse-angles` (89, S9 two arms + S18) · `tests/entity-drift` (green unchanged — the rewire is
 reporting-only) · `tests/draft-entities` (18, projection equality with two mutants).

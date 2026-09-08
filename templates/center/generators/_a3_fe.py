@@ -518,11 +518,18 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
         #    NEVER entered into file_pieces/ids — _PRINCIPAL ranks store (1) above hook (2) and component
         #    (3), so a key piece filed under a component would HIJACK that file's principal piece and
         #    steal its screen absorption and its module-scope refs. `ops` records r / w / rw honestly.
+        # The extractor's `file_refs` is the WHOLE-FILE walk, so every key inside an export body appears
+        # there TOO. Without this claim set the module-scope pass re-attributes each key to the file's
+        # PRINCIPAL piece — and when the principal is not the export that names it (a route beside a
+        # component, say) the principal gains a `uses-store` wire to state it never touches, and with it a
+        # place on the state spine. The neighbouring calls/jsx loops already guard this way; this one did not.
+        _claimed: set[tuple[str, str, str]] = set()
         for _ex in ([e for e in (rec.get("exports") or []) if not e.get("reexport")]
                     + [dict(rec.get("file_refs") or {}, name=None)]):
             _src = (export_piece.get((path, _ex.get("name") or "")) if _ex.get("name") else None) or principal.get(path)
             if not _src:
                 continue
+            _modscope = not _ex.get("name")
             _keys: list[tuple[str, str, str]] = []       # (via, key, op)
             for _t in _ex.get("storage") or []:
                 if not (isinstance(_t, (list, tuple)) and len(_t) == 3):
@@ -535,6 +542,9 @@ def build_fe(extract: dict[str, Any], entities: dict[str, Any] | frozenset[str] 
                 if _k:
                     _keys.append((_QUERY_VIA, _k, "r"))   # a queryKey names the cache entry the piece READS or invalidates
             for _via, _k, _op in _keys:
+                if _modscope and (_via, _k, _op) in _claimed:
+                    continue                             # an export already owns this key — never re-file it on the principal
+                _claimed.add((_via, _k, _op))
                 _pid = f"fe:store:{_via}#{_k}"
                 _p = pieces.get(_pid)
                 if _p is None:

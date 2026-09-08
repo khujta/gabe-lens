@@ -1113,6 +1113,23 @@ check('class="jdstep' in page and 'data-si="' in page and 'WALK.i=i; try{ _walkG
 check('function _stepData(n){' in page and 'function _dataHTML(sd){' in page and 'function _groupsHTML(gs){' in page and 'function _grp(id, dir, spec){' in page and 'function _grpRW(id, dir, spec, rw){' in page and 'function _storeHTML(sd){' in page and 'function _fieldsHTML(sd){' in page and 'class="jdentdot"' in page and 'class="jdenc"' in page and 'class="jdencE"' in page and 'class="jdencC"' in page and 'class="jdopc"' in page and 'class="jdin"' in page and 'class="jdstore"' in page and 'class="jdout"' in page and 'class="jdrel"' in page and 'class="jdrw jdrw-' in page and 'op="guards"; opk="gate"; note="evaluates "' in page,
       "the journey-detail merged entity·cluster cell, the OPERATION column, or the RELATION-labelled IN/STORE/OUT groups (_grp/_grpRW/_groupsHTML/_storeHTML/.jdrel/.jdrw) are gone")
 # FACE (2026-09-07): the from/to pair is RETIRED — three columns, and the two keys that could never match are gone.
+# The empty-cell popover kept branching on the retired side==="from" through the whole FACE beat, so every
+# empty IN and STORE cell read "nothing goes out at this step" — only OUT was right, by accident. Nothing
+# pinned the STRING, which is why the rename sweep missed it. STORE is not a direction, so it is three
+# phrasings, not a two-way swap. (review 2026-09-08)
+check('var _mt=(side==="in")?"nothing reaches this step":(side==="store")?"this step holds no data":"nothing goes out from this step";' in page
+      and 'side==="from"' not in page,
+      "step-card FIRE: the empty-cell popover must phrase all THREE columns — a two-way from/to branch cannot describe STORE, which is not a direction")
+# A relation key that can never match is not coverage. `returns` is emitted by NO generator and `serializes`
+# runs schema→model, so neither could ever appear on an endpoint's outgoing side. (review 2026-09-08)
+check('{returns:"returns",serializes:"serializes"}' not in page and '{returns:"returned by"' not in page
+      and 'outG=_grp(n.id,"out",{handler:"handled by"});' in page,
+      "step-card REGRESSION: a never-emitted relation key is back in a _stepData spec — `returns` is emitted by nothing and `serializes` runs schema→model, so on an endpoint's OUT they only looked like coverage")
+check('#cfg{ z-index:45; }' in page,
+      "trail-panel FIRE: the trail must sit ABOVE #ctrlp (z-44) — at its 56vh cap a long journey reaches the controls panel, and the trail is the thing being read")
+check('var _n=(window.__uniBadges||[]).length, _grew=(_n!==_mbBadgeN); _mbBadgeN=_n;' in page
+      and 'if(!_moved && !_grew && typeof ANIM!=="undefined" && !ANIM.all) return; }' in page,
+      "pause-gate FIRE: the badge loop must also run when the badge SET changed — a rebuild while paused mints badges at their raw local default, and a camera-only gate leaves them there until the view moves")
 check('class="jdfrom"' not in page and 'class="jdto"' not in page and 'sd.fromG' not in page and 'sd.toG' not in page,
       "step-card REGRESSION: the retired from/to pair is back — the columns are IN · STORE · OUT")
 check("resp:\"returned by\"" not in page and "\"uses-store\":\"used by\"" not in page,
@@ -1155,9 +1172,9 @@ check('.cooldownTicks(240).onEngineTick(updateClusters)' not in page, "settle la
 # show/hide presets keep the right, and the copy-settings button is gone with the only function that fed it.
 check('id="cfgcopy"' not in page and 'function configSnapshot()' not in page,
       "fleet-header REGRESSION: the copy-settings button (or the configSnapshot it was the only caller of) is back — it was retired 2026-09-07")
-check('#fleet .cfgtitle{ flex:0 0 auto; }' in page
-      and page.find('id="flrender"') < page.find('id="motionBtn"') < page.find('class="flprehead"') < page.find('id="fleetmin"'),
-      "fleet-header FIRE: render + motion must sit LEFT beside the title (the title stops expanding) and BEFORE the show/hide presets, which keep the right")
+check('#fleet .cfgtitle{ flex:0 0 auto; }' in page and 'id="flrender"' not in page
+      and 0 < page.find('id="motionBtn"') < page.find('class="flprehead"') < page.find('id="fleetmin"'),
+      "fleet-header FIRE: the motion toggle must sit LEFT beside the title (the title stops expanding) and BEFORE the show/hide presets, which keep the right. The render button it used to precede was deleted with the instanced path — naming it here made the first comparison vacuously true (page.find returns -1), so the row only half-tested itself (review 2026-09-08)")
 # the motion toggle draws an ICON. It was a ⏸/▶ text glyph, which carries its own metrics and sat off the
 # line its neighbours share — and FOUR places write that button, so one of them reverting is enough to break it.
 check('var _MOICO={ pause:' in page and 'mo.innerHTML=ANIM.all?_MOICO.pause:_MOICO.play;' in page
@@ -1310,21 +1327,36 @@ check(bool(_ls) and '_connSection()+_planetSection()+_modelSection()' in page an
 check(all(k in page for k in ('window.__uniNameOf=function(id)','window.__uniRender=function(form, name)','window.__uniCaseRun=function(run, how)','window.__uniStrategy=function()','window.__uniConvention=function()')),
       "B3-naming: the formatter chain (__uniNameOf · __uniRender · __uniCaseRun · __uniStrategy · __uniConvention) is missing a link")
 check('{name|camel}' in page and '{name|pascal}' in page and '/^(.*?)( · | — )(.*)$/' in page, "B3-naming: the case tokens are not substituted on the leading word-run only")
-_en=page[page.find('if(!document.getElementById("entnaming"))'):page.find('if(!document.getElementById("entfeconv"))')]
-_ec=page[page.find('if(!document.getElementById("entfeconv"))'):page.find('/* ── SELECTED-LINE look SETTLED')]
 _ico=page[page.find('var ICO={'):page.find('function ico(g,w)')]
-check(bool(_ico) and all((k+":'") in _ico or (k+':GLYPH') in _ico for k in ('claim','seeded','derived','proposed','domain','table','path','action','config','both','prefix','suffix','bracket','tint','none')) and '"class":GLYPH.schema' in _ico and 'glyph:GLYPH.screen' in _ico and '"case":\'' in _ico,
-      "B3-icons: the ICO roster is missing a pill icon (claim · seeded · derived · proposed · domain · table · class · path · action · config · both · case · prefix · suffix · bracket · glyph · tint · none)")
-_rl=page[page.find('window.__uniRelabel=function()'):page.find('window.__uniSetNaming=function(k, opts)')]
-_sn=page[page.find('window.__uniSetNaming=function(k, opts)'):page.find('window.__uniAddWireView=function()')]
+# This used to pin 19 named glyphs — claim · seeded · derived · proposed · domain · table · class · path ·
+# action · config · both · case · prefix · suffix · bracket · glyph · tint · none — every one of which fed the
+# three choosers removed 2026-09-07 (and `cog`, which titled the retired Temporary Config). Pinning them KEPT
+# DEAD CODE ALIVE: the roster could not be trimmed without failing a green battery, which is the opposite of
+# what a test is for. What is actually load-bearing is the roster and its accessor, so that is what is pinned.
+# The dead entries are left in place deliberately — several roster keys are reached through DYNAMIC lookups
+# (ico(NICO[k]), iconTog(..., "star", ...)), so a name-by-name sweep is not safe from a string search alone.
+# TRIGGER for the cleanup: an ICO audit that resolves every dynamic call site, not a grep. (review 2026-09-08)
+check(bool(_ico) and 'function ico(g,w)' in page,
+      "B3-icons: the ICO roster or its accessor is gone")
 _dl2=page[page.find('window.__uniApplyDeepLinks=function()'):page.find('window.UNICAP={')]
 check('srcRow("info","names"' in page and 'your choice · project default' in page and 'frontend mark: ' in page and '_nb.config_error?("⚠ "' in page, "B9-naming: the Sources names clause (strategy · source · coverage · mark · a config error first) is missing")
 check('rows.push(["naming","names: "+k' in page and 'rows.push(["mark","frontend mark: "+c' in page, "B9-naming: the legend NAMES + FRONTEND MARK rows are missing")
 check('_lt.slice(0,_nmax-1)+"…"' in page, "the hull sprite must truncate at name_max with an ellipsis (an action phrase runs 100+ chars)")
-check('orphan' not in page[page.find('/* ── NAMING (naming-plan.md Phase 3'):page.find('/* LINKS: intra-entity')].lower() and 'orphan' not in _en.lower() and 'orphan' not in _ec.lower(), "R10: a naming string says 'orphan'")
+# R10 over the naming surface. The two pill slices this also swept (_en, _ec) went with the choosers on
+# 2026-09-07 — and because a slice with no anchors is the EMPTY STRING, `'orphan' not in ""` read True and
+# two thirds of this sweep silently stopped testing anything. It now sweeps the WHOLE page's naming region
+# plus the legend rows that survived, and asserts its slice is non-empty. (review 2026-09-08)
+_nmr=page[page.find('/* \u2500\u2500 NAMING (naming-plan.md Phase 3'):page.find('/* LINKS: intra-entity')]
+check(bool(_nmr), "battery INTEGRITY: the naming region slice is EMPTY — its anchors no longer exist, so the R10 sweep below is vacuous")
+check('orphan' not in _nmr.lower(), "R10: a naming string says 'orphan'")
 # ── the surfaces review (R2, 2026-09-06): the relabel keeps the reader's panel · one label funnel on the card · escaped sinks · synced pills ──
 check('window.__uniPView={lvl:"node", id:n&&n.id};' in page, "R2-naming: an element card records its level")
 _nm=page[page.find('function modelRow(n)'):page.find('function modelSec(ent)')]
+# A page SLICE whose anchors were deleted is the empty string, and every `x in ""` reads False while every
+# `x not in ""` reads True — a whole family of checks stops testing anything and stays green. Two slices
+# reached that state after the pill removal and nothing noticed. Assert the slices are non-empty. (2026-09-08)
+for _sname, _sv in (("_sm1", _sm1), ("_sm2", _sm2), ("_ico", _ico), ("_dl2", _dl2), ("_nm", _nm)):
+    check(bool(_sv), f"battery INTEGRITY: the page slice {_sname} is EMPTY — its anchors no longer exist, so every check reading it is vacuous")
 check('"fe · "' not in _nm and 'r.name+" · "' not in _nm and '(r&&r.name)?(l+" · "+_hslug(e)):l' in _nm, "R2-naming: modelRow's nm() goes through __uniEntLabel (strategy + mark) with the raw id beside a cluster's name — no hard-coded prefix, no bare r.name")
 check('window.__uniEsc=function(x)' in page and 'window.__uniEntLabelHTML=function(e)' in page and '__uniEntLabelHTML(e):(window.__uniEntLabel?__uniEntLabel(e):e))+\'</span>' in page and '"<div class=\'ptitle\'><div class=\'pname\'>"+_hx(title)+"</div>"' in page,
       "R2-naming: the fleet row and the panel head escape the label (project prose reaches innerHTML) — the fleet through __uniEntLabelHTML (the glyph mark rides it)")
@@ -1829,6 +1861,7 @@ const { chromium } = require(process.argv[3]);
       var ab=nodes.find(function(n){ return n.modelMark==='abstain'; }); r.abstainOk=(!ab || ab.ent===ab.entClaim);
       var newC=_ents.filter(function(e){ return __uniClaimEnts.indexOf(e)<0; });
       r.newClusters=newC.length; r.regOk=newC.every(function(e){ return !!ENT[e] && !!UNIVIS.ent[e]; });
+      r.regVacuous=(newC.length===0);   /* .every() on an empty list is TRUE: on a feed whose seeded view mints no new cluster this proves nothing, and saying so beats implying coverage (review 2026-09-08) */
       // the chooser is gone at RUNTIME, not merely absent from the source
       r.pills=[document.getElementById('entmodel'),document.getElementById('entnaming'),document.getElementById('entfeconv')].filter(Boolean).length;
       r.setters=[window.__uniSetModel,window.__uniSetNaming,window.__uniSetFeConv,window.__uniRelabel].filter(function(x){ return typeof x==='function'; }).length;
@@ -1852,7 +1885,7 @@ const { chromium } = require(process.argv[3]);
           window.__uniNaming=_keepN; if(_keepE===undefined) delete NB.entities[_slug]; else NB.entities[_slug]=_keepE; }
         else r.nmSkip=true; }catch(e){ r.escErr=String(e); }
       // the element card still carries its model + claim rows
-      try{ var _el=nodes.find(function(n){ return n.kind==='element'; }); if(_el){ SEL={kind:'node',data:_el}; showPanel(_el); r.elementCard=/pbody/.test('pbody') && !!document.querySelector('#pbody .sec'); } }catch(e){}
+      try{ var _el=nodes.find(function(n){ return n.kind==='element'; }); if(_el){ SEL={kind:'node',data:_el}; showPanel(_el); r.elementCard=!!document.querySelector('#pbody .sec') && ((document.querySelector('#phead .pname')||{}).textContent||'')===(_el.label||_el.id); } }catch(e){}
       // ?ent= still deep-links (the half of the old ?model=&ent= pair that survives)
       try{ var _e0=_ents.filter(function(e){ return e!=='__unclaimed__'; })[0];
         window.__ent=_e0; window.__entDone=false; __uniApplyDeepLinks();
@@ -1882,6 +1915,7 @@ const { chromium } = require(process.argv[3]);
       && modelSw.evClaim!==false                                    // a moved piece's evidence row still names the CLAIM
       && modelSw.escHead===true                                     // project prose still reaches innerHTML escaped
       && modelSw.deepLink===true                                    // ?ent= survives the loss of ?model=
+      && modelSw.elementCard!==false                                // the element card still renders (was a literal tautology AND unasserted — review 2026-09-08)
       && modelSw.absent===true && modelSw.absentRow===true);        // no seeded view → claim, said out loud
   await b.close();
   // the frontend fold, when the feed carries it: pieces drawn · every web node absorbed · bridge wires survive ·
