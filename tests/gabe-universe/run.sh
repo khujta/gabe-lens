@@ -1186,6 +1186,9 @@ check('mb.textContent="▶"' not in page and 'mb.textContent="⏸"' not in page 
 # A RENDER SWITCH KEEPS YOUR PLACE (operator: "I was looking in a journey, and I put Render, and everything
 # got deselected"). The switch reloads because the scene is rebuilt either way — that is an implementation
 # detail, and losing the reader's place is not an acceptable price for it.
+check('hl:(H&&H.on)?{ mode:H.mode, depth:H.depth, rest:H.rest' in page and 'pin:(window.__uniPin?Object.keys(window.__uniPin)' in page
+      and page.find('HL.origin=_org; HL.exact=!!H.exact;') > page.find('if(WALK.steps && WALK.steps.length){ WALK.i='),
+      "resume FIRE: the FOCUS must travel too (HL's seven non-derived fields + __uniPin) and must be restored AFTER the walk — __uniJrnStart and _walkGo both write HL, so restoring it first is simply overwritten")
 check('window.__uniResumeSave=function(){' in page and 'window.__uniResumeApply=function(){' in page
       and 'try{ __uniResumeSave(); }catch(e){} try{ window.localStorage.setItem("gabe:universe:render"' in page
       and 'sessionStorage' in page,
@@ -1940,17 +1943,29 @@ const { chromium } = require(process.argv[3]);
   // END TO END: walk a journey, step into it, open a card — then flip the render path and demand it all back.
   const resume = await p.evaluate(() => { try{ const js=_jrnCollect(); if(!js.length) return {skip:'no journeys'};
       __uniJrnStart(js[0].cid); WALK.i=Math.min(5,(WALK.steps||[]).length-1); _walkGo(0);
+      __uniHLMode();   // glow -> FOCUS: the operator's own sequence (journey, step, focus, switch)
       const n=NIDS[WALK.steps[WALK.i]]; if(n){ SEL={kind:'node',data:n}; showPanel(n); }
-      return {jname:js[0].name, i:WALK.i, steps:(WALK.steps||[]).length, pid:(window.__uniPView||{}).id}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
+      return {jname:js[0].name, i:WALK.i, steps:(WALK.steps||[]).length, pid:(window.__uniPView||{}).id,
+              hlMode:HL.mode, hlOn:HL.on, hlDepth:HL.depth, hlRest:HL.rest, hlOrigin:(HL.origin||[]).length, hlJr:HL.jr,
+              pins:Object.keys(window.__uniPin||{}).length,
+              vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length}; }catch(e){ return {err:String(e)}; } }).catch(e=>({err:String(e)}));
   if(!resume.skip && !resume.err){
     await p.evaluate(() => __uniToggleRender());
     await p.waitForFunction('window.__spikeKindsReady===true', {timeout:120000}); await p.waitForTimeout(9000);
     const back = await p.evaluate(() => ({ mode:window.__uniRenderMode, wmode:WALK.mode, i:WALK.i, steps:(WALK.steps||[]).length,
         jname:((window.HL&&HL.jrObj)?HL.jrObj.name:null), pid:(window.__uniPView||{}).id,
+        hlMode:HL.mode, hlOn:HL.on, hlDepth:HL.depth, hlRest:HL.rest, hlOrigin:(HL.origin||[]).length, hlJr:HL.jr,
+        pins:Object.keys(window.__uniPin||{}).length,
+        vis:nodes.filter(function(x){ return _nodeVisibleFn(x); }).length,
         cleared:(function(){ try{ return window.sessionStorage.getItem('gabe:universe:resume')===null; }catch(e){ return false; } })() })).catch(e=>({err:String(e)}));
     resume.back = back;
+    // the FOCUS is the half a reader actually feels, so `vis` is asserted too: the mode flag surviving while
+    // the culling did not would look identical in every other field (operator 2026-09-07).
     resume.ok = !!(back && !back.err && back.mode==='objects' && back.wmode==='journey' && back.jname===resume.jname
-                   && back.i===resume.i && back.steps===resume.steps && back.pid===resume.pid && back.cleared);
+                   && back.i===resume.i && back.steps===resume.steps && back.pid===resume.pid && back.cleared
+                   && back.hlOn===resume.hlOn && back.hlMode===resume.hlMode && back.hlDepth===resume.hlDepth
+                   && back.hlRest===resume.hlRest && back.hlOrigin===resume.hlOrigin && back.hlJr===resume.hlJr
+                   && back.pins===resume.pins && back.vis===resume.vis);
   } else resume.ok = !!resume.skip;   // ONLY a feed with no journeys may skip — an ERROR must FAIL, or this row is non-evidence (it already passed once by erroring after the browser closed)
   await b.close();
   // the frontend fold, when the feed carries it: pieces drawn · every web node absorbed · bridge wires survive ·

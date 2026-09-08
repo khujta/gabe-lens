@@ -1478,9 +1478,17 @@ window.__uniRenderMode=INST?"instanced":"objects";   /* NOT __uniRender — that
    dropped, and a stale record simply does nothing. ── */
 window.__uniResumeSave=function(){ try{
     var W=(typeof WALK!=="undefined")?WALK:null;
+    var H=(typeof HL!=="undefined")?HL:null;
     var rec={ tier:(window.__uniTier!=null?window.__uniTier:null),
       walk:(W&&W.mode&&W.steps&&W.steps.length)?{ mode:W.mode, steps:W.steps.slice(0,600), i:W.i,
-              jcid:((window.HL&&HL.jrObj&&HL.jrObj.cid)||null) }:null,
+              jcid:((H&&H.jrObj&&H.jrObj.cid)||null) }:null,
+      /* the HIGHLIGHT is state too, and it is the one a reader FEELS: `set`, `links`, `sprites`, `rings` and
+         `jrObj` are all DERIVED and are recomputed on the other side, so only the seven fields that cannot be
+         re-derived travel. `__uniPin` rides along because a focus that hides the outside relies on it to keep
+         the walk's own steps drawn. */
+      hl:(H&&H.on)?{ mode:H.mode, depth:H.depth, rest:H.rest, origin:(H.origin||[]).slice(0,600),
+              exact:!!H.exact, jr:(H.jr||null) }:null,
+      pin:(window.__uniPin?Object.keys(window.__uniPin).slice(0,600):null),
       pview:(window.__uniPView||null) };
     window.sessionStorage.setItem("gabe:universe:resume", JSON.stringify(rec)); }catch(e){} };
 window.__uniResumeApply=function(){ var raw=null;
@@ -1493,6 +1501,17 @@ window.__uniResumeApply=function(){ var raw=null;
       else if(W.steps && W.steps.length){ WALK.mode=W.mode||"trail"; WALK.steps=W.steps.filter(function(id){ return !!NIDS[id]; }); }
       if(WALK.steps && WALK.steps.length){ WALK.i=Math.max(0, Math.min(W.i||0, WALK.steps.length-1)); _walkGo(0); }
     }catch(e){} }
+  /* AFTER the walk, never before: __uniJrnStart re-establishes HL as the journey's glow, and _walkGo
+     re-origins it on a trail — restoring the focus first would simply be overwritten by both. */
+  var H=rec.hl;
+  if(H && typeof HL!=="undefined"){ try{
+      var _org=(H.origin||[]).filter(function(id){ return !!NIDS[id] || (typeof _fnById==="function" && !!_fnById(id)); });
+      if(_org.length){
+        if(rec.pin && rec.pin.length){ window.__uniPin={}; rec.pin.forEach(function(id){ window.__uniPin[id]=1; }); }
+        HL.mode=H.mode||"focus"; if(H.depth!=null) HL.depth=H.depth; if(H.rest) HL.rest=H.rest;
+        HL.origin=_org; HL.exact=!!H.exact; HL.jr=(H.jr||null); if(!HL.jr) HL.jrObj=null; HL.on=true;
+        _hlCompute(); _hlRestyle();   /* _hlRestyle re-sets the visibility accessor, rebuilds the nodes, the clusters and the transports, and re-applies the halos — the whole picture the focus implies */
+      } }catch(e){} }
   var P=rec.pview;
   if(P){ try{
       if(P.lvl==="node" && P.id && NIDS[P.id]) showPanel(NIDS[P.id]);
